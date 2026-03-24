@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIVA IPIZ | Notificacoes</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <a class="brand" href="index.html">
+          <img src="./images/logo.png" alt="Logo GIVA IPIZ">
+          <h1>GIVA <strong>IPIZ</strong></h1>
+        </a>
+        <button class="close-sidebar" id="close-btn" aria-label="Fechar menu lateral">
+          <span class="material-icons-sharp">close</span>
+        </button>
+      </div>
+      <nav class="sidebar-nav" aria-label="Menu principal">
+        <a class="nav-link" data-route="index.html" href="index.html"><span class="material-icons-sharp">dashboard</span>Dashboard</a>
+        <a class="nav-link" data-route="est.html" href="est.html"><span class="material-icons-sharp">work_history</span>Estagios Ativos</a>
+        <a class="nav-link" data-route="parc.html" href="parc.html"><span class="material-icons-sharp">apartment</span>Parceiros</a>
+        <a class="nav-link" data-route="statis.html" href="statis.html"><span class="material-icons-sharp">insights</span>Estatisticas</a>
+        <a class="nav-link" data-route="docs.html" href="docs.html"><span class="material-icons-sharp">description</span>Documentos</a>
+        <a class="nav-link" data-route="notif.html" href="notif.html"><span class="material-icons-sharp">notifications</span>Notificacoes <span class="pill">12</span></a>
+        <a class="nav-link" data-route="config.html" href="config.html"><span class="material-icons-sharp">settings</span>Perfil e Configuracoes</a>
+      </nav>
+      <div class="nav-footer">
+        <a class="nav-link logout-link" href="#"><span class="material-icons-sharp">logout</span>Terminar sessao</a>
+      </div>
+    </aside>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="app-content">
+      <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="Abrir menu lateral">
+          <span class="material-icons-sharp">menu</span>
+        </button>
+        <label class="search" for="global-search">
+          <span class="material-icons-sharp">search</span>
+          <input id="global-search" type="search" placeholder="Pesquisar notificacoes por assunto...">
+        </label>
+        <button class="theme-btn" id="theme-btn" aria-label="Alternar tema">
+          <span class="material-icons-sharp">dark_mode</span>
+        </button>
+        <div class="profile-chip">
+          <img src="./images/perfil-2.jpg" alt="Operador de notificacoes">
+          <div><strong>Comunicacao Interna</strong><small>Fila de alertas</small></div>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="page-header">
+          <h2>Hub de Notificacoes</h2>
+          <p>Alertas estrategicos sobre prazos, documentos e desempenho operacional para garantir resposta rapida da equipa de estagios.</p>
+          <div class="header-meta">
+            <span class="tag"><span class="material-icons-sharp">notification_important</span>12 alertas ativos</span>
+            <span class="tag"><span class="material-icons-sharp">bolt</span>4 requerem acao imediata</span>
+            <button class="btn ghost" id="mark-all-read" type="button">Marcar tudo como lido</button>
+          </div>
+        </section>
+
+        <section class="card" id="notice-list">
+          <div class="notice critical" data-search="critico parceiro impacta contrato">
+            <strong>Contrato da Impacta Lab expira em 8 dias</strong>
+            <p class="meta">Renovacao pendente com risco de impacto em 7 estagiarios.</p>
+            <button class="btn ghost" type="button" data-action="read">Alternar lido</button>
+          </div>
+
+          <div class="notice warn" data-search="avaliacao mensal atrasada">
+            <strong>5 fichas de avaliacao mensal em atraso</strong>
+            <p class="meta">Cursos afetados: TI e Mecanica. Prazo final: sexta-feira.</p>
+            <button class="btn ghost" type="button" data-action="read">Alternar lido</button>
+          </div>
+
+          <div class="notice" data-search="novo parceiro validacao naio">
+            <strong>Novo parceiro aprovado para EIE</strong>
+            <p class="meta">NAIO Industria ampliou capacidade em 4 vagas para abril.</p>
+            <button class="btn ghost" type="button" data-action="read">Alternar lido</button>
+          </div>
+
+          <div class="notice" data-search="assinatura digital termo compromisso">
+            <strong>Assinatura digital concluida</strong>
+            <p class="meta">Termo de compromisso de 14 estudantes foi finalizado hoje.</p>
+            <button class="btn ghost" type="button" data-action="read">Alternar lido</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>
+

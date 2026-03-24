@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIVA IPIZ | Estatisticas</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <a class="brand" href="index.html">
+          <img src="./images/logo.png" alt="Logo GIVA IPIZ">
+          <h1>GIVA <strong>IPIZ</strong></h1>
+        </a>
+        <button class="close-sidebar" id="close-btn" aria-label="Fechar menu lateral">
+          <span class="material-icons-sharp">close</span>
+        </button>
+      </div>
+      <nav class="sidebar-nav" aria-label="Menu principal">
+        <a class="nav-link" data-route="index.html" href="index.html"><span class="material-icons-sharp">dashboard</span>Dashboard</a>
+        <a class="nav-link" data-route="est.html" href="est.html"><span class="material-icons-sharp">work_history</span>Estagios Ativos</a>
+        <a class="nav-link" data-route="parc.html" href="parc.html"><span class="material-icons-sharp">apartment</span>Parceiros</a>
+        <a class="nav-link" data-route="statis.html" href="statis.html"><span class="material-icons-sharp">insights</span>Estatisticas</a>
+        <a class="nav-link" data-route="docs.html" href="docs.html"><span class="material-icons-sharp">description</span>Documentos</a>
+        <a class="nav-link" data-route="notif.html" href="notif.html"><span class="material-icons-sharp">notifications</span>Notificacoes <span class="pill">12</span></a>
+        <a class="nav-link" data-route="config.html" href="config.html"><span class="material-icons-sharp">settings</span>Perfil e Configuracoes</a>
+      </nav>
+      <div class="nav-footer">
+        <a class="nav-link logout-link" href="#"><span class="material-icons-sharp">logout</span>Terminar sessao</a>
+      </div>
+    </aside>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="app-content">
+      <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="Abrir menu lateral">
+          <span class="material-icons-sharp">menu</span>
+        </button>
+        <label class="search" for="global-search">
+          <span class="material-icons-sharp">search</span>
+          <input id="global-search" type="search" placeholder="Pesquisar indicador, curso ou periodo...">
+        </label>
+        <button class="theme-btn" id="theme-btn" aria-label="Alternar tema">
+          <span class="material-icons-sharp">dark_mode</span>
+        </button>
+        <div class="profile-chip">
+          <img src="./images/perfil-2.jpg" alt="Analista de desempenho">
+          <div><strong>Analytics Desk</strong><small>Insights e previsoes</small></div>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="page-header">
+          <h2>Estatisticas e Tendencias</h2>
+          <p>Visao analitica de performance da plataforma, com indicadores de colocacao, regularidade documental e eficiencia por curso.</p>
+          <div class="header-meta">
+            <span class="tag"><span class="material-icons-sharp">query_stats</span>7 indicadores principais</span>
+            <span class="tag"><span class="material-icons-sharp">monitoring</span>Atualizacao em tempo diario</span>
+          </div>
+        </section>
+
+        <section class="stats-grid">
+          <article class="stat-card" data-search="taxa empregabilidade">
+            <div class="stat-head"><span>Empregabilidade</span><span class="material-icons-sharp">rocket_launch</span></div>
+            <h3>72%</h3>
+            <p><span class="kpi-up">+5.2%</span> apos estagio</p>
+          </article>
+
+          <article class="stat-card" data-search="documentacao regularizada">
+            <div class="stat-head"><span>Documentacao OK</span><span class="material-icons-sharp">task_alt</span></div>
+            <h3>88%</h3>
+            <p><span class="kpi-up">+3.1%</span> no ultimo ciclo</p>
+          </article>
+
+          <article class="stat-card" data-search="satisfacao parceiros">
+            <div class="stat-head"><span>Satisfacao Parceiros</span><span class="material-icons-sharp">favorite</span></div>
+            <h3>4.5</h3>
+            <p><span class="kpi-up">+0.2</span> media geral</p>
+          </article>
+
+          <article class="stat-card" data-search="risco evasao">
+            <div class="stat-head"><span>Risco de Evasao</span><span class="material-icons-sharp">report_problem</span></div>
+            <h3>11%</h3>
+            <p><span class="kpi-down">-2.4%</span> apos mentoria</p>
+          </article>
+        </section>
+
+        <section class="panel-grid">
+          <article class="panel" data-search="desempenho mensal">
+            <h3>Desempenho Mensal por Curso</h3>
+            <div class="bars">
+              <div class="bar"><strong>TI - Insercao</strong><div class="line"><span class="p-92"></span></div></div>
+              <div class="bar"><strong>EIE - Insercao</strong><div class="line line-accent"><span class="p-76"></span></div></div>
+              <div class="bar"><strong>TLQB - Insercao</strong><div class="line"><span class="p-71"></span></div></div>
+              <div class="bar"><strong>Mecanica - Insercao</strong><div class="line line-danger"><span class="p-59"></span></div></div>
+            </div>
+          </article>
+
+          <article class="panel" data-search="benchmark trimestral">
+            <h3>Benchmark Trimestral</h3>
+            <div class="list">
+              <div class="list-item"><strong>Q1 - Conversao de vagas</strong><span class="meta">Meta 80% | Real 78%</span></div>
+              <div class="list-item"><strong>Q1 - Satisfacao dos mentores</strong><span class="meta">Meta 4.2 | Real 4.5</span></div>
+              <div class="list-item"><strong>Q1 - Conclusao documental</strong><span class="meta">Meta 85% | Real 88%</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <h3>Relatorio Consolidado</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Meta</th>
+                  <th>Atual</th>
+                  <th>Status</th>
+                  <th>Acao recomendada</th>
+                  <th>Relatorio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-search="empregabilidade meta 70 atual 72"><td>Empregabilidade apos estagio</td><td>70%</td><td>72%</td><td><span class="badge success">Acima</span></td><td>Escalar modelo para novos parceiros</td><td><button class="btn ghost" type="button" data-download-doc data-doc-title="Relatorio Analitico - Empregabilidade" data-doc-type="PDF" data-doc-scope="Aluno" data-doc-target="Empregabilidade apos estagio" data-doc-status="Acima da meta" data-doc-responsible="Analytics Desk">Baixar</button></td></tr>
+                <tr data-search="tempo onboarding meta 5 atual 6"><td>Tempo medio de onboarding</td><td>5 dias</td><td>6 dias</td><td><span class="badge warning">Atencao</span></td><td>Padronizar checklist por curso</td><td><button class="btn ghost" type="button" data-download-doc data-doc-title="Relatorio Analitico - Onboarding" data-doc-type="PDF" data-doc-scope="Turma" data-doc-target="Tempo medio de onboarding" data-doc-status="Atencao" data-doc-responsible="Analytics Desk">Baixar</button></td></tr>
+                <tr data-search="evasao meta 14 atual 11"><td>Taxa de evasao</td><td>&lt; 14%</td><td>11%</td><td><span class="badge success">Controlado</span></td><td>Manter mentoria quinzenal</td><td><button class="btn ghost" type="button" data-download-doc data-doc-title="Relatorio Analitico - Evasao" data-doc-type="PDF" data-doc-scope="Turma" data-doc-target="Taxa de evasao" data-doc-status="Controlado" data-doc-responsible="Analytics Desk">Baixar</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>
+

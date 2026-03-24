@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIVA IPIZ | Perfil e Configuracoes</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <a class="brand" href="index.html">
+          <img src="./images/logo.png" alt="Logo GIVA IPIZ">
+          <h1>GIVA <strong>IPIZ</strong></h1>
+        </a>
+        <button class="close-sidebar" id="close-btn" aria-label="Fechar menu lateral">
+          <span class="material-icons-sharp">close</span>
+        </button>
+      </div>
+      <nav class="sidebar-nav" aria-label="Menu principal">
+        <a class="nav-link" data-route="index.html" href="index.html"><span class="material-icons-sharp">dashboard</span>Dashboard</a>
+        <a class="nav-link" data-route="est.html" href="est.html"><span class="material-icons-sharp">work_history</span>Estagios Ativos</a>
+        <a class="nav-link" data-route="parc.html" href="parc.html"><span class="material-icons-sharp">apartment</span>Parceiros</a>
+        <a class="nav-link" data-route="statis.html" href="statis.html"><span class="material-icons-sharp">insights</span>Estatisticas</a>
+        <a class="nav-link" data-route="docs.html" href="docs.html"><span class="material-icons-sharp">description</span>Documentos</a>
+        <a class="nav-link" data-route="notif.html" href="notif.html"><span class="material-icons-sharp">notifications</span>Notificacoes <span class="pill">12</span></a>
+        <a class="nav-link" data-route="config.html" href="config.html"><span class="material-icons-sharp">settings</span>Perfil e Configuracoes</a>
+      </nav>
+      <div class="nav-footer">
+        <a class="nav-link logout-link" href="#"><span class="material-icons-sharp">logout</span>Terminar sessao</a>
+      </div>
+    </aside>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="app-content">
+      <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="Abrir menu lateral">
+          <span class="material-icons-sharp">menu</span>
+        </button>
+        <label class="search" for="global-search">
+          <span class="material-icons-sharp">search</span>
+          <input id="global-search" type="search" placeholder="Pesquisar preferencia ou parametro...">
+        </label>
+        <button class="theme-btn" id="theme-btn" aria-label="Alternar tema">
+          <span class="material-icons-sharp">dark_mode</span>
+        </button>
+        <div class="profile-chip">
+          <img src="./images/perfil-1.jpg" alt="Administrador da plataforma">
+          <div><strong>Mandriz Admin</strong><small>Gestao global</small></div>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="page-header">
+          <h2>Perfil e Configuracoes da Plataforma</h2>
+          <p>Personalizacao de perfil, preferencias de comunicacao, seguranca e parametros de governanca operacional.</p>
+          <div class="header-meta">
+            <span class="tag"><span class="material-icons-sharp">admin_panel_settings</span>Nivel: Administrador</span>
+            <span class="tag"><span class="material-icons-sharp">shield</span>2FA ativo</span>
+          </div>
+        </section>
+
+        <section class="settings-grid">
+          <article class="card">
+            <h3>Dados do Perfil</h3>
+            <form class="form-grid" id="settings-form">
+              <label for="nome">Nome completo</label>
+              <input id="nome" type="text" value="Mandriz Admin">
+
+              <label for="email">Email institucional</label>
+              <input id="email" type="email" value="mandriz.admin@ipiz.ao">
+
+              <label for="cargo">Cargo</label>
+              <select id="cargo">
+                <option>Administrador</option>
+                <option>Coordenador de estagios</option>
+                <option>Operador</option>
+              </select>
+
+              <label for="bio">Observacoes</label>
+              <textarea id="bio" rows="4">Responsavel por estrategia de insercao profissional e qualidade documental.</textarea>
+
+              <div class="actions">
+                <button class="btn primary" type="submit">Guardar alteracoes</button>
+                <button class="btn ghost" type="button">Cancelar</button>
+              </div>
+              <p id="save-feedback" class="meta is-hidden"></p>
+            </form>
+          </article>
+
+          <article class="card" data-search="preferencias notificacoes seguranca">
+            <h3>Preferencias e Seguranca</h3>
+            <label class="switch"><span>Receber alertas criticos por email</span><input type="checkbox" aria-label="Receber alertas criticos por email" checked></label>
+            <label class="switch"><span>Receber resumo diario por WhatsApp</span><input type="checkbox" aria-label="Receber resumo diario por WhatsApp" checked></label>
+            <label class="switch"><span>Ativar bloqueio apos 15 min de inatividade</span><input type="checkbox" aria-label="Ativar bloqueio apos 15 min de inatividade" checked></label>
+            <label class="switch"><span>Forcar validacao de documentos em 2 etapas</span><input type="checkbox" aria-label="Forcar validacao de documentos em 2 etapas"></label>
+
+            <div class="actions mt-md">
+              <button class="btn primary" type="button">Atualizar seguranca</button>
+              <button class="btn ghost" type="button">Gerir acessos</button>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>
+

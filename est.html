@@ -1,0 +1,463 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIVA IPIZ | Estagios Ativos</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .metric-mini { text-align: center; padding: 1rem; background: #f7fafc; border-radius: 12px; border: 1px solid #e5eaef; }
+    .metric-mini p { margin: 0; color: #667085; font-size: 0.875rem; }
+    .metric-mini strong { display: block; font-size: 1.75rem; color: #101828; margin: 0.5rem 0; }
+    .phase-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-radius: 16px; font-size: 0.8rem; font-weight: 500; background: #f0f4f9; color: #344054; }
+    .phase-active { background: #d0f7e8; color: #0f8f57; }
+    .phase-pending { background: #fef0e0; color: #b26b00; }
+    .phase-completed { background: #e5eaef; color: #667085; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <a class="brand" href="index.html">
+          <img src="./images/logo.png" alt="Logo GIVA IPIZ">
+          <h1>GIVA <strong>IPIZ</strong></h1>
+        </a>
+        <button class="close-sidebar" id="close-btn" aria-label="Fechar menu lateral">
+          <span class="material-icons-sharp">close</span>
+        </button>
+      </div>
+      <nav class="sidebar-nav" aria-label="Menu principal">
+        <a class="nav-link" data-route="index.html" href="index.html"><span class="material-icons-sharp">dashboard</span>Dashboard</a>
+        <a class="nav-link" data-route="est.html" href="est.html"><span class="material-icons-sharp">work_history</span>Estagios Ativos</a>
+        <a class="nav-link" data-route="parc.html" href="parc.html"><span class="material-icons-sharp">apartment</span>Parceiros</a>
+        <a class="nav-link" data-route="statis.html" href="statis.html"><span class="material-icons-sharp">insights</span>Estatisticas</a>
+        <a class="nav-link" data-route="docs.html" href="docs.html"><span class="material-icons-sharp">description</span>Documentos</a>
+        <a class="nav-link" data-route="notif.html" href="notif.html"><span class="material-icons-sharp">notifications</span>Notificacoes <span class="pill">12</span></a>
+        <a class="nav-link" data-route="config.html" href="config.html"><span class="material-icons-sharp">settings</span>Perfil e Configuracoes</a>
+      </nav>
+      <div class="nav-footer">
+        <a class="nav-link logout-link" href="#"><span class="material-icons-sharp">logout</span>Terminar sessao</a>
+      </div>
+    </aside>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="app-content">
+      <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="Abrir menu lateral">
+          <span class="material-icons-sharp">menu</span>
+        </button>
+        <label class="search" for="global-search">
+          <span class="material-icons-sharp">search</span>
+          <input id="global-search" type="search" placeholder="Pesquisar por nome, curso, empresa...">
+        </label>
+        <button class="theme-btn" id="theme-btn" aria-label="Alternar tema">
+          <span class="material-icons-sharp">dark_mode</span>
+        </button>
+        <div class="profile-chip">
+          <img src="./images/perfil-2.jpg" alt="Foto da coordenacao">
+          <div><strong>Coordenacao</strong><small>Acompanhamento Integral</small></div>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="page-header">
+          <h2>Acompanhamento de Estagios - Sistema Completo</h2>
+          <p>Acompanhamento detalhado e integral de todos os alunos em estagio, turma, curso, area, empresa, estado, fase, conhecimentos e avaliacoes.</p>
+          <div class="header-meta">
+            <span class="tag"><span class="material-icons-sharp">groups</span><strong id="total-students">0</strong> alunos em estagio</span>
+            <span class="tag"><span class="material-icons-sharp">work</span><strong id="active-stages">0</strong> estagios ativos</span>
+            <span class="tag"><span class="material-icons-sharp">apartment</span><strong id="active-companies">0</strong> empresas parceiras</span>
+          </div>
+        </section>
+
+        <!-- Cards de Metricas -->
+        <section class="grid-2" style="margin-bottom: 2rem;">
+          <div class="metric-mini">
+            <p>Triagem Inicial</p>
+            <strong id="metric-initial">0</strong>
+          </div>
+          <div class="metric-mini">
+            <p>Entrevista Tecnica</p>
+            <strong id="metric-interview">0</strong>
+          </div>
+          <div class="metric-mini">
+            <p>Onboarding</p>
+            <strong id="metric-onboarding">0</strong>
+          </div>
+          <div class="metric-mini">
+            <p>Estagio Ativo</p>
+            <strong id="metric-active">0</strong>
+          </div>
+          <div class="metric-mini">
+            <p>Em Avaliacao</p>
+            <strong id="metric-evaluation">0</strong>
+          </div>
+          <div class="metric-mini">
+            <p>Concluido</p>
+            <strong id="metric-completed">0</strong>
+          </div>
+        </section>
+
+        <!-- Filtros Robustos -->
+        <section class="panel">
+          <h3>Filtros Avancados</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <label for="filter-course">Curso</label>
+              <select id="filter-course" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todos os cursos</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-class">Turma</label>
+              <select id="filter-class" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todas as turmas</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-company">Empresa</label>
+              <select id="filter-company" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todas as empresas</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-phase">Fase</label>
+              <select id="filter-phase" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todas as fases</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-status">Estado</label>
+              <select id="filter-status" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todos os estados</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-performance">Performance</label>
+              <select id="filter-performance" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todos</option>
+                <option value="excellent">Excelente (>=4.5)</option>
+                <option value="good">Bom (3.5-4.5)</option>
+                <option value="satisfactory">Satisfatorio (2.5-3.5)</option>
+                <option value="weak">Fraco (<2.5)</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn primary" type="button" id="btn-apply-filters">
+              <span class="material-icons-sharp">filter_list</span> Aplicar Filtros
+            </button>
+            <button class="btn ghost" type="button" id="btn-clear-filters">
+              <span class="material-icons-sharp">clear</span> Limpar
+            </button>
+            <a href="avaliacoes.html" class="btn ghost" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+              <span class="material-icons-sharp">assessment</span> Avaliacoes
+            </a>
+            <button class="btn ghost" type="button" id="btn-export-report">
+              <span class="material-icons-sharp">download</span> Exportar Relatorio
+            </button>
+          </div>
+        </section>
+
+        <!-- Dashboard por Turma -->
+        <section class="panel">
+          <h3>Vista por Turma e Curso</h3>
+          <div id="class-dashboard" style="display: grid; gap: 1.5rem;">
+            <!-- Carregado dinamicamente -->
+          </div>
+        </section>
+
+        <!-- Tabela Principal de Alunos -->
+        <section class="panel">
+          <h3>Todos os Alunos em Acompanhamento</h3>
+          <div class="table-wrap" style="overflow-x: auto;">
+            <table style="font-size: 0.9rem;">
+              <thead>
+                <tr>
+                  <th style="min-width: 180px;">Aluno</th>
+                  <th style="min-width: 100px;">Matricula</th>
+                  <th style="min-width: 100px;">Turma</th>
+                  <th style="min-width: 120px;">Empresa</th>
+                  <th style="min-width: 120px;">Area</th>
+                  <th style="min-width: 100px;">Fase</th>
+                  <th style="min-width: 80px;">Estado</th>
+                  <th style="min-width: 100px;">Desempenho</th>
+                  <th style="min-width: 80px;">Avaliacoes</th>
+                  <th style="min-width: 120px;">Accoes</th>
+                </tr>
+              </thead>
+              <tbody id="students-table">
+                <tr><td colspan="10" style="text-align: center;">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Analise de Performance -->
+        <section class="panel">
+          <h3>Analise de Performance Geral</h3>
+          <div class="grid-2">
+            <div>
+              <label>Presenca Media</label>
+              <p style="font-size: 2rem; font-weight: bold; color: #0a6c85;" id="avg-attendance">--%</p>
+            </div>
+            <div>
+              <label>Envolvimento Medio</label>
+              <p style="font-size: 2rem; font-weight: bold; color: #0a6c85;" id="avg-engagement">-/5</p>
+            </div>
+            <div>
+              <label>Conformidade Media</label>
+              <p style="font-size: 2rem; font-weight: bold; color: #0a6c85;" id="avg-compliance">-/5</p>
+            </div>
+            <div>
+              <label>Taxa de Conclusao</label>
+              <p style="font-size: 2rem; font-weight: bold; color: #0a6c85;" id="completion-rate">--%</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script>
+    (() => {
+      if (route !== "est.html") return;
+
+      const systemData = stageSystem.getSystemData();
+      let allStudents = stageSystem.getAllStudents();
+
+      const initDashboard = () => {
+        populateFilters();
+        renderMetrics();
+        renderClassDashboard();
+        renderStudentsTable();
+        renderPerformanceAnalysis();
+      };
+
+      const populateFilters = () => {
+        const courseSelect = document.getElementById("filter-course");
+        systemData.courses.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          courseSelect.appendChild(opt);
+        });
+
+        const classSelect = document.getElementById("filter-class");
+        systemData.classes.forEach(cl => {
+          const course = systemData.courses.find(c => c.id === cl.courseId);
+          const opt = document.createElement("option");
+          opt.value = cl.id;
+          opt.textContent = `${course?.short} - Turma ${cl.section} (${cl.supervisor})`;
+          classSelect.appendChild(opt);
+        });
+
+        const companySelect = document.getElementById("filter-company");
+        systemData.companies.forEach(co => {
+          const opt = document.createElement("option");
+          opt.value = co.id;
+          opt.textContent = co.name;
+          companySelect.appendChild(opt);
+        });
+
+        const phaseSelect = document.getElementById("filter-phase");
+        systemData.stagePhases.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = p.name;
+          phaseSelect.appendChild(opt);
+        });
+
+        const statusSelect = document.getElementById("filter-status");
+        systemData.stageStatus.forEach(st => {
+          const opt = document.createElement("option");
+          opt.value = st.id;
+          opt.textContent = st.name;
+          statusSelect.appendChild(opt);
+        });
+      };
+
+      const renderMetrics = () => {
+        const phases = systemData.stagePhases;
+        document.getElementById("total-students").textContent = allStudents.length;
+        document.getElementById("active-stages").textContent = allStudents.filter(s => s.stage.statusId === "inprogress").length;
+        document.getElementById("active-companies").textContent = new Set(allStudents.map(s => s.stage.companyId)).size;
+
+        phases.forEach(p => {
+          const count = allStudents.filter(s => s.stage.phaseId === p.id).length;
+          const el = document.getElementById(`metric-${p.id}`);
+          if (el) el.textContent = count;
+        });
+      };
+
+      const renderClassDashboard = () => {
+        const classDashDiv = document.getElementById("class-dashboard");
+        const courses = systemData.courses;
+
+        classDashDiv.innerHTML = courses.map(course => {
+          const classes = systemData.classes.filter(cl => cl.courseId === course.id);
+          const courseStudents = allStudents.filter(s => s.courseId === course.id);
+          const activeCount = courseStudents.filter(s => s.stage.statusId === "inprogress").length;
+          const completedCount = courseStudents.filter(s => s.stage.statusId === "completed").length;
+
+          return `
+            <div style="border-left: 4px solid ${course.color}; padding: 1rem; background: #f7fafc; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                  <strong style="color: ${course.color};">${course.name}</strong>
+                  <p style="margin: 0.25rem 0 0 0; color: #667085; font-size: 0.9rem;">${courseStudents.length} alunos  ${activeCount} ativos  ${completedCount} concluidos</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                  ${classes.map(cl => {
+                    const classStudents = courseStudents.filter(s => s.classId === cl.id);
+                    return `<span class="badge" style="background: ${course.color}22; color: ${course.color};">${cl.section} (${classStudents.length})</span>`;
+                  }).join("")}
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
+                ${classes.map(cl => {
+                  const classStudents = courseStudents.filter(s => s.classId === cl.id);
+                  return `
+                    <div style="padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #e5eaef;">
+                      <p style="margin: 0; font-size: 0.85rem; color: #667085;">Turma ${cl.section}</p>
+                      <p style="margin: 0.25rem 0 0 0; font-weight: bold; color: #101828;">${classStudents.length} alunos</p>
+                      <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #667085;">Supervisor: ${cl.supervisor}</p>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            </div>
+          `;
+        }).join("");
+      };
+
+      const renderStudentsTable = (filtered = allStudents) => {
+        const tbody = document.getElementById("students-table");
+        
+        if (filtered.length === 0) {
+          tbody.innerHTML = "<tr><td colspan=\"10\" style=\"text-align: center; color: #667085;\">Nenhum aluno encontrado com os filtros aplicados.<\/td><\/tr>";
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(s => {
+          const course = systemData.courses.find(c => c.id === s.courseId);
+          const company = systemData.companies.find(c => c.id === s.stage.companyId);
+          const phase = systemData.stagePhases.find(p => p.id === s.stage.phaseId);
+          const status = systemData.stageStatus.find(st => st.id === s.stage.statusId);
+          const avgPerf = ((s.performance.attendance / 100) * 2 + s.performance.engagement * 1.5 + s.performance.compliance * 1.5) / 5;
+          const perfColor = avgPerf >= 4.5 ? "#0f8f57" : avgPerf >= 3.5 ? "#0a6c85" : avgPerf >= 2.5 ? "#b26b00" : "#c23854";
+          const evalCount = (s.evaluations || []).length;
+
+          return `
+            <tr data-search="${s.name.toLowerCase()} ${course?.short} ${company?.name}">
+              <td>
+                <strong>${s.name}</strong>
+                <br><small style="color: #667085;">${course?.short}<\/small>
+              <\/td>
+              <td><code style="background: #f0f4f9; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85rem;">${s.matricula}<\/code><\/td>
+              <td>${s.classId}<\/td>
+              <td><strong>${company?.name || "--"}<\/strong><\/td>
+              <td>${company?.areas[s.stage.areaId] || "--"}<\/td>
+              <td>
+                <span class="phase-badge phase-${s.stage.phaseId}">
+                  <span class="material-icons-sharp" style="font-size: 0.9rem;">${phase?.icon || "info"}<\/span>
+                  ${phase?.name?.substring(0, 12) || "--"}
+                <\/span>
+              <\/td>
+              <td><span class="badge" style="background: ${status?.color || "#d0d5dd"}22; color: ${status?.color || "#667085"};">${status?.name || "--"}<\/span><\/td>
+              <td>
+                <div style="font-size: 2rem; color: ${perfColor};"><\/div>
+                <small style="color: #667085;">${avgPerf.toFixed(1)}\/5<\/small>
+              <\/td>
+              <td>
+                <span class="badge" style="background: ${evalCount > 0 ? "#0f8f57" : "#d0d5dd"}22; color: ${evalCount > 0 ? "#0f8f57" : "#667085"};">
+                  <span class="material-icons-sharp" style="font-size: 0.8rem;">${evalCount > 0 ? "check_circle" : "radio_button_unchecked"}<\/span>
+                  ${evalCount}
+                <\/span>
+              <\/td>
+              <td style="display: flex; gap: 0.25rem;">
+                <a href="alumno.html?id=${s.id}" class="btn ghost" style="text-decoration: none; white-space: nowrap; padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                  <span class="material-icons-sharp">person<\/span> Ver
+                <\/a>
+              <\/td>
+            <\/tr>
+          `;
+        }).join("");
+      };
+
+      document.getElementById("btn-apply-filters")?.addEventListener("click", () => {
+        const courseFilter = document.getElementById("filter-course").value;
+        const classFilter = document.getElementById("filter-class").value;
+        const companyFilter = document.getElementById("filter-company").value;
+        const phaseFilter = document.getElementById("filter-phase").value;
+        const statusFilter = document.getElementById("filter-status").value;
+        const perfFilter = document.getElementById("filter-performance").value;
+
+        let filtered = allStudents;
+        if (courseFilter) filtered = filtered.filter(s => s.courseId === courseFilter);
+        if (classFilter) filtered = filtered.filter(s => s.classId === classFilter);
+        if (companyFilter) filtered = filtered.filter(s => s.stage.companyId === companyFilter);
+        if (phaseFilter) filtered = filtered.filter(s => s.stage.phaseId === phaseFilter);
+        if (statusFilter) filtered = filtered.filter(s => s.stage.statusId === statusFilter);
+        if (perfFilter) {
+          filtered = filtered.filter(s => {
+            const avgPerf = ((s.performance.attendance / 100) * 2 + s.performance.engagement * 1.5 + s.performance.compliance * 1.5) / 5;
+            if (perfFilter === "excellent") return avgPerf >= 4.5;
+            if (perfFilter === "good") return avgPerf >= 3.5 && avgPerf < 4.5;
+            if (perfFilter === "satisfactory") return avgPerf >= 2.5 && avgPerf < 3.5;
+            if (perfFilter === "weak") return avgPerf < 2.5;
+            return true;
+          });
+        }
+
+        renderStudentsTable(filtered);
+        showToast(`${filtered.length} alunos encontrados`, "info", "done");
+      });
+
+      document.getElementById("btn-clear-filters")?.addEventListener("click", () => {
+        document.getElementById("filter-course").value = "";
+        document.getElementById("filter-class").value = "";
+        document.getElementById("filter-company").value = "";
+        document.getElementById("filter-phase").value = "";
+        document.getElementById("filter-status").value = "";
+        document.getElementById("filter-performance").value = "";
+        renderStudentsTable();
+        showToast("Filtros limpos", "info", "done");
+      });
+
+      document.getElementById("btn-export-report")?.addEventListener("click", () => {
+        showToast("Relatorio em preparacao para download", "info", "download");
+      });
+
+      const renderPerformanceAnalysis = () => {
+        const total = allStudents.length;
+        if (total === 0) return;
+
+        const avgAttendance = Math.round(
+          allStudents.reduce((sum, s) => sum + s.performance.attendance, 0) / total
+        );
+        const avgEngagement = (
+          allStudents.reduce((sum, s) => sum + s.performance.engagement, 0) / total
+        ).toFixed(1);
+        const avgCompliance = (
+          allStudents.reduce((sum, s) => sum + s.performance.compliance, 0) / total
+        ).toFixed(1);
+        const completionRate = Math.round(
+          (allStudents.filter(s => s.stage.statusId === "completed").length / total) * 100
+        );
+
+        document.getElementById("avg-attendance").textContent = `${avgAttendance}%`;
+        document.getElementById("avg-engagement").textContent = `${avgEngagement}\/5`;
+        document.getElementById("avg-compliance").textContent = `${avgCompliance}\/5`;
+        document.getElementById("completion-rate").textContent = `${completionRate}%`;
+      };
+
+      initDashboard();
+    })();
+  </script>
+</body>
+</html>

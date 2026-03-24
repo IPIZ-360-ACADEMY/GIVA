@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIVA IPIZ | Avaliacoes de Estagio</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <a class="brand" href="index.html">
+          <img src="./images/logo.png" alt="Logo GIVA IPIZ">
+          <h1>GIVA <strong>IPIZ</strong></h1>
+        </a>
+        <button class="close-sidebar" id="close-btn" aria-label="Fechar menu lateral">
+          <span class="material-icons-sharp">close</span>
+        </button>
+      </div>
+      <nav class="sidebar-nav" aria-label="Menu principal">
+        <a class="nav-link" data-route="index.html" href="index.html"><span class="material-icons-sharp">dashboard</span>Dashboard</a>
+        <a class="nav-link" data-route="est.html" href="est.html"><span class="material-icons-sharp">work_history</span>Estagios Ativos</a>
+        <a class="nav-link" data-route="parc.html" href="parc.html"><span class="material-icons-sharp">apartment</span>Parceiros</a>
+        <a class="nav-link" data-route="statis.html" href="statis.html"><span class="material-icons-sharp">insights</span>Estatisticas</a>
+        <a class="nav-link" data-route="docs.html" href="docs.html"><span class="material-icons-sharp">description</span>Documentos</a>
+        <a class="nav-link" data-route="notif.html" href="notif.html"><span class="material-icons-sharp">notifications</span>Notificacoes <span class="pill">12</span></a>
+        <a class="nav-link" data-route="config.html" href="config.html"><span class="material-icons-sharp">settings</span>Perfil e Configuracoes</a>
+      </nav>
+      <div class="nav-footer">
+        <a class="nav-link logout-link" href="#"><span class="material-icons-sharp">logout</span>Terminar sessao</a>
+      </div>
+    </aside>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="app-content">
+      <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="Abrir menu lateral">
+          <span class="material-icons-sharp">menu</span>
+        </button>
+        <label class="search" for="global-search">
+          <span class="material-icons-sharp">search</span>
+          <input id="global-search" type="search" placeholder="Pesquisar aluno, tutor ou empresa...">
+        </label>
+        <button class="theme-btn" id="theme-btn" aria-label="Alternar tema">
+          <span class="material-icons-sharp">dark_mode</span>
+        </button>
+        <div class="profile-chip">
+          <img src="./images/perfil-2.jpg" alt="Foto do utilizador">
+          <div><strong>Utilizador</strong><small>Sistema IPIZ</small></div>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="page-header">
+          <h2>Avaliacoes de Estagio</h2>
+          <p>Gestao de avaliacoes de alunos em estagio por tutores, instrutores e supervisores da empresa.</p>
+          <div class="header-meta">
+            <span class="tag"><span class="material-icons-sharp">assessment</span>Sistema centralizado de avaliacoes</span>
+            <span class="tag"><span class="material-icons-sharp">people</span>Feedback de multiplos avaliadores</span>
+          </div>
+        </section>
+
+        <!-- Filtros -->
+        <section class="panel">
+          <h3>Filtros e Accoes</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+              <label for="filter-course">Curso</label>
+              <select id="filter-course" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todos os cursos</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-class">Turma</label>
+              <select id="filter-class" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todas as turmas</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-company">Empresa</label>
+              <select id="filter-company" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todas as empresas</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-status">Estado</label>
+              <select id="filter-status" style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Todos os estados</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <button class="btn primary" type="button" id="btn-apply-filters">
+              <span class="material-icons-sharp">filter_list</span> Aplicar Filtros
+            </button>
+            <button class="btn ghost" type="button" id="btn-add-evaluation">
+              <span class="material-icons-sharp">add</span> Nova Avaliaca​o
+            </button>
+          </div>
+        </section>
+
+        <!-- Tabuleiro de Avaliacoes -->
+        <section class="panel">
+          <h3>Alunos Pendentes de Avaliacao</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Matricula</th>
+                  <th>Turma</th>
+                  <th>Empresa</th>
+                  <th>Fase</th>
+                  <th>Tutor</th>
+                  <th>Avaliacoes</th>
+                  <th>Accoes</th>
+                </tr>
+              </thead>
+              <tbody id="evaluations-table">
+                <tr><td colspan="8" style="text-align: center; color: #667085;">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Formulario de Avaliacao -->
+        <section class="panel" id="evaluation-form-section" style="display: none;">
+          <h3>Registar Nova Avaliacao</h3>
+          <form id="evaluation-form" style="display: grid; gap: 1rem; max-width: 800px;">
+            <div>
+              <label for="eval-student">Aluno</label>
+              <select id="eval-student" required style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                <option value="">Selecione um aluno</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label for="eval-evaluator-type">Tipo de Avaliador</label>
+                <select id="eval-evaluator-type" required style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                  <option value="">Selecione...</option>
+                  <option value="tutor">Tutor</option>
+                  <option value="company">Supervisor da Empresa</option>
+                  <option value="instructor">Instrutor</option>
+                </select>
+              </div>
+              <div>
+                <label for="eval-score">Classificacao (1-5 estrelas)</label>
+                <select id="eval-score" required style="width: 100%; padding: 0.5rem; border: 1px solid #d0d5dd; border-radius: 8px;">
+                  <option value="">Selecione...</option>
+                  <option value="5">5 - Excelente</option>
+                  <option value="4">4 - Muito Bom</option>
+                  <option value="3">3 - Satisfatorio</option>
+                  <option value="2">2 - Fraco</option>
+                  <option value="1">1 - Muito Fraco</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="eval-feedback">Feedback e Observacoes</label>
+              <textarea id="eval-feedback" placeholder="Descreva os pontos fortes, areas de melhoria e comportamentos observados..." style="width: 100%; min-height: 150px; padding: 0.75rem; border: 1px solid #d0d5dd; border-radius: 8px; font-family: inherit;" required></textarea>
+            </div>
+
+            <div style="display: grid; gap: 0.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="eval-commitment" style="cursor: pointer;">
+                <span>Demonstra compromisso com o aprendizado</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="eval-teamwork" style="cursor: pointer;">
+                <span>Trabalha bem em equipa</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="eval-punctuality" style="cursor: pointer;">
+                <span>Cumprimento de prazos e horarios</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="eval-proactivity" style="cursor: pointer;">
+                <span>Proatividade e iniciativa</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="eval-communication" style="cursor: pointer;">
+                <span>Comunicacao clara e eficaz</span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn primary" type="submit">
+                <span class="material-icons-sharp">save</span> Guardar Avaliaca​o
+              </button>
+              <button class="btn ghost" type="button" id="btn-cancel-form">
+                <span class="material-icons-sharp">close</span> Cancelar
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Historico de Avaliacoes -->
+        <section class="panel">
+          <h3>Historico Completo de Avaliacoes</h3>
+          <div id="evaluation-history" style="display: grid; gap: 1rem;">
+            <!-- Historico carregado dinamicamente -->
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+  <script>
+    (() => {
+      if (route !== "avaliacoes.html") return;
+
+      const systemData = stageSystem.getSystemData();
+      const allStudents = stageSystem.getAllStudents();
+
+      // Preencher dropdowns de filtros
+      const populateFilters = () => {
+        const courseSelect = document.getElementById("filter-course");
+        systemData.courses.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          courseSelect.appendChild(opt);
+        });
+
+        const classSelect = document.getElementById("filter-class");
+        systemData.classes.forEach(cl => {
+          const course = systemData.courses.find(c => c.id === cl.courseId);
+          const opt = document.createElement("option");
+          opt.value = cl.id;
+          opt.textContent = `${course?.short || "?"} - Turma ${cl.section}`;
+          classSelect.appendChild(opt);
+        });
+
+        const companySelect = document.getElementById("filter-company");
+        systemData.companies.forEach(co => {
+          const opt = document.createElement("option");
+          opt.value = co.id;
+          opt.textContent = co.name;
+          companySelect.appendChild(opt);
+        });
+
+        const statusSelect = document.getElementById("filter-status");
+        systemData.stageStatus.forEach(st => {
+          const opt = document.createElement("option");
+          opt.value = st.id;
+          opt.textContent = st.name;
+          statusSelect.appendChild(opt);
+        });
+
+        const evalStudentSelect = document.getElementById("eval-student");
+        allStudents.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = `${s.name} (${s.matricula})`;
+          evalStudentSelect.appendChild(opt);
+        });
+      };
+
+      // Renderizar tabela de avaliacoes
+      const renderEvaluationsTable = (filtered = allStudents) => {
+        const tbody = document.getElementById("evaluations-table");
+        if (filtered.length === 0) {
+          tbody.innerHTML = "<tr><td colspan=\"8\" style=\"text-align: center; color: #667085;\">Nenhum aluno encontrado com os filtros aplicados.</td></tr>";
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(s => {
+          const course = systemData.courses.find(c => c.id === s.courseId);
+          const company = systemData.companies.find(c => c.id === s.stage.companyId);
+          const phase = systemData.stagePhases.find(p => p.id === s.stage.phaseId);
+          const tutor = systemData.tutors.find(t => t.id === s.stage.tutorId);
+          const evalCount = (s.evaluations || []).length;
+
+          return `
+            <tr data-search="${s.name.toLowerCase()} ${course?.short || ""} ${company?.name || ""}">
+              <td><strong>${s.name}</strong></td>
+              <td>${s.matricula}</td>
+              <td>${s.classId}</td>
+              <td>${company?.name || "--"}</td>
+              <td><span class="material-icons-sharp" style="font-size: 0.9rem; vertical-align: middle;">${phase?.icon || "info"}</span> ${phase?.name || "--"}</td>
+              <td>${tutor?.name.split(" ")[0] || "--"}</td>
+              <td>
+                <span class="badge" style="background: ${evalCount > 0 ? "#0f8f57" : "#d0d5dd"};">
+                  <span class="material-icons-sharp" style="font-size: 0.8rem; vertical-align: middle;">${evalCount > 0 ? "check_circle" : "radio_button_unchecked"}</span>
+                  ${evalCount} ${evalCount === 1 ? "avaliacao" : "avaliacoes"}
+                </span>
+              </td>
+              <td>
+                <button class="btn ghost" type="button" onclick="document.location.href='alumno.html?id=${s.id}'">
+                  <span class="material-icons-sharp">person</span> Ver
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      };
+
+      // Aplicar filtros
+      document.getElementById("btn-apply-filters")?.addEventListener("click", () => {
+        const courseFilter = document.getElementById("filter-course").value;
+        const classFilter = document.getElementById("filter-class").value;
+        const companyFilter = document.getElementById("filter-company").value;
+        const statusFilter = document.getElementById("filter-status").value;
+
+        let filtered = allStudents;
+        if (courseFilter) filtered = filtered.filter(s => s.courseId === courseFilter);
+        if (classFilter) filtered = filtered.filter(s => s.classId === classFilter);
+        if (companyFilter) filtered = filtered.filter(s => s.stage.companyId === companyFilter);
+        if (statusFilter) filtered = filtered.filter(s => s.stage.statusId === statusFilter);
+
+        renderEvaluationsTable(filtered);
+        showToast(`${filtered.length} alunos encontrados`, "info", "done");
+      });
+
+      // Mostrar/esconder formulario
+      document.getElementById("btn-add-evaluation")?.addEventListener("click", () => {
+        document.getElementById("evaluation-form-section").style.display = "block";
+        document.querySelector("form").scrollIntoView({ behavior: "smooth" });
+      });
+
+      document.getElementById("btn-cancel-form")?.addEventListener("click", () => {
+        document.getElementById("evaluation-form-section").style.display = "none";
+        document.getElementById("evaluation-form").reset();
+      });
+
+      // Guardar avaliacao
+      document.getElementById("evaluation-form")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const studentId = document.getElementById("eval-student").value;
+        const evaluation = {
+          tutorId: document.getElementById("eval-evaluator-type").value === "tutor" ? "auto" : null,
+          companySupervisor: document.getElementById("eval-evaluator-type").value === "company" ? "Supervisor Empresa" : null,
+          score: parseFloat(document.getElementById("eval-score").value),
+          feedback: document.getElementById("eval-feedback").value,
+          behaviors: {
+            commitment: document.getElementById("eval-commitment").checked,
+            teamwork: document.getElementById("eval-teamwork").checked,
+            punctuality: document.getElementById("eval-punctuality").checked,
+            proactivity: document.getElementById("eval-proactivity").checked,
+            communication: document.getElementById("eval-communication").checked
+          }
+        };
+
+        stageSystem.addEvaluation(studentId, evaluation);
+        showToast("Avaliacao registada com sucesso", "success", "check_circle");
+        document.getElementById("evaluation-form-section").style.display = "none";
+        document.getElementById("evaluation-form").reset();
+        renderEvaluationsTable();
+        renderEvaluationHistory();
+      });
+
+      // Renderizar historico
+      const renderEvaluationHistory = () => {
+        const historyDiv = document.getElementById("evaluation-history");
+        const allEvals = [];
+        
+        allStudents.forEach(s => {
+          (s.evaluations || []).forEach(e => {
+            allEvals.push({ student: s, evaluation: e });
+          });
+        });
+
+        allEvals.sort((a, b) => new Date(b.evaluation.date) - new Date(a.evaluation.date));
+
+        if (allEvals.length === 0) {
+          historyDiv.innerHTML = "<p style=\"color: #667085; text-align: center;\">Nenhuma avaliacao registada.</p>";
+          return;
+        }
+
+        historyDiv.innerHTML = allEvals.slice(0, 20).map(item => {
+          const { student, evaluation } = item;
+          const stars = "★".repeat(Math.round(evaluation.score)) + "☆".repeat(5 - Math.round(evaluation.score));
+          return `
+            <div style="border-left: 4px solid #0a6c85; padding: 1rem; background: #f7fafc; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                <div>
+                  <strong>${student.name}</strong>
+                  <small style="color: #667085;">${student.matricula}</small>
+                </div>
+                <span style="color: #b26b00; font-size: 1.2rem;">${stars}</span>
+              </div>
+              <p>${evaluation.feedback}</p>
+              <small style="color: #667085;">${new Date(evaluation.date).toLocaleDateString("pt-BR")} • ${evaluation.tutorId ? "Tutor" : "Supervisor Empresa"}</small>
+            </div>
+          `;
+        }).join("");
+      };
+
+      populateFilters();
+      renderEvaluationsTable();
+      renderEvaluationHistory();
+    })();
+  </script>
+</body>
+</html>
