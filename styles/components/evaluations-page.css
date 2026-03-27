@@ -1,0 +1,194 @@
+/* ====================================================
+   Evaluations Page — Atomic component styles
+   Corresponds to: avaliacoes.html
+   ==================================================== */
+
+.eval-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.eval-filter-grid select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+
+.eval-filter-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.eval-empty-cell {
+  text-align: center;
+  color: var(--text-soft);
+}
+
+.eval-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 800px;
+}
+
+.eval-form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.eval-form select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+
+.eval-form-textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-family: inherit;
+  resize: vertical;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.eval-checkboxes {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.eval-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.eval-checkbox-input {
+  cursor: pointer;
+}
+
+.eval-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.eval-history-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+/* Phase icon in table */
+.eval-phase-icon {
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+/* Eval count badge */
+.eval-count-badge {
+  background: var(--gear-tint);
+  color: var(--gear);
+}
+
+.eval-count-badge.eval-count-ok {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+}
+
+.eval-count-icon {
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+/* History cards */
+.eval-history-card {
+  border-left: 4px solid var(--brand);
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.eval-history-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.eval-history-sub {
+  color: var(--text-soft);
+}
+
+.eval-history-stars {
+  color: var(--warning);
+  font-size: 1.2rem;
+}
+
+.eval-history-date {
+  color: var(--text-soft);
+}
+
+.eval-history-empty {
+  color: var(--text-soft);
+  text-align: center;
+}
+
+/* Dynamically generated evaluation cards */
+.eval-card {
+  border-left: 4px solid var(--brand);
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.eval-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.eval-card-score {
+  background: var(--brand);
+  color: #fff;
+}
+
+.eval-card-date {
+  color: var(--text-soft);
+}
+
+@media (max-width: 600px) {
+  .eval-form-two-col {
+    grid-template-columns: 1fr;
+  }
+  .eval-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .eval-form-actions {
+    flex-direction: column;
+  }
+  .eval-history-card-header,
+  .eval-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 380px) {
+  .eval-form {
+    gap: 0.75rem;
+  }
+  .eval-form-textarea {
+    min-height: 100px;
+  }
+}

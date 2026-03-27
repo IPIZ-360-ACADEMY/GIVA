@@ -1,6 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 
-@import url("./styles/legacy.css");
 @import url("./styles/tokens.css");
 @import url("./styles/base.css");
 @import url("./styles/layout.css");
@@ -13,5 +12,8 @@
 @import url("./styles/components/feedback.css");
 @import url("./styles/components/auth.css");
 @import url("./styles/components/stage-tracking.css");
+@import url("./styles/components/internship-page.css");
+@import url("./styles/components/evaluations-page.css");
+@import url("./styles/components/student-detail-page.css");
 @import url("./styles/utilities.css");
 @import url("./styles/responsive.css");

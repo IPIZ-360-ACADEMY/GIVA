@@ -1,0 +1,114 @@
+.auth-layout {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+}
+
+.auth-card {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.18fr 1fr;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.auth-showcase {
+  padding: 1.6rem;
+  color: #eef6fb;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.24), transparent 45%),
+    linear-gradient(155deg, #0a6c85, #127e9c 56%, #144a61);
+}
+
+.auth-logo-hero {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.auth-logo-hero img {
+  width: clamp(130px, 18vw, 176px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  padding: 0.95rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
+.auth-showcase h1 {
+  margin: 0;
+  font-size: clamp(1.62rem, 2.5vw, 2.32rem);
+}
+
+.auth-showcase p {
+  margin-top: 0.7rem;
+  color: rgba(231, 255, 250, 0.88);
+}
+
+.auth-bullets {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.auth-bullets span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.auth-form-wrap {
+  padding: 1.6rem;
+}
+
+.auth-form-wrap .theme-btn {
+  justify-self: end;
+  margin-bottom: 0.8rem;
+}
+
+.auth-form-wrap h2 {
+  margin: 0;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.auth-form label {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-help,
+.auth-accounts {
+  color: var(--text-soft);
+}
+
+.auth-help {
+  margin: 0.4rem 0 1rem;
+}
+
+.auth-accounts {
+  margin-top: 0.95rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.85rem;
+  font-size: 0.84rem;
+}
+
+.auth-error {
+  color: var(--danger);
+  font-weight: 700;
+}

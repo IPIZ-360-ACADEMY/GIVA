@@ -1,0 +1,222 @@
+/* ================================================================
+   Responsive — fluidamente responsivo de 320 px a 4 K
+   Paleta: azul institucional + cinza da engrenagem (#3d3d3d)
+   ================================================================ */
+
+/* ---------- Tipografia fluida (base) ---------- */
+:root {
+  --fs-page-title: clamp(1.2rem, 2.5vw, 1.9rem);
+  --fs-section:    clamp(1rem,   2vw,   1.4rem);
+  --fs-body:       clamp(0.85rem, 1.2vw, 1rem);
+}
+
+.page-header h2 { font-size: var(--fs-page-title); }
+.panel > h3     { font-size: var(--fs-section); }
+
+/* ---------- Ecrã largo (≥ 1440 px) — 4 colunas ---------- */
+@media (min-width: 1440px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .app-shell {
+    max-width: 1680px;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 1150px) {
+  .panel-grid,
+  .doc-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0.75rem;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-110%);
+    transition: transform 0.25s ease;
+    z-index: 40;
+    width: min(86vw, 320px);
+    height: 100vh;
+    border-radius: 0 24px 24px 0;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .close-sidebar,
+  .menu-btn {
+    display: grid;
+  }
+
+  .topbar {
+    top: 0.6rem;
+    grid-template-columns: auto 1fr auto;
+    margin-top: env(safe-area-inset-top, 0);
+  }
+
+  .profile-chip {
+    display: none;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .validation-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    gap: 0.6rem;
+    padding: 0.64rem;
+  }
+
+  .search input {
+    padding-left: 2.3rem;
+  }
+
+  .header-meta {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .app-content {
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .page-header,
+  .panel,
+  .card,
+  .kanban-col,
+  .partner-card {
+    padding: 0.84rem;
+  }
+
+  .stats-grid,
+  .info-grid,
+  .auth-card {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-mini {
+    padding: 0.75rem;
+  }
+
+  .metric-mini strong {
+    font-size: clamp(1.3rem, 5vw, 1.7rem);
+  }
+
+  .phase-badge {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .topbar {
+    grid-template-columns: auto 1fr auto;
+    border-radius: 18px;
+  }
+
+  .theme-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar {
+    grid-template-columns: auto 1fr;
+  }
+
+  .theme-btn {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .search input {
+    font-size: 0.93rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.25rem;
+  }
+}
+
+/* ---------- Ecrã muito pequeno (320 px) ---------- */
+@media (max-width: 360px) {
+  .app-content {
+    padding: 0.5rem;
+  }
+
+  .page-header,
+  .panel,
+  .card {
+    padding: 0.65rem;
+    border-radius: var(--radius-md);
+  }
+
+  .btn {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .topbar {
+    padding: 0.5rem;
+    border-radius: 14px;
+  }
+
+  .brand h1 {
+    font-size: 0.88rem;
+  }
+
+  .metric-mini strong {
+    font-size: 1.2rem;
+  }
+}
+
+/* ---------- Touch: alvos mínimos de 44 px ---------- */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .theme-btn,
+  .menu-btn,
+  .close-sidebar {
+    min-height: 44px;
+  }
+}
+
+/* ---------- Movimento reduzido ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,119 @@
+.sidebar {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 1rem;
+  position: sticky;
+  top: 1rem;
+  height: calc(100vh - 2rem);
+  overflow-y: auto;
+  box-shadow: var(--shadow-soft);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.sidebar-top {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-muted), var(--surface) 40%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--surface-solid);
+  padding: 0.24rem;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.02rem;
+  letter-spacing: 0;
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+.brand strong {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.74rem;
+  border-radius: 999px;
+  padding: 0.72rem 0.86rem;
+  color: var(--text-soft);
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-link .material-icons-sharp {
+  font-size: 1.16rem;
+}
+
+.nav-link:hover {
+  background: color-mix(in srgb, var(--surface-muted), var(--surface) 25%);
+  border-color: var(--line);
+  color: var(--text);
+  transform: translateX(3px);
+}
+
+.nav-link.active {
+  color: #fff;
+  background: linear-gradient(120deg, var(--brand), var(--brand-2));
+  border-color: transparent;
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--brand) 34%, transparent);
+}
+
+.nav-link .pill {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand-2);
+  padding: 0.16rem 0.46rem;
+  border-radius: 999px;
+}
+
+.nav-footer {
+  margin-top: 1rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--line);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+  z-index: 30;
+}
+
+.backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}

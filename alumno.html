@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GIVA IPIZ | Detalhes do Aluno</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style-modern.css">
 </head>
 <body>
   <div class="app-shell">
@@ -55,9 +55,9 @@
 
       <main class="page">
         <section class="page-header">
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <a href="est.html" style="text-decoration: none; color: inherit;">
-              <button class="btn ghost" type="button" style="display: flex; align-items: center; gap: 0.5rem;">
+          <div class="alumno-back-row">
+            <a href="est.html" class="alumno-back-link">
+              <button class="btn ghost alumno-back-btn" type="button">
                 <span class="material-icons-sharp">arrow_back</span> Voltar
               </button>
             </a>
@@ -101,32 +101,32 @@
           <!-- Desempenho -->
           <section class="panel">
             <h3>Desempenho e Progresso</h3>
-            <div style="display: grid; gap: 1rem;">
+            <div class="alumno-perf-grid">
               <div>
-                <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <label class="alumno-label-row">
                   <span>Presenca</span>
                   <strong id="attend-value">95%</strong>
                 </label>
                 <div class="progress-bar">
-                  <div id="attend-bar" class="progress-fill" style="background: #0f8f57; width: 95%;"></div>
+                  <div id="attend-bar" class="progress-fill progress-fill-green"></div>
                 </div>
               </div>
               <div>
-                <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <label class="alumno-label-row">
                   <span>Envolvimento</span>
                   <strong id="engage-value">4.5/5</strong>
                 </label>
                 <div class="progress-bar">
-                  <div id="engage-bar" class="progress-fill" style="background: #0a6c85; width: 90%;"></div>
+                  <div id="engage-bar" class="progress-fill progress-fill-blue"></div>
                 </div>
               </div>
               <div>
-                <label style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <label class="alumno-label-row">
                   <span>Conformidade</span>
                   <strong id="comply-value">4.8/5</strong>
                 </label>
                 <div class="progress-bar">
-                  <div id="comply-bar" class="progress-fill" style="background: #0f8f57; width: 96%;"></div>
+                  <div id="comply-bar" class="progress-fill progress-fill-green"></div>
                 </div>
               </div>
             </div>
@@ -139,11 +139,11 @@
           <div class="grid-2">
             <div>
               <label>Empresa</label>
-              <p style="font-weight: 600;" id="stage-company">--</p>
+              <p class="alumno-labeled" id="stage-company">--</p>
             </div>
             <div>
               <label>Area de Atuacao</label>
-              <p style="font-weight: 600;" id="stage-area">--</p>
+              <p class="alumno-labeled" id="stage-area">--</p>
             </div>
             <div>
               <label>Data de Inicio</label>
@@ -167,7 +167,7 @@
         <!-- Áreas de Conhecimento -->
         <section class="panel">
           <h3>Conhecimentos e Competencias Desenvolvidas</h3>
-          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;" id="knowledge-tags">
+          <div class="alumno-knowledge-wrap" id="knowledge-tags">
             <!-- Tags carregadas dinamicamente -->
           </div>
         </section>
@@ -198,10 +198,10 @@
         <!-- Avaliacoes -->
         <section class="panel">
           <h3>Avaliacoes e Feedback</h3>
-          <div id="evaluations-container" style="display: grid; gap: 1rem;">
+          <div id="evaluations-container" class="alumno-eval-grid">
             <!-- Avaliações carregadas dinamicamente -->
           </div>
-          <div style="text-align: center; margin-top: 1.5rem;">
+          <div class="alumno-add-row">
             <button class="btn primary" type="button" id="add-evaluation-btn">
               <span class="material-icons-sharp">add</span> Adicionar Avaliacao
             </button>
@@ -211,7 +211,7 @@
         <!-- Timeline de Progresso -->
         <section class="panel">
           <h3>Timeline de Progresso</h3>
-          <div id="timeline" style="display: grid; gap: 1rem;">
+          <div id="timeline" class="alumno-timeline">
             <!-- Timeline carregada dinamicamente -->
           </div>
         </section>
@@ -220,127 +220,6 @@
   </div>
 
   <script src="index.js"></script>
-  <script>
-    (() => {
-      if (route !== "alumno.html") return;
-
-      const getStudentId = () => {
-        const url = new URL(window.location);
-        return url.searchParams.get("id");
-      };
-
-      const renderStudentDetails = () => {
-        const studentId = getStudentId();
-        if (!studentId) {
-          window.location.href = "est.html";
-          return;
-        }
-
-        const student = stageSystem.getStudentById(studentId);
-        if (!student) {
-          showModal("Aluno nao encontrado", "O ID do aluno nao foi localizado no sistema.", "danger", "error");
-          setTimeout(() => window.location.href = "est.html", 2500);
-          return;
-        }
-
-        const course = stageSystem.getCourseById(student.courseId);
-        const company = stageSystem.getCompanyById(student.stage.companyId);
-        const phase = stageSystem.getPhaseById(student.stage.phaseId);
-        const status = stageSystem.getStatusById(student.stage.statusId);
-        const tutor = stageSystem.getTutorById(student.stage.tutorId);
-
-        // Preencher dados pessoais
-        document.getElementById("student-name").textContent = student.name;
-        document.getElementById("student-subtitle").textContent = `${course?.name || "--"} • ${student.matricula}`;
-        document.getElementById("student-id").textContent = student.matricula;
-        document.getElementById("student-email").textContent = student.email;
-        document.getElementById("student-phone").textContent = student.phone;
-        document.getElementById("student-course").textContent = course?.name || "--";
-        document.getElementById("student-class").textContent = student.classId;
-        document.getElementById("student-supervisor").textContent = student.stage.supervisor;
-
-        // Preencher desempenho
-        const perf = student.performance;
-        document.getElementById("attend-value").textContent = `${perf.attendance}%`;
-        document.getElementById("attend-bar").style.width = `${perf.attendance}%`;
-        document.getElementById("engage-value").textContent = `${perf.engagement.toFixed(1)}/5`;
-        document.getElementById("engage-bar").style.width = `${(perf.engagement / 5) * 100}%`;
-        document.getElementById("comply-value").textContent = `${perf.compliance.toFixed(1)}/5`;
-        document.getElementById("comply-bar").style.width = `${(perf.compliance / 5) * 100}%`;
-
-        // Preencher detalhes do estágio
-        document.getElementById("stage-company").textContent = company?.name || "--";
-        document.getElementById("stage-area").textContent = company?.areas[student.stage.areaId] || "--";
-        document.getElementById("stage-start").textContent = new Date(student.stage.startDate).toLocaleDateString("pt-BR");
-        document.getElementById("stage-end").textContent = new Date(student.stage.expectedEndDate).toLocaleDateString("pt-BR");
-        document.getElementById("stage-status").textContent = status?.name || "--";
-        document.getElementById("stage-status").style.backgroundColor = status?.color || "#d0d5dd";
-        document.getElementById("stage-phase").innerHTML = `<span class="material-icons-sharp" style="font-size: 1.2rem; vertical-align: middle;">${phase?.icon || "info"}</span> ${phase?.name || "--"}`;
-
-        // Preencher conhecimentos
-        const knowledgeContainer = document.getElementById("knowledge-tags");
-        knowledgeContainer.innerHTML = student.stage.knowledgeFocus
-          .map(k => `<span class="tag"><span class="material-icons-sharp">check_circle</span>${k}</span>`)
-          .join("");
-
-        // Preencher tutor
-        document.getElementById("tutor-name").textContent = tutor?.name || "--";
-        document.getElementById("tutor-email").textContent = tutor?.email || "--";
-        document.getElementById("tutor-expertise").textContent = (tutor?.expertise || []).join(", ") || "--";
-
-        // Preencher avaliações
-        const evals = student.evaluations || [];
-        const evalsContainer = document.getElementById("evaluations-container");
-        if (evals.length === 0) {
-          evalsContainer.innerHTML = "<p style=\"color: #667085; text-align: center;\">Nenhuma avaliacao registada ainda.</p>";
-        } else {
-          evalsContainer.innerHTML = evals
-            .map((e, i) => `
-              <div style="border-left: 4px solid #0a6c85; padding: 1rem; background: #f7fafc; border-radius: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-                  <strong>${e.tutorId ? "Avaliacao do Tutor" : e.companySupervisor ? "Feedback do Supervisor da Empresa" : "Avaliacao"}  </strong>
-                  <span class="badge" style="background: #0a6c85;">${e.score}/5</span>
-                </div>
-                <p>${e.feedback}</p>
-                <small style="color: #667085;">${new Date(e.date).toLocaleDateString("pt-BR")}</small>
-              </div>
-            `)
-            .join("");
-        }
-
-        // Timeline
-        const timelineContainer = document.getElementById("timeline");
-        const phases = stageSystem.getSystemData().stagePhases;
-        timelineContainer.innerHTML = phases
-          .map(p => {
-            const isActive = p.id === student.stage.phaseId;
-            const isCompleted = phases.findIndex(x => x.id === student.stage.phaseId) > phases.findIndex(x => x.id === p.id);
-            return `
-              <div style="display: flex; gap: 1rem;${isActive ? " opacity: 1;" : isCompleted ? " opacity: 0.6;" : " opacity: 0.4;"}">
-                <div style="width: 40px; height: 40px; border-radius: 50%; background: ${isActive ? "#0a6c85" : isCompleted ? "#0f8f57" : "#d0d5dd"}; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;">
-                  <span class="material-icons-sharp">${isCompleted || isActive ? p.icon : "schedule"}</span>
-                </div>
-                <div>
-                  <p style="font-weight: 600; color: #101828;">${p.name}</p>
-                  <p style="color: #667085; font-size: 0.9rem;">${isActive ? "Fase atual" : isCompleted ? "Concluida" : "Aguardando"}</p>
-                </div>
-              </div>
-            `;
-          })
-          .join("");
-      };
-
-      document.getElementById("add-evaluation-btn")?.addEventListener("click", () => {
-        showModal(
-          "Nova Avaliaca​o",
-          "Esta funcionalidade sera ativada quando a pagina de avaliacoes for integrada. Acesse 'Avaliacoes' no menu principal.",
-          "info",
-          "assessment"
-        );
-      });
-
-      renderStudentDetails();
-    })();
-  </script>
+  <script src="scripts/pages/alumno.page.js"></script>
 </body>
 </html>
