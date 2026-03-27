@@ -1,14 +1,16 @@
 .auth-layout {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 1.2rem;
+  padding: clamp(0.8rem, 2.2vw, 1.5rem);
 }
 
 .auth-card {
-  width: min(980px, 100%);
+  width: min(1020px, 100%);
   display: grid;
   grid-template-columns: 1.18fr 1fr;
+  align-items: stretch;
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: var(--radius-xl);
@@ -19,7 +21,7 @@
 }
 
 .auth-showcase {
-  padding: 1.6rem;
+  padding: clamp(1.15rem, 2.5vw, 1.8rem);
   color: #eef6fb;
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.24), transparent 45%),
@@ -68,16 +70,23 @@
 }
 
 .auth-form-wrap {
-  padding: 1.6rem;
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  padding: clamp(1.15rem, 2.5vw, 1.8rem);
 }
 
 .auth-form-wrap .theme-btn {
-  justify-self: end;
-  margin-bottom: 0.8rem;
+  position: absolute;
+  top: clamp(0.75rem, 2vw, 1rem);
+  right: clamp(0.75rem, 2vw, 1rem);
+  margin: 0;
 }
 
 .auth-form-wrap h2 {
   margin: 0;
+  padding-right: 3.2rem;
 }
 
 .auth-form {
@@ -111,4 +120,74 @@
 .auth-error {
   color: var(--danger);
   font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+    max-width: 720px;
+  }
+
+  .auth-showcase {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.24);
+  }
+
+  .auth-bullets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .auth-layout {
+    place-items: stretch;
+    align-content: center;
+  }
+
+  .auth-card {
+    border-radius: 18px;
+  }
+
+  .auth-bullets {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-showcase h1 {
+    font-size: 1.46rem;
+  }
+
+  .auth-showcase p {
+    font-size: 0.92rem;
+  }
+
+  .auth-form {
+    gap: 0.62rem;
+  }
+
+  .auth-form-wrap h2 {
+    font-size: 1.28rem;
+    padding-right: 2.9rem;
+  }
+
+  .auth-accounts {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth-card {
+    border-radius: 14px;
+  }
+
+  .auth-logo-hero img {
+    width: 118px;
+    padding: 0.78rem;
+    border-radius: 18px;
+  }
+
+  .auth-form-wrap .theme-btn {
+    top: 0.6rem;
+    right: 0.6rem;
+  }
 }
