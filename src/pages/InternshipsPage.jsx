@@ -5,8 +5,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DataTable from "../components/DataTable.jsx";
 import StudentProfileModal from "../components/StudentProfileModal.jsx";
-import profileImage1 from "../../images/perfil-1.jpg";
-import profileImage2 from "../../images/perfil-2.jpg";
+import { INTERNSHIPS_ROWS } from "../data/internshipsData.js";
 
 const STORAGE_KEY = "giva.internships.filters";
 const PAGE_SIZE_OPTIONS = [3, 5, 10];
@@ -30,111 +29,6 @@ function readStoredFilters() {
     return null;
   }
 }
-
-const initialRows = [
-  {
-    id: 1,
-    aluno: "Ana Melo",
-    turma: "11-TI-A",
-    anoLetivo: "2025/2026",
-    curso: "TI",
-    empresa: "Novasoft",
-    supervisor: "Eng. Pedro Dias",
-    status: "active",
-    email: "ana.melo@ipiz.ao",
-    telefone: "+244 921 234 567",
-    inicio: "Fev 2026",
-    ultimaAtualizacao: "29 Mar 2026",
-    nota: "9.1",
-    photo: profileImage1,
-    skills: [87, 68, 63],
-  },
-  {
-    id: 2,
-    aluno: "Osvaldo Mane",
-    turma: "12-EIE-B",
-    anoLetivo: "2025/2026",
-    curso: "EIE",
-    empresa: "TecnoRed",
-    supervisor: "Eng. Marta Chissano",
-    status: "monitoring",
-    email: "osvaldo.mane@ipiz.ao",
-    telefone: "+244 922 345 678",
-    inicio: "Mar 2026",
-    ultimaAtualizacao: "27 Mar 2026",
-    nota: "7.8",
-    photo: profileImage2,
-    skills: [72, 55, 70],
-  },
-  {
-    id: 3,
-    aluno: "Laura Pires",
-    turma: "11-TLQB-C",
-    anoLetivo: "2025/2026",
-    curso: "TLQB",
-    empresa: "BioHealth",
-    supervisor: "Dra. Ana Furtado",
-    status: "risk",
-    email: "laura.pires@ipiz.ao",
-    telefone: "+244 923 456 789",
-    inicio: "Jan 2026",
-    ultimaAtualizacao: "25 Mar 2026",
-    nota: "5.9",
-    photo: profileImage1,
-    skills: [45, 52, 40],
-  },
-  {
-    id: 4,
-    aluno: "Mateus Simango",
-    turma: "12-TI-A",
-    anoLetivo: "2025/2026",
-    curso: "TI",
-    empresa: "Infotech Hub",
-    supervisor: "Eng. Carla Teixeira",
-    status: "active",
-    email: "mateus.simango@ipiz.ao",
-    telefone: "+244 924 114 887",
-    inicio: "Fev 2026",
-    ultimaAtualizacao: "30 Mar 2026",
-    nota: "8.7",
-    photo: profileImage2,
-    skills: [81, 76, 79],
-  },
-  {
-    id: 5,
-    aluno: "Catarina Goncalves",
-    turma: "12-EIE-B",
-    anoLetivo: "2025/2026",
-    curso: "EIE",
-    empresa: "Energix",
-    supervisor: "Eng. Marta Chissano",
-    status: "monitoring",
-    email: "catarina.goncalves@ipiz.ao",
-    telefone: "+244 925 778 903",
-    inicio: "Mar 2026",
-    ultimaAtualizacao: "28 Mar 2026",
-    nota: "7.3",
-    photo: profileImage1,
-    skills: [74, 69, 62],
-  },
-  {
-    id: 6,
-    aluno: "Joel Francisco",
-    turma: "11-TLQB-C",
-    anoLetivo: "2025/2026",
-    curso: "TLQB",
-    empresa: "MediLab",
-    supervisor: "Dra. Ana Furtado",
-    status: "risk",
-    email: "joel.francisco@ipiz.ao",
-    telefone: "+244 926 302 441",
-    inicio: "Jan 2026",
-    ultimaAtualizacao: "24 Mar 2026",
-    nota: "6.1",
-    photo: profileImage2,
-    skills: [56, 60, 48],
-  },
-];
 
 function statusLabel(status, copy) {
   if (status === "active") return copy.active;
@@ -188,7 +82,7 @@ export default function InternshipsPage() {
   const [classSortBy, setClassSortBy] = useState(savedFilters?.classSortBy ?? "grade");
   const [pageSize, setPageSize] = useState(savedFilters?.pageSize ?? 3);
   const [classPage, setClassPage] = useState({});
-  const [rows] = useState(initialRows);
+  const [rows] = useState(INTERNSHIPS_ROWS);
 
   useEffect(() => {
     localStorage.setItem(

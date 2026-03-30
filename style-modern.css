@@ -663,6 +663,8 @@ html[data-density="compact"] td {
 .stat-card {
   padding: 1rem;
   animation: fade-up 0.44s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .stat-head {
@@ -676,6 +678,19 @@ html[data-density="compact"] td {
 .stat-card h3 {
   margin: 0.32rem 0 0.2rem;
   font-size: 1.6rem;
+}
+
+.card-actions {
+  margin-top: auto;
+  padding-top: 0.55rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-actions .btn {
+  min-width: 220px;
+  justify-content: center;
 }
 
 .kpi-up {
@@ -1939,6 +1954,258 @@ html[data-theme="dark"][data-ui="neo"] .btn.primary:hover {
 
 .class-pagination .btn {
   padding: 0.34rem 0.62rem;
+}
+
+.classes-year-list {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.classes-year-block {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, var(--surface), var(--surface-muted));
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.classes-year-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.classes-course-block {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.classes-course-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.classes-course-head h4 {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.classes-card-rich {
+  gap: 0.7rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.classes-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.classes-kpi {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-muted);
+  padding: 0.45rem 0.55rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.classes-kpi small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.classes-kpi strong {
+  font-size: 1rem;
+}
+
+.classes-open-hint {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--primary);
+}
+
+.classes-card-actions {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.classes-card-actions .btn {
+  min-width: 220px;
+  justify-content: center;
+}
+
+.classes-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.classes-resources {
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface-muted);
+  padding: 0.55rem;
+}
+
+.classes-resources strong {
+  font-size: 0.8rem;
+}
+
+.classes-resources ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.classes-resources li {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+}
+
+.classes-students-panel {
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.classes-students-panel > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.55rem 0.65rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-bottom: 1px solid transparent;
+}
+
+.classes-students-panel[open] > summary {
+  border-bottom-color: var(--border);
+}
+
+.classes-students-list {
+  margin: 0;
+  padding: 0.45rem;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.classes-student-item {
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface-muted);
+  padding: 0.45rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.classes-student-main {
+  border: none;
+  background: transparent;
+  width: 100%;
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.classes-student-main:focus-visible {
+  outline: 2px solid var(--ring);
+  border-radius: 0.5rem;
+}
+
+.classes-student-copy {
+  min-width: 0;
+  display: grid;
+}
+
+.classes-student-copy strong {
+  font-size: 0.86rem;
+}
+
+.classes-student-copy small {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.classes-student-side {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+}
+
+.classes-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.classes-contact-cell {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.classes-contact-cell small {
+  font-size: 0.75rem;
+}
+
+.classes-status-active {
+  border-color: rgba(12, 154, 97, 0.35);
+  color: #0c9a61;
+}
+
+.classes-status-monitoring {
+  border-color: rgba(26, 115, 232, 0.35);
+  color: #1a73e8;
+}
+
+.classes-status-risk {
+  border-color: rgba(194, 59, 87, 0.35);
+  color: #c23b57;
+}
+
+@media (max-width: 900px) {
+  .classes-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .classes-student-item {
+    grid-template-columns: 1fr;
+  }
+
+  .classes-student-side {
+    justify-items: start;
+  }
+
+  .classes-card-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .card-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* ── Modal perfil do aluno (slide-over lateral) ─────────────────────────── */

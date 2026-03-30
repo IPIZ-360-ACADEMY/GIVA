@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import InternshipsPage from "./pages/InternshipsPage.jsx";
+import ClassesPage from "./pages/ClassesPage.jsx";
+import ClassDetailPage from "./pages/ClassDetailPage.jsx";
 import PartnersPage from "./pages/PartnersPage.jsx";
 import StatisticsPage from "./pages/StatisticsPage.jsx";
 import DocumentsPage from "./pages/DocumentsPage.jsx";
@@ -18,6 +20,8 @@ import LoginPage from "./pages/LoginPage.jsx";
 const APP_ROUTES = [
   { path: "/", element: <DashboardPage /> },
   { path: "/estagios", element: <InternshipsPage /> },
+  { path: "/turmas", element: <ClassesPage /> },
+  { path: "/turmas/detalhe", element: <ClassDetailPage /> },
   { path: "/avaliacoes", element: <EvaluationsPage /> },
   { path: "/parceiros", element: <PartnersPage /> },
   { path: "/estatisticas", element: <StatisticsPage /> },
@@ -30,6 +34,7 @@ const LEGACY_PATH_REDIRECTS = [
   { from: "/index.html", to: "/" },
   { from: "/est", to: "/estagios" },
   { from: "/est.html", to: "/estagios" },
+  { from: "/turmas.html", to: "/turmas" },
   { from: "/parc", to: "/parceiros" },
   { from: "/parc.html", to: "/parceiros" },
   { from: "/statis", to: "/estatisticas" },

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import App from "../App.jsx";
 
@@ -88,6 +88,27 @@ describe("App routes", () => {
     });
   });
 
+  it("renderiza turmas na rota /turmas", async () => {
+    renderWithRoute("/turmas");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /gestor de turmas/i })).toBeInTheDocument();
+    });
+  });
+
+  it("abre detalhe da turma ao clicar no card", async () => {
+    renderWithRoute("/turmas");
+
+    const classCard = await screen.findByRole("link", { name: /abrir detalhes da turma: 11-ti-a/i });
+    fireEvent.click(classCard);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /detalhes da turma/i })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/ana melo/i)).toBeInTheDocument();
+    expect(screen.getByText(/novasoft/i)).toBeInTheDocument();
+  });
+
   it("renderiza parceiros na rota /parceiros", async () => {
     renderWithRoute("/parceiros");
     await waitFor(() => {
@@ -126,5 +147,13 @@ describe("App routes", () => {
   it("nav em ingles inclui link Evaluations", () => {
     renderWithRoute("/", { language: "en", uiNotifications: true, density: "comfortable" });
     expect(screen.getByRole("link", { name: /evaluations/i })).toBeInTheDocument();
+  });
+
+  it("nav em ingles inclui link Classes", () => {
+    renderWithRoute("/", { language: "en", uiNotifications: true, density: "comfortable" });
+    const mainMenu = screen.getByRole("navigation", { name: /main menu/i });
+    const classesLink = within(mainMenu).getByRole("link", { name: /classes/i });
+    expect(classesLink).toBeInTheDocument();
+    expect(classesLink).toHaveAttribute("href", "/turmas");
   });
 });

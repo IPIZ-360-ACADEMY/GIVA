@@ -26,6 +26,7 @@ export default function AppShell() {
     () => [
       { to: "/", icon: "dashboard", label: t("nav.dashboard") },
       { to: "/estagios", icon: "work_history", label: t("nav.internships") },
+      { to: "/turmas", icon: "school", label: t("nav.classes") },
       { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
       { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
       { to: "/estatisticas", icon: "insights", label: t("nav.statistics") },

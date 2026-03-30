@@ -1,4 +1,4 @@
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { matchesSearch } from "../utils/search.js";
 
@@ -45,6 +45,17 @@ export default function StatisticsPage() {
     [period, query]
   );
 
+  function metricTarget(key) {
+    if (key === "completion") return "/estagios";
+    if (key === "employability") return "/parceiros";
+    if (key === "dropout") return "/notificacoes";
+    return "/avaliacoes";
+  }
+
+  function metricActionLabel(key) {
+    return `${t("common.open")} ${metricLabel(key)}`;
+  }
+
   return (
     <main className="page">
       <section className="page-header">
@@ -70,6 +81,11 @@ export default function StatisticsPage() {
                 <span>{metricLabel(s[0])}</span>
               </div>
               <h3>{s[1]}</h3>
+              <div className="card-actions">
+                <Link className="btn ghost" to={metricTarget(s[0])} aria-label={metricActionLabel(s[0])}>
+                  {metricActionLabel(s[0])}
+                </Link>
+              </div>
             </article>
           ))}
       </section>

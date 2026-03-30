@@ -1,4 +1,4 @@
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { matchesSearch } from "../utils/search.js";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
@@ -8,10 +8,42 @@ export default function DashboardPage() {
   const { query, currentDate, showToast, t } = useOutletContext();
 
   const kpis = [
-    [t("dashboard.kpi.active"), "trending_up", "243", t("dashboard.kpi.activeMeta"), "total estagiarios ativos"],
-    [t("dashboard.kpi.unassigned"), "person_off", "97", t("dashboard.kpi.unassignedMeta"), "sem alocacao"],
-    [t("dashboard.kpi.partners"), "domain", "18", t("dashboard.kpi.partnersMeta"), "parceiros ativos"],
-    [t("dashboard.kpi.critical"), "warning", "9", t("dashboard.kpi.criticalMeta"), "alertas criticos"]
+    {
+      label: t("dashboard.kpi.active"),
+      icon: "trending_up",
+      value: "243",
+      meta: t("dashboard.kpi.activeMeta"),
+      search: "total estagiarios ativos",
+      to: "/estagios",
+      action: `${t("common.open")} ${t("nav.internships")}`,
+    },
+    {
+      label: t("dashboard.kpi.unassigned"),
+      icon: "person_off",
+      value: "97",
+      meta: t("dashboard.kpi.unassignedMeta"),
+      search: "sem alocacao",
+      to: "/turmas",
+      action: `${t("common.open")} ${t("nav.classes")}`,
+    },
+    {
+      label: t("dashboard.kpi.partners"),
+      icon: "domain",
+      value: "18",
+      meta: t("dashboard.kpi.partnersMeta"),
+      search: "parceiros ativos",
+      to: "/parceiros",
+      action: `${t("common.open")} ${t("nav.partners")}`,
+    },
+    {
+      label: t("dashboard.kpi.critical"),
+      icon: "warning",
+      value: "9",
+      meta: t("dashboard.kpi.criticalMeta"),
+      search: "alertas criticos",
+      to: "/notificacoes",
+      action: `${t("common.open")} ${t("nav.notifications")}`,
+    }
   ];
 
   const docs = [
@@ -56,15 +88,20 @@ export default function DashboardPage() {
 
       <section className="stats-grid">
         {kpis
-          .filter((item) => matchesSearch(query, item[4]))
+          .filter((item) => matchesSearch(query, item.search))
           .map((item) => (
-            <article className="stat-card" key={item[0]}>
+            <article className="stat-card" key={item.label}>
               <div className="stat-head">
-                <span>{item[0]}</span>
-                <span className="material-icons-sharp">{item[1]}</span>
+                <span>{item.label}</span>
+                <span className="material-icons-sharp">{item.icon}</span>
               </div>
-              <h3>{item[2]}</h3>
-              <p>{item[3]}</p>
+              <h3>{item.value}</h3>
+              <p>{item.meta}</p>
+              <div className="card-actions">
+                <Link className="btn ghost" to={item.to} aria-label={`${item.action}`}>
+                  {item.action}
+                </Link>
+              </div>
             </article>
           ))}
       </section>
