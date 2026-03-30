@@ -5,31 +5,31 @@ import PanelSection from "../components/PanelSection.jsx";
 import DataTable from "../components/DataTable.jsx";
 
 export default function DashboardPage() {
-  const { query, currentDate, showToast } = useOutletContext();
+  const { query, currentDate, showToast, t } = useOutletContext();
 
   const kpis = [
-    ["Estagiarios ativos", "trending_up", "243", "+8.4% vs mes anterior", "total estagiarios ativos"],
-    ["Sem alocacao", "person_off", "97", "-4.1% em reducao gradual", "sem alocacao"],
-    ["Parceiros ativos", "domain", "18", "+2 novas instituicoes", "parceiros ativos"],
-    ["Alertas criticos", "warning", "9", "3 requerem acao imediata", "alertas criticos"]
+    [t("dashboard.kpi.active"), "trending_up", "243", t("dashboard.kpi.activeMeta"), "total estagiarios ativos"],
+    [t("dashboard.kpi.unassigned"), "person_off", "97", t("dashboard.kpi.unassignedMeta"), "sem alocacao"],
+    [t("dashboard.kpi.partners"), "domain", "18", t("dashboard.kpi.partnersMeta"), "parceiros ativos"],
+    [t("dashboard.kpi.critical"), "warning", "9", t("dashboard.kpi.criticalMeta"), "alertas criticos"]
   ];
 
   const docs = [
-    { id: "d1", documento: "Pedido de estagio externo", tipo: "DOCX", estado: "Em revisao" },
-    { id: "d2", documento: "Lista oficial de estagios TI", tipo: "PDF", estado: "Aprovado" },
-    { id: "d3", documento: "Relatorio mensal de parceiro", tipo: "XLSX", estado: "Atrasado" }
+    { id: "d1", documento: t("dashboard.doc1"), tipo: "DOCX", estado: t("common.inReview") },
+    { id: "d2", documento: t("dashboard.doc2"), tipo: "PDF", estado: t("common.approved") },
+    { id: "d3", documento: t("dashboard.doc3"), tipo: "XLSX", estado: t("common.delayed") }
   ];
 
   const docColumns = [
-    { key: "documento", label: "Documento" },
-    { key: "tipo", label: "Tipo" },
-    { key: "estado", label: "Estado" },
+    { key: "documento", label: t("common.document") },
+    { key: "tipo", label: t("common.type") },
+    { key: "estado", label: t("common.status") },
     {
       key: "acao",
-      label: "Acao",
+      label: t("common.action"),
       render: (row) => (
-        <button className="btn ghost" type="button" onClick={() => showToast(`Download iniciado: ${row.documento}`)}>
-          Baixar
+        <button className="btn ghost" type="button" onClick={() => showToast(t("dashboard.toast.download").replace("{name}", row.documento))}>
+          {t("common.download")}
         </button>
       )
     }
@@ -38,8 +38,8 @@ export default function DashboardPage() {
   return (
     <main className="page page-dashboard">
       <PageHeader
-        title="Centro Operacional de Estagios"
-        description="Painel unico com ocupacao, risco documental e desempenho por curso, orientado para tomada de decisao rapida."
+        title={t("dashboard.title")}
+        description={t("dashboard.description")}
         meta={
           <>
             <span className="tag">
@@ -48,7 +48,7 @@ export default function DashboardPage() {
             </span>
             <span className="tag">
               <span className="material-icons-sharp">fact_check</span>
-              Dados auditados
+              {t("dashboard.auditedData")}
             </span>
           </>
         }
@@ -70,7 +70,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel-grid">
-        <PanelSection title="Distribuicao por curso">
+        <PanelSection title={t("dashboard.distribution")}>
           <div className="bars">
             <div className="bar">
               <strong>TI</strong>
@@ -99,25 +99,25 @@ export default function DashboardPage() {
           </div>
         </PanelSection>
 
-        <PanelSection title="Atividade recente">
+        <PanelSection title={t("dashboard.recentActivity")}>
           <div className="list">
             <div className="list-item">
-              <strong>Pedido externo validado</strong>
-              <span className="meta">ha 12 minutos</span>
+              <strong>{t("dashboard.activityOne")}</strong>
+              <span className="meta">{t("dashboard.activityOneTime")}</span>
             </div>
             <div className="list-item">
-              <strong>Lista TI publicada</strong>
-              <span className="meta">ha 2 horas</span>
+              <strong>{t("dashboard.activityTwo")}</strong>
+              <span className="meta">{t("dashboard.activityTwoTime")}</span>
             </div>
             <div className="list-item">
-              <strong>Ficha mensal pendente</strong>
-              <span className="meta">aguarda assinatura digital</span>
+              <strong>{t("dashboard.activityThree")}</strong>
+              <span className="meta">{t("dashboard.activityThreeTime")}</span>
             </div>
           </div>
         </PanelSection>
       </section>
 
-      <PanelSection title="Documentos em fluxo">
+      <PanelSection title={t("dashboard.inProgressDocs")}>
         <DataTable columns={docColumns} rows={docs.filter((doc) => matchesSearch(query, `${doc.documento} ${doc.tipo} ${doc.estado}`))} />
       </PanelSection>
     </main>

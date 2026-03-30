@@ -2,16 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import profileImage from "../../images/perfil-1.jpg";
-
-const navItems = [
-  { to: "/", icon: "dashboard", label: "Dashboard" },
-  { to: "/est", icon: "work_history", label: "Estagios" },
-  { to: "/parc", icon: "apartment", label: "Parceiros" },
-  { to: "/statis", icon: "insights", label: "Estatisticas" },
-  { to: "/documentos", icon: "description", label: "Documentos" },
-  { to: "/notif", icon: "notifications", label: "Notificacoes", pill: "12" },
-  { to: "/config", icon: "settings", label: "Configuracoes" }
-];
+import { createTranslator, resolveDateLocale } from "../utils/i18n.js";
 
 function navClass({ isActive }) {
   return isActive ? "nav-link active" : "nav-link";
@@ -21,9 +12,29 @@ export default function AppShell() {
   const [query, setQuery] = useState("");
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState("light");
+  const [preferences, setPreferences] = useState({
+    language: "pt-BR",
+    uiNotifications: true,
+    density: "comfortable"
+  });
   const [toast, setToast] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const t = useMemo(() => createTranslator(preferences.language), [preferences.language]);
+
+  const navItems = useMemo(
+    () => [
+      { to: "/", icon: "dashboard", label: t("nav.dashboard") },
+      { to: "/estagios", icon: "work_history", label: t("nav.internships") },
+      { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
+      { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
+      { to: "/estatisticas", icon: "insights", label: t("nav.statistics") },
+      { to: "/documentos", icon: "description", label: t("nav.documents") },
+      { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: "12" },
+      { to: "/config", icon: "settings", label: t("nav.settings") }
+    ],
+    [t]
+  );
 
   useEffect(() => {
     const saved = localStorage.getItem("giva.theme");
@@ -36,6 +47,30 @@ export default function AppShell() {
     const nextTheme = prefersDark ? "dark" : "light";
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
+  }, []);
+
+  useEffect(() => {
+    const savedRaw = localStorage.getItem("giva.preferences");
+    if (!savedRaw) {
+      document.documentElement.setAttribute("lang", "pt-BR");
+      document.documentElement.setAttribute("data-density", "comfortable");
+      return;
+    }
+
+    try {
+      const saved = JSON.parse(savedRaw);
+      const next = {
+        language: saved.language === "pt-PT" || saved.language === "en" ? saved.language : "pt-BR",
+        uiNotifications: saved.uiNotifications !== false,
+        density: saved.density === "compact" ? "compact" : "comfortable"
+      };
+      setPreferences(next);
+      document.documentElement.setAttribute("lang", next.language);
+      document.documentElement.setAttribute("data-density", next.density);
+    } catch {
+      document.documentElement.setAttribute("lang", "pt-BR");
+      document.documentElement.setAttribute("data-density", "comfortable");
+    }
   }, []);
 
   useEffect(() => {
@@ -61,12 +96,12 @@ export default function AppShell() {
 
   const currentDate = useMemo(
     () =>
-      new Intl.DateTimeFormat("pt-PT", {
+      new Intl.DateTimeFormat(resolveDateLocale(preferences.language), {
         day: "2-digit",
         month: "long",
         year: "numeric"
       }).format(new Date()),
-    []
+    [preferences.language]
   );
 
   useEffect(() => {
@@ -79,12 +114,32 @@ export default function AppShell() {
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("giva.theme", next);
-    document.documentElement.setAttribute("data-theme", next);
+    setThemeMode(next);
+  }
+
+  function setThemeMode(nextTheme) {
+    if (nextTheme !== "light" && nextTheme !== "dark") {
+      return;
+    }
+    setTheme(nextTheme);
+    localStorage.setItem("giva.theme", nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  }
+
+  function updatePreferences(partial) {
+    setPreferences((current) => {
+      const next = { ...current, ...partial };
+      localStorage.setItem("giva.preferences", JSON.stringify(next));
+      document.documentElement.setAttribute("lang", next.language);
+      document.documentElement.setAttribute("data-density", next.density);
+      return next;
+    });
   }
 
   function showToast(message, type = "success") {
+    if (!preferences.uiNotifications) {
+      return;
+    }
     setToast({ message, type, id: Date.now() });
   }
 
@@ -98,15 +153,15 @@ export default function AppShell() {
             </span>
             <div className="brand-copy">
               <h1>GIVA IPIZ</h1>
-              <small>Gestao institucional de estagios e avaliacoes</small>
+              <small>{t("brand.subtitle")}</small>
             </div>
           </Link>
-          <button className="close-sidebar" onClick={() => setSidebarOpen(false)} aria-label="Fechar menu">
+          <button className="close-sidebar" onClick={() => setSidebarOpen(false)} aria-label={t("actions.closeMenu")}>
             <span className="material-icons-sharp">close</span>
           </button>
         </div>
 
-        <nav className="sidebar-nav" aria-label="Menu principal">
+        <nav className="sidebar-nav" aria-label={t("nav.mainMenu")}>
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"} className={navClass}>
               <span className="material-icons-sharp">{item.icon}</span>
@@ -119,7 +174,7 @@ export default function AppShell() {
         <div className="nav-footer">
           <button className="nav-link" onClick={() => navigate("/login")} type="button">
             <span className="material-icons-sharp">logout</span>
-            Terminar sessao
+            {t("actions.logout")}
           </button>
         </div>
       </aside>
@@ -128,11 +183,11 @@ export default function AppShell() {
 
       <div className="app-content">
         <header className="topbar">
-          <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menu">
+          <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label={t("actions.openMenu")}>
             <span className="material-icons-sharp">menu</span>
           </button>
 
-          <Link className="topbar-brand" to="/" aria-label="Ir para o inicio da plataforma">
+          <Link className="topbar-brand" to="/" aria-label={t("actions.goHome")}>
             <img className="topbar-brand-logo" src={logoImage} alt="" />
             <span>GIVA</span>
           </Link>
@@ -144,28 +199,36 @@ export default function AppShell() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Pesquisar conteudo da pagina"
+              placeholder={t("search.placeholder")}
             />
           </label>
-
-          <button className="theme-btn" onClick={toggleTheme} aria-label="Alternar tema">
-            <span className="material-icons-sharp">{theme === "dark" ? "light_mode" : "dark_mode"}</span>
-          </button>
 
           <div className="profile-chip">
             <img src={profileImage} alt="Foto do utilizador" />
             <div>
-              <strong>Coordenacao IPIZ</strong>
-              <small>Operacao central GIVA</small>
+              <strong>{t("profile.name")}</strong>
+              <small>{t("profile.role")}</small>
             </div>
           </div>
         </header>
 
-        <Outlet context={{ query, currentDate, showToast }} />
+        <Outlet
+          context={{
+            query,
+            currentDate,
+            showToast,
+            theme,
+            toggleTheme,
+            setThemeMode,
+            preferences,
+            updatePreferences,
+            t
+          }}
+        />
 
         {toast ? (
           <div className={`toast ${toast.type === "error" ? "danger" : "success"}`} role="status">
-            <strong>{toast.type === "error" ? "Erro" : "Sucesso"}</strong>
+            <strong>{toast.type === "error" ? t("toast.error") : t("toast.success")}</strong>
             <div>{toast.message}</div>
           </div>
         ) : null}

@@ -12,7 +12,7 @@ const seedEvaluations = [
 ];
 
 export default function EvaluationsPage() {
-  const { query, showToast } = useOutletContext();
+  const { query, showToast, t } = useOutletContext();
   const [items, setItems] = useState(seedEvaluations);
   const [form, setForm] = useState({ aluno: "", curso: "TI", nota: "" });
 
@@ -22,35 +22,35 @@ export default function EvaluationsPage() {
   );
 
   const columns = [
-    { key: "aluno", label: "Aluno" },
-    { key: "curso", label: "Curso" },
-    { key: "nota", label: "Nota" }
+    { key: "aluno", label: t("common.student") },
+    { key: "curso", label: t("common.course") },
+    { key: "nota", label: t("evaluations.grade") }
   ];
 
   function submitEvaluation(event) {
     event.preventDefault();
     if (!form.aluno.trim() || !form.nota.trim()) {
-      showToast("Preencha aluno e nota para registar.", "error");
+      showToast(t("evaluations.toast.required"), "error");
       return;
     }
     setItems((current) => [{ ...form }, ...current]);
     setForm({ aluno: "", curso: "TI", nota: "" });
-    showToast("Avaliacao registada com sucesso.");
+    showToast(t("evaluations.toast.saved"));
   }
 
   return (
     <main className="page">
-      <PageHeader title="Painel de avaliacoes" description="Consolidado de desempenho dos estagiarios por ciclo e supervisor." />
+      <PageHeader title={t("evaluations.title")} description={t("evaluations.description")} />
 
-      <PanelSection className="form-card" title="Lancar avaliacao">
+      <PanelSection className="form-card" title={t("evaluations.launch")}>
         <form onSubmit={submitEvaluation}>
           <div className="form-grid">
             <div className="form-field">
-              <label htmlFor="ev-aluno">Aluno</label>
+              <label htmlFor="ev-aluno">{t("common.student")}</label>
               <input id="ev-aluno" value={form.aluno} onChange={(event) => setForm((f) => ({ ...f, aluno: event.target.value }))} />
             </div>
             <div className="form-field">
-              <label htmlFor="ev-curso">Curso</label>
+              <label htmlFor="ev-curso">{t("common.course")}</label>
               <select id="ev-curso" value={form.curso} onChange={(event) => setForm((f) => ({ ...f, curso: event.target.value }))}>
                 <option>TI</option>
                 <option>EIE</option>
@@ -59,17 +59,17 @@ export default function EvaluationsPage() {
               </select>
             </div>
             <div className="form-field">
-              <label htmlFor="ev-nota">Nota</label>
+              <label htmlFor="ev-nota">{t("evaluations.grade")}</label>
               <input id="ev-nota" value={form.nota} onChange={(event) => setForm((f) => ({ ...f, nota: event.target.value }))} />
             </div>
           </div>
           <div className="form-actions">
-            <button className="btn primary" type="submit">Registar</button>
+            <button className="btn primary" type="submit">{t("evaluations.register")}</button>
           </div>
         </form>
       </PanelSection>
 
-      <PanelSection title="Ultimos resultados">
+      <PanelSection title={t("evaluations.recent")}>
         <DataTable columns={columns} rows={filtered} />
       </PanelSection>
     </main>

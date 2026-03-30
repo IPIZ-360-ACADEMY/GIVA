@@ -3,48 +3,61 @@ import { useMemo, useState } from "react";
 import { matchesSearch } from "../utils/search.js";
 
 const datasets = {
-  Semanal: [
-    ["Taxa de conclusao", "84%"],
-    ["Empregabilidade", "69%"],
-    ["Evasao", "8%"],
-    ["Satisfacao", "90%"]
+  weekly: [
+    ["completion", "84%"],
+    ["employability", "69%"],
+    ["dropout", "8%"],
+    ["satisfaction", "90%"]
   ],
-  Mensal: [
-    ["Taxa de conclusao", "88%"],
-    ["Empregabilidade", "71%"],
-    ["Evasao", "6%"],
-    ["Satisfacao", "92%"]
+  monthly: [
+    ["completion", "88%"],
+    ["employability", "71%"],
+    ["dropout", "6%"],
+    ["satisfaction", "92%"]
   ],
-  Trimestral: [
-    ["Taxa de conclusao", "91%"],
-    ["Empregabilidade", "74%"],
-    ["Evasao", "5%"],
-    ["Satisfacao", "94%"]
+  quarterly: [
+    ["completion", "91%"],
+    ["employability", "74%"],
+    ["dropout", "5%"],
+    ["satisfaction", "94%"]
   ]
 };
 
 export default function StatisticsPage() {
-  const { query } = useOutletContext();
-  const [period, setPeriod] = useState("Mensal");
+  const { query, t } = useOutletContext();
+  const [period, setPeriod] = useState("monthly");
+
+  function metricLabel(key) {
+    if (key === "completion") {
+      return t("statistics.completion");
+    }
+    if (key === "employability") {
+      return t("statistics.employability");
+    }
+    if (key === "dropout") {
+      return t("statistics.dropout");
+    }
+    return t("statistics.satisfaction");
+  }
 
   const stats = useMemo(
-    () => datasets[period].filter((s) => matchesSearch(query, s.join(" "))),
+    () => datasets[period].filter((s) => matchesSearch(query, `${metricLabel(s[0])} ${s[1]}`)),
     [period, query]
   );
 
   return (
     <main className="page">
       <section className="page-header">
-        <h2>Inteligencia operacional</h2>
-        <p>Leitura consolidada de produtividade, empregabilidade e risco de evasao no programa.</p>
+        <h2>{t("statistics.title")}</h2>
+        <p>{t("statistics.description")}</p>
         <div className="header-meta">
           <span className="tag">
             <span className="material-icons-sharp">date_range</span>
-            Periodo:
+            {t("statistics.period")}
             <select value={period} onChange={(event) => setPeriod(event.target.value)}>
-              <option>Semanal</option>
-              <option>Mensal</option>
-              <option>Trimestral</option>
+              <option value="weekly">{t("statistics.weekly")}</option>
+              <option value="monthly">{t("statistics.monthly")}</option>
+              <option value="quarterly">{t("statistics.quarterly")}</option>
             </select>
           </span>
         </div>
@@ -54,7 +67,7 @@ export default function StatisticsPage() {
         {stats.map((s) => (
             <article className="stat-card" key={s[0]}>
               <div className="stat-head">
-                <span>{s[0]}</span>
+                <span>{metricLabel(s[0])}</span>
               </div>
               <h3>{s[1]}</h3>
             </article>

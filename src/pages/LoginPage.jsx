@@ -1,8 +1,23 @@
 import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import logoImage from "../../images/logo.png";
+import { createTranslator } from "../utils/i18n.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const language = useMemo(() => {
+    const raw = localStorage.getItem("giva.preferences");
+    if (!raw) {
+      return "pt-BR";
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed.language === "pt-PT" || parsed.language === "en" ? parsed.language : "pt-BR";
+    } catch {
+      return "pt-BR";
+    }
+  }, []);
+  const t = useMemo(() => createTranslator(language), [language]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -11,44 +26,36 @@ export default function LoginPage() {
 
   return (
     <main className="login-shell">
-      <section className="login-card">
-        <article className="login-highlight">
-          <div className="login-brand-block">
-            <img className="login-brand-logo" src={logoImage} alt="Logotipo GIVA IPIZ" />
-            <div>
-              <strong>GIVA IPIZ</strong>
-              <small>Plataforma institucional IPIZ</small>
-            </div>
-          </div>
-          <span className="tag login-tag">
-            <span className="material-icons-sharp">workspace_premium</span>
-            Experiencia oficial da academia
-          </span>
-          <h2>Gestao inteligente de estagios com visao completa e operacao em tempo real.</h2>
-          <p>Coordena alunos, parceiros, documentos e desempenho num fluxo unificado, seguro e responsivo.</p>
-        </article>
+      <div className="login-box">
+        <div className="login-box-logo">
+          <img className="login-box-img" src={logoImage} alt="" />
+        </div>
 
-        <article className="login-panel">
-          <h1>Aceder ao GIVA</h1>
-          <p className="meta">Use as credenciais institucionais para entrar.</p>
-          <form onSubmit={handleSubmit}>
-            <div className="form-field">
-              <label htmlFor="l-user">Utilizador</label>
-              <input id="l-user" required placeholder="nome.apelido" />
-            </div>
-            <div className="form-field">
-              <label htmlFor="l-pass">Senha</label>
-              <input id="l-pass" type="password" required placeholder="********" />
-            </div>
-            <div className="form-actions">
-              <button className="btn primary" type="submit">
-                Entrar
-              </button>
-              <button className="btn ghost" type="button" onClick={() => navigate("/")}>Modo demonstracao</button>
-            </div>
-          </form>
-        </article>
-      </section>
+        <div className="login-box-head">
+          <h1>{t("login.title")}</h1>
+          <p>{t("login.brand")}</p>
+        </div>
+
+        <form className="login-box-form" onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label htmlFor="l-user">{t("login.username")}</label>
+            <input id="l-user" type="text" required placeholder={t("login.usernamePlaceholder")} />
+          </div>
+          <div className="form-field">
+            <label htmlFor="l-pass">{t("login.password")}</label>
+            <input id="l-pass" type="password" required placeholder={t("login.passwordPlaceholder")} />
+          </div>
+          <button className="btn primary" type="submit">
+            {t("login.submit")}
+          </button>
+        </form>
+
+        <button className="btn ghost login-box-demo" type="button" onClick={() => navigate("/")}>
+          {t("login.demo")}
+        </button>
+
+        <p className="login-box-footer">{t("login.badge")}</p>
+      </div>
     </main>
   );
 }

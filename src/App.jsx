@@ -6,34 +6,42 @@ import PartnersPage from "./pages/PartnersPage.jsx";
 import StatisticsPage from "./pages/StatisticsPage.jsx";
 import DocumentsPage from "./pages/DocumentsPage.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
-import SettingsPage from "./pages/SettingsPage.jsx";
+import SettingsLayout from "./pages/SettingsLayout.jsx";
+import SettingsProfilePage from "./pages/SettingsProfilePage.jsx";
+import SettingsAppearancePage from "./pages/SettingsAppearancePage.jsx";
+import SettingsSecurityPage from "./pages/SettingsSecurityPage.jsx";
+import SettingsPreferencesPage from "./pages/SettingsPreferencesPage.jsx";
 import StudentPage from "./pages/StudentPage.jsx";
 import EvaluationsPage from "./pages/EvaluationsPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 
 const APP_ROUTES = [
   { path: "/", element: <DashboardPage /> },
-  { path: "/est", element: <InternshipsPage /> },
-  { path: "/parc", element: <PartnersPage /> },
-  { path: "/statis", element: <StatisticsPage /> },
-  { path: "/documentos", element: <DocumentsPage /> },
-  { path: "/notif", element: <NotificationsPage /> },
-  { path: "/config", element: <SettingsPage /> },
-  { path: "/alumno", element: <StudentPage /> },
+  { path: "/estagios", element: <InternshipsPage /> },
   { path: "/avaliacoes", element: <EvaluationsPage /> },
+  { path: "/parceiros", element: <PartnersPage /> },
+  { path: "/estatisticas", element: <StatisticsPage /> },
+  { path: "/documentos", element: <DocumentsPage /> },
+  { path: "/notificacoes", element: <NotificationsPage /> },
+  { path: "/aluno", element: <StudentPage /> },
 ];
 
 const LEGACY_PATH_REDIRECTS = [
   { from: "/index.html", to: "/" },
-  { from: "/est.html", to: "/est" },
-  { from: "/parc.html", to: "/parc" },
-  { from: "/statis.html", to: "/statis" },
+  { from: "/est", to: "/estagios" },
+  { from: "/est.html", to: "/estagios" },
+  { from: "/parc", to: "/parceiros" },
+  { from: "/parc.html", to: "/parceiros" },
+  { from: "/statis", to: "/estatisticas" },
+  { from: "/statis.html", to: "/estatisticas" },
   { from: "/docs", to: "/documentos" },
   { from: "/docs.html", to: "/documentos" },
-  { from: "/notif.html", to: "/notif" },
-  { from: "/config.html", to: "/config" },
-  { from: "/alumno.html", to: "/alumno" },
+  { from: "/notif", to: "/notificacoes" },
+  { from: "/notif.html", to: "/notificacoes" },
+  { from: "/alumno", to: "/aluno" },
+  { from: "/alumno.html", to: "/aluno" },
   { from: "/avaliacoes.html", to: "/avaliacoes" },
+  { from: "/config.html", to: "/config" },
 ];
 
 function LegacyRedirect({ to }) {
@@ -47,6 +55,14 @@ export default function App() {
         {APP_ROUTES.map((route) => (
           <Route key={route.path} path={route.path} element={route.element} />
         ))}
+
+        <Route path="/config" element={<SettingsLayout />}>
+          <Route index element={<LegacyRedirect to="/config/perfil" />} />
+          <Route path="perfil" element={<SettingsProfilePage />} />
+          <Route path="preferencias" element={<SettingsPreferencesPage />} />
+          <Route path="aparencia" element={<SettingsAppearancePage />} />
+          <Route path="seguranca" element={<SettingsSecurityPage />} />
+        </Route>
 
         {LEGACY_PATH_REDIRECTS.map((route) => (
           <Route key={route.from} path={route.from} element={<LegacyRedirect to={route.to} />} />
