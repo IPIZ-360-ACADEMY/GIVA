@@ -1,0 +1,419 @@
+[33mcommit b3c2f5d077806ef710561e4bc7f02514e2911405[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Fri Apr 24 11:57:00 2026 +0100
+
+    Belmiro chorão
+
+[33mcommit 342c07dd3186af3ec696e58a4dad434f14967b85[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 03:26:55 2026 +0100
+
+    Change Picture Profiles on users acounts!
+
+[33mcommit 71f2b0556e100cb5e4be1648032546df9bcbf3ad[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 03:00:06 2026 +0100
+
+    Last App Version MVP 0.1.7 Full-Cicle (Finishing UI/UX and data base conection)
+
+[33mcommit 8a680bd0f166518e411cbef73cba5d33da652377[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 02:42:19 2026 +0100
+
+    fix: Add error handling for image upload failures and create avatars bucket configuration
+
+[33mcommit 2c83d31bb2e0797bbab1c00b65ff983fa98e67d8[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 02:30:47 2026 +0100
+
+    feat: Auto-convert process numbers to valid emails when creating student accounts in admin panel
+
+[33mcommit 4f709d37717b0cc564203f7be9f1a25d46df550b[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 02:25:38 2026 +0100
+
+    feat: Add automatic student account creation on first login with process number validation
+
+[33mcommit 86519dc8c0bb12381fa44162f629d583d7ad67af[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 02:12:31 2026 +0100
+
+    Last App Version MVP 0.1.7 Full-Cicle (Finishing UI/UX and data base conection)
+
+[33mcommit 6b2fbacfb0a4fd4b2dc93e046d2e7db526cec3da[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 22 02:08:04 2026 +0100
+
+    Last App Version MVP 0.1.7 Full-Cicle (Finishing UI/UX and data base conection)
+
+[33mcommit 8ae1a0ccba3e4060034694ea959e6fdebb3e53c0[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 21 01:56:44 2026 +0100
+
+    FORCK
+
+[33mcommit 6ed516327a35bbdb06fb7407b2426ed971da6c49[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 21 01:51:16 2026 +0100
+
+    FORCK
+
+[33mcommit 6a18f6664850297c0522df74eec4a40aa174b935[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 21 01:36:49 2026 +0100
+
+    new version sistem
+
+[33mcommit 0c0717b7186fb11db8945ce95ff796b7125eed97[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 21 01:17:49 2026 +0100
+
+    new version sistem
+
+[33mcommit f9bdbd2a7a7aae614e8090c5d768496d721b41d9[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 20 10:57:27 2026 +0100
+
+    Updated
+
+[33mcommit f339f69ccb3cbeeb98a122b21c5ee35943722b0e[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sun Apr 19 15:08:30 2026 +0100
+
+    Last App Version MVP 0.1.7 Full-Cicle (Finishing UI/UX and data base conection)
+
+[33mcommit ce30f85ba8ed02dfad132d36c0f1712ecdb964e1[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sat Apr 18 12:14:49 2026 +0100
+
+    Last App Version MVP 0.1.7 Full-Cicle
+
+[33mcommit 604eb43c96d8985cbd37e65dc5bdfbd095a03955[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sat Apr 18 10:33:24 2026 +0100
+
+    Last App Version MVP 0.1.7 Full-Cicle
+
+[33mcommit fa03907709f7f6709e72e49224e832dd6eb1fc6e[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sat Apr 18 09:33:44 2026 +0100
+
+    System files ready
+
+[33mcommit df8df4d0746ab1a2d2c53cc9a57bd8ab5e7af860[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sat Apr 18 01:07:10 2026 +0100
+
+    Last App Version MVP 0.1.6 Full-Cicle
+
+[33mcommit 36480915dac8e0b8bac0cc39cb9f6bd7e805eaa4[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 15 13:53:26 2026 +0100
+
+    Last App Version MVP 0.1.6 Full-Cicle
+
+[33mcommit eb01e69df7b39c809fb39ec75034b3c57efd561f[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 15 04:32:45 2026 +0100
+
+    feat: implementar matriz de acessos e fluxo completo de candidaturas
+
+[33mcommit 4cab41a0d4731681ff7795922645683004e83734[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 15 04:16:06 2026 +0100
+
+    feat: reforcar RBAC, registo guiado e escopo por area
+
+[33mcommit 08608f02d85cce2ec61b4a6949837e612b6f9fef[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 15 01:51:35 2026 +0100
+
+    fix: remover /turmas do sidebar e dar acesso SUPER_ADMIN a Ferramentas
+
+[33mcommit 141f38a820b7b0452d9ebf4cc1a15184e784acfa[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 15 01:45:14 2026 +0100
+
+    feat: adicionar tab Gestão de Turmas em ToolsPage
+
+[33mcommit 11eb6778783777015dbee7ae3fed3f7fab82ac84[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 15 00:16:17 2026 +0100
+
+    fix: feed mobile topbar compacta, chat height 100dvh, signup-type-grid 2col, public-profile padding mobile
+
+[33mcommit c3480e7a319d8ae382fb5d6b41b6de55ea32f1b9[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 23:37:30 2026 +0100
+
+    fix: mobile responsiveness — stats 2-col tablet, topbar oculta, chat height, page-header compacto, kpi-grid, settings-tabs progressivos
+
+[33mcommit ef50397f008a4746491c1f94ee1c3dbd9427706b[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 23:10:06 2026 +0100
+
+    feat: UI polish — training/eval/profile/timeline tokens, eval-tabs, phase-completion, portfolio, profile-header refinados
+
+[33mcommit e263e359750689761b1d9a2702573ff00f76abf6[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 22:55:27 2026 +0100
+
+    feat: UI Supabase-quality — Inter, tokens, animações, skeleton, tabs, density, aliases CSS
+
+[33mcommit b1700d62801f8456818722ee8b699d4ee5d8712c[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 18:56:21 2026 +0100
+
+    feat: responsive UI - mobile topbar with notifs/theme/avatar, sidebar drawer, data-label tables
+
+[33mcommit fffd46e958be8183221525f24c42bca810006d3f[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 18:29:33 2026 +0100
+
+    fix: trigger notify_on_company_approved usa 'active' em vez de 'approved'; rejectCompany usa 'suspended'
+
+[33mcommit 79dce3623febda35a4715d8315f4933493abdca8[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 18:12:09 2026 +0100
+
+    fix: normModeration aplicado no handleSave (protege contra valores legados 'approved')
+
+[33mcommit 678ca2daa323f27ff4611a7391bf4bd4bcfba40d[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 11:34:40 2026 +0100
+
+    Last App Version MVP 0.1.5 Full-Cicle
+
+[33mcommit ab29ea1a1b774bae9bcff93f2842c5f541b95b10[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 14 10:30:16 2026 +0100
+
+    Last App Version MVP 0.1.4 Full-Cicle
+
+[33mcommit df4c296351de42856387987c8b53a4f1b587eb63[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 13 23:14:44 2026 +0100
+
+    Version 0.1.4
+
+[33mcommit 9a9c6e868ecd122ff56ee60119cd57aa98fc950a[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 13 22:50:24 2026 +0100
+
+    Version 0.1.3
+
+[33mcommit acf9f41c66395624119d7e4ed4618ba0bdceed1c[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 13 22:48:39 2026 +0100
+
+    Version 0.1.3.
+
+[33mcommit e47d627e795475a32f6cfc79f67bb6c8aa7f131d[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 13 21:20:24 2026 +0100
+
+    Version 0.1.3
+
+[33mcommit f4cf81cea60c7ac65cad9ea68eeb609e82db0c2c[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 23:31:16 2026 +0100
+
+    Feat: ToolsPage (sistema RH), TopProgressBar, feed moderno, fotos de perfil
+
+[33mcommit 41e596b232afa76a3f121bb7c3e5e5686a49b2d8[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 11:37:21 2026 +0100
+
+    Receptor da mensagem recebe notificação
+
+[33mcommit 14b50e879811901946290b34e78c25841f62d86f[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 01:49:33 2026 +0100
+
+    Fix: OAuth redirectTo usa VITE_APP_URL para evitar redirect para localhost
+
+[33mcommit a18e73c6a2cb9c397d709f10ac447080fc23fd5b[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 01:30:09 2026 +0100
+
+    Fix: som notificacao (AudioContext singleton) + display_name aluno no signup
+
+[33mcommit bcc76743ca46d193764684adeef6d706f4ed4bce[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 01:02:07 2026 +0100
+
+    Feat: notificacao de audio ao receber mensagem (trigger SQL + toast + som)
+
+[33mcommit e4f0750d93d0cf6efca66f61c88a8481f234b238[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 00:51:05 2026 +0100
+
+    Feat: read receipts no chat (Visto + checkmarks em tempo real)
+
+[33mcommit f2c51702407158f560475b7729d71aa230b8ee58[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 00:44:37 2026 +0100
+
+    Fix: race condition no login (navigate so via useEffect apos isAuthenticated)
+
+[33mcommit f4c67d2d1d71870c3a8aa3c40b540ce710059b10[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 00:40:58 2026 +0100
+
+    Fix: Realtime canal duplicado (shared channel manager por userId)
+
+[33mcommit ca03f728955650e290928046971671dad1cf7693[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 00:37:07 2026 +0100
+
+    Espf screanout buged
+
+[33mcommit a3759d5ee8702ddf2d73a271e9d9514e7449ca25[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 8 00:33:42 2026 +0100
+
+    Fix: blank screen apos login (ErrorBoundary + page-loader CSS + AppShell/AdminPage fixes)
+
+[33mcommit 1470552cb5df6e9df4daa7513e16677833ec515e[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Apr 7 23:55:15 2026 +0100
+
+    Last App Version MVP 0.1.3 Full-Cicle
+
+[33mcommit 44895f1dada9cec69e23002968215c1985016e92[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 6 12:40:27 2026 +0100
+
+    Updated sistem sms and notifications
+
+[33mcommit 16011aad793c3bb53dd3e94740bd145f14e2ef4f[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 6 12:11:18 2026 +0100
+
+    Updated llast
+
+[33mcommit 075e1eb3d6cb5ad580359c08f533328c45e743fe[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 6 03:32:10 2026 +0100
+
+    FullStack Stage Deploy
+
+[33mcommit d714db427beda8478d71f44619b3be5a86679913[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 6 03:19:43 2026 +0100
+
+    Full-Cilce App Version 0.1.2
+
+[33mcommit 99bbbd20f80663cfc9fbb24f18d2bb27ea6a22e6[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 6 01:23:13 2026 +0100
+
+    Last App Version MVP 0.1.2 Full-Cicle
+
+[33mcommit 985e42e34c051add76d3d246c74a8706ae6585af[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Apr 6 00:48:02 2026 +0100
+
+    Last App Version MVP 0.1.2
+
+[33mcommit 6f1269c5a91d6c6d3d44fb70182d432646e1e6ec[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sun Apr 5 13:22:58 2026 +0100
+
+    Full Cicle V.0.0.1
+
+[33mcommit f3c93b407ea2d7794b6020288fd8841c7df64e1a[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sat Apr 4 21:52:24 2026 +0100
+
+    Last App Version MVP 0.1.1
+
+[33mcommit b62c2bef1f5c82ebb5f6b999562ccee5da84f706[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sat Apr 4 15:21:13 2026 +0100
+
+    Last App Version MVP 0.1.1
+
+[33mcommit 4fa6f2d2d9d49f4510e30b51a45f980790a1cf4c[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 1 22:43:15 2026 +0100
+
+    feat: add real document uploads with Supabase Storage
+
+[33mcommit eb1659b9f911316635f1e7044f30f1cde086dc88[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 1 22:39:53 2026 +0100
+
+    feat: implement professional real-world document management workflow
+
+[33mcommit 0786c38a0e9e61f8a7d244d7cec7e93b7038d455[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 1 21:52:40 2026 +0100
+
+    fix: enforce admin password reset on user reprovision
+
+[33mcommit 7bec890f0863ebc9b30a7a212775bc60da101ce2[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 1 21:41:52 2026 +0100
+
+    chore: remove tracked node_modules and dist from repository
+
+[33mcommit ba640a296607523acc7c7d0a62c73fc37e740e69[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 1 21:38:58 2026 +0100
+
+    fix: explicit vercel build config for vite
+
+[33mcommit edfbf62b8841de2e1499f3931c1f5e7e7ccf4baa[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Wed Apr 1 21:19:46 2026 +0100
+
+    FullStack Level App
+
+[33mcommit 5a0758746b862da543a05f7bf117cf3c24ab6e8c[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Mar 30 19:10:05 2026 +0100
+
+    Front
+
+[33mcommit 0dbcff61c0fce2336e9e20fb5dfae2a9c6937af9[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Mar 30 18:43:21 2026 +0100
+
+    feat: add classes detail flow and explicit card actions UX
+
+[33mcommit e922f3aaee7f5b298c172382c0334bbb54f2f996[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Mon Mar 30 16:51:58 2026 +0100
+
+    feat: reorganize settings, i18n and core page UX
+
+[33mcommit 35aa5be440555abe6a447d4e6c50793b1565c6b2[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Sun Mar 29 10:50:28 2026 +0100
+
+    FrontEnd Builded v.0.1
+
+[33mcommit 842c16da5708cc59d4abc7b7528568e9a908ae54[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Fri Mar 27 17:06:29 2026 +0100
+
+    Last App Version MVP 0.1
+
+[33mcommit 247fc01c67f3241c57d3a182f9d3ced0e26b86a3[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Fri Mar 27 16:40:18 2026 +0100
+
+    Last App Version MVP 0.1
+
+[33mcommit 8da7cbdaf5bd13cf1df287fb7ad4785cb775c518[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Fri Mar 27 16:24:59 2026 +0100
+
+    Versão Web Aplication Finished
+
+[33mcommit b9fe7dadb23b2965068b6bc84ea4190b45ca6174[m
+Author: Claúdio Henriques <claudiomhenriques@gmail.com>
+Date:   Tue Mar 24 15:06:35 2026 +0100
+
+    GIVA versão 001

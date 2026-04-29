@@ -1,0 +1,146 @@
+import { Navigate, Outlet, matchPath, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { signOut } from "../services/authService.js";
+
+function PendingApprovalScreen() {
+  return (
+    <main className="login-shell">
+      <div className="login-box" style={{ textAlign: "center", padding: "2.5rem 2rem" }}>
+        <span className="material-icons-sharp pending-icon" style={{ fontSize: "3rem", color: "var(--accent)", display: "block", marginBottom: "0.75rem" }}>
+          hourglass_top
+        </span>
+        <h2 style={{ marginBottom: "0.5rem" }}>Conta em análise</h2>
+        <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>
+          O teu registo de empresa está a aguardar aprovação por um administrador IPIZ.
+          Receberás uma notificação por e-mail assim que for aprovado.
+        </p>
+        <button
+          className="btn ghost"
+          onClick={() => signOut()}
+        >
+          Terminar sessão
+        </button>
+      </div>
+    </main>
+  );
+}
+
+export default function RequireAuth({ children }) {
+  const { authEnabled, isAuthenticated, loading, userProfile, authProfile, user } = useAuth();
+  const location = useLocation();
+
+  if (!authEnabled) {
+    return children ?? <Outlet />;
+  }
+
+  if (loading) {
+    return (
+      <main className="page" aria-busy="true">
+        <section className="panel">
+          <p>A validar sessao...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (authProfile?.mustChangePassword) {
+    const isSecurityRoute = location.pathname === "/config/seguranca";
+    if (!isSecurityRoute) {
+      return <Navigate to="/config/seguranca" replace state={{ from: location.pathname }} />;
+    }
+  }
+
+  // Apenas empresas aguardam aprovação antes de aceder ao produto.
+  if (userProfile?.type === "company" && userProfile?.moderation === "pending") {
+    return <PendingApprovalScreen />;
+  }
+
+  const role = String(authProfile?.role ?? "").toUpperCase();
+  const isCompanyUser = userProfile?.type === "company" || role === "COMPANY";
+  const isStudentUser = userProfile?.type === "student" || role === "STUDENT";
+  const isExternalUser = userProfile?.type === "external" || role === "EXTERNAL";
+  const isSuperAdmin  = role === "SUPER_ADMIN";
+  const isAdmin       = isSuperAdmin || role === "ADMIN_1";
+
+  // SUPER_ADMIN: acesso total a todas as páginas e funcionalidades
+  if (isSuperAdmin) {
+    return children ?? <Outlet />;
+  }
+
+  // Empresa: só pode aceder às rotas de empresa
+  if (isCompanyUser) {
+    const companyAllowedRoutes = ["/empresa", "/notificacoes", "/chat", "/config"];
+    const canAccessPath = companyAllowedRoutes.some((basePath) =>
+      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
+    );
+    if (!canAccessPath) {
+      return <Navigate to="/empresa" replace state={{ from: location.pathname }} />;
+    }
+  }
+
+  // Externo: apenas feed/comunidade e configurações
+  if (isExternalUser && !isAdmin) {
+    const externalAllowedRoutes = ["/home", "/config"];
+    const canAccessPath = externalAllowedRoutes.some((basePath) =>
+      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
+    );
+
+    if (!canAccessPath) {
+      return <Navigate to="/home" replace state={{ from: location.pathname }} />;
+    }
+  }
+
+  // Estudante: somente recursos relacionados ao próprio percurso
+  if (isStudentUser && !isAdmin) {
+    const studentAllowedRoutes = [
+      "/",
+      "/home",
+      "/estagios",
+      "/avaliacoes",
+      "/documentos",
+      "/chat",
+      "/notificacoes",
+      "/config",
+      "/aluno",
+      "/perfil",
+      "/progresso",
+      "/perfil-publico",
+    ];
+    const canAccessPath = studentAllowedRoutes.some((basePath) =>
+      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
+    );
+    if (!canAccessPath) {
+      return <Navigate to="/" replace state={{ from: location.pathname }} />;
+    }
+
+    const profileMatch = matchPath("/perfil/:studentId", location.pathname);
+    const progressMatch = matchPath("/progresso/:studentId", location.pathname);
+    const targetStudentId = profileMatch?.params?.studentId ?? progressMatch?.params?.studentId;
+
+    // Alunos só podem aceder ao próprio perfil e progresso.
+    if (targetStudentId && user?.id && targetStudentId !== user.id) {
+      return <Navigate to={`/perfil/${user.id}`} replace state={{ from: location.pathname }} />;
+    }
+  }
+
+  // Rotas exclusivas de admin (ADMIN_1 + SUPER_ADMIN)
+  const adminOnlyRoutes = ["/admin", "/ferramentas"];
+  if (adminOnlyRoutes.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`))) {
+    if (!isAdmin) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // Rota exclusiva de SUPER_ADMIN
+  if (location.pathname === "/utilizadores" || location.pathname.startsWith("/utilizadores/")) {
+    if (!isSuperAdmin) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  return children ?? <Outlet />;
+}
