@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "validate:deploy-target": "node scripts/validate-deploy-target.mjs",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",

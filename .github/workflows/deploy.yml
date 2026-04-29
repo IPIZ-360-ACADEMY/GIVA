@@ -30,7 +30,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate deploy target (GitHub Pages profile)
+        env:
+          DEPLOY_ENV: github-pages
+          DEPLOY_TARGET: gh-pages
+        run: npm run validate:deploy-target
+
       - name: Build
+        env:
+          DEPLOY_TARGET: gh-pages
         run: npm run build
 
       - name: Setup Pages

@@ -28,5 +28,10 @@ jobs:
       - name: Run tests
         run: npm run test:run
 
+      - name: Validate deploy target (Vercel profile)
+        env:
+          DEPLOY_ENV: vercel
+        run: npm run validate:deploy-target
+
       - name: Build
         run: npm run build
