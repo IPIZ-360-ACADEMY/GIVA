@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-router-dom", () => ({
   Link: ({ to, children, ...props }) => <a href={to} {...props}>{children}</a>,
+  useLocation: () => ({ search: "" }),
+  useNavigate: () => vi.fn(),
   useOutletContext: () => ({ showToast: vi.fn() }),
 }));
 

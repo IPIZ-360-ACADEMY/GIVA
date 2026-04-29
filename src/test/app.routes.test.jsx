@@ -38,7 +38,9 @@ describe("App routes", () => {
   it("renderiza dashboard na rota raiz", async () => {
     renderWithRoute("/");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: nameIncludes("centro operacional de estagios") })).toBeInTheDocument();
+      const mainMenu = screen.getByRole("navigation", { name: /menu principal/i });
+      const dashboardLink = within(mainMenu).getByRole("link", { name: /painel|dashboard/i });
+      expect(dashboardLink).toHaveAttribute("aria-current", "page");
     });
   });
 
