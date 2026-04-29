@@ -1,8 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const isGitHubPagesBuild = process.env.DEPLOY_TARGET === "gh-pages";
+
 export default defineConfig({
-  base: "/GIVA/",
+  base: isGitHubPagesBuild ? "/GIVA/" : "/",
   plugins: [react()],
   build: {
     rollupOptions: {
