@@ -62,8 +62,6 @@ export default function AppShell() {
           { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
           { to: "/empresa", icon: "business_center", label: t("nav.companyDashboard") },
-          { to: "/turmas", icon: "groups", label: "Turmas" },
-          { to: "/areas-formacao", icon: "school", label: "Áreas de Formação" },
           { to: "/admin", icon: "admin_panel_settings", label: "Administração" },
           { to: "/ferramentas", icon: "build", label: "Ferramentas" },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
@@ -81,7 +79,6 @@ export default function AppShell() {
           { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
           { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
-          { to: "/turmas", icon: "groups", label: "Turmas" },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
           { to: "/config", icon: "settings", label: t("nav.settings") },
@@ -131,7 +128,7 @@ export default function AppShell() {
   );
 
   const navSections = useMemo(() => {
-    const baseRoutes = new Set(["/home", "/", "/estagios", "/avaliacoes", "/documentos", "/parceiros", "/turmas", "/areas-formacao", "/empresa"]);
+    const baseRoutes = new Set(["/home", "/", "/estagios", "/avaliacoes", "/documentos", "/parceiros", "/empresa"]);
     const collaborationRoutes = new Set(["/chat", "/notificacoes"]);
     const adminRoutes = new Set(["/admin", "/ferramentas", "/ferramentas?tab=utilizadores", "/config"]);
 
