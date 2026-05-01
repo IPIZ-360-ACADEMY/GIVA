@@ -141,21 +141,26 @@ $$;
 -- ============================================================
 -- 4) Criar novo utilizador na plataforma (SUPER_ADMIN apenas)
 -- ============================================================
+drop function if exists public.admin_create_platform_user(text, text, text, text, text, text, boolean);
 create or replace function public.admin_create_platform_user(
   p_email        text,
   p_password     text,
   p_display_name text,
   p_type         text,
   p_role         text,
-  p_moderation   text default 'active',
-  p_require_password_change boolean default true
+  p_moderation   text    default 'active',
+  p_require_password_change boolean default true,
+  p_process_number text  default null,
+  p_area_id        text  default null
 )
 returns uuid
 language plpgsql
 security definer
 as $$
 declare
-  v_uid uuid;
+  v_uid      uuid;
+  v_area_id  uuid;
+  v_app_meta jsonb;
 begin
   if public.current_app_role() <> 'SUPER_ADMIN' then
     raise exception 'Acesso negado: requer SUPER_ADMIN';
@@ -181,7 +186,28 @@ begin
     raise exception 'Ja existe um utilizador com este email';
   end if;
 
+  -- Validar e converter area_id (obrigatório para ADMIN_1)
+  if p_role = 'ADMIN_1' then
+    if p_area_id is null or trim(p_area_id) = '' then
+      raise exception 'area_id e obrigatorio para o role ADMIN_1';
+    end if;
+    begin
+      v_area_id := p_area_id::uuid;
+    exception when invalid_text_representation then
+      raise exception 'area_id tem formato UUID invalido';
+    end;
+    if not exists (select 1 from public.training_area where id = v_area_id and is_active = true) then
+      raise exception 'Area de formacao invalida ou inactiva';
+    end if;
+  end if;
+
   v_uid := gen_random_uuid();
+
+  -- Construir app_metadata (role + area_id opcional)
+  v_app_meta := jsonb_build_object('role', p_role);
+  if v_area_id is not null then
+    v_app_meta := v_app_meta || jsonb_build_object('area_id', v_area_id::text);
+  end if;
 
   -- Criar utilizador auth
   insert into auth.users (
@@ -202,7 +228,7 @@ begin
     lower(trim(p_email)),
     crypt(p_password, gen_salt('bf')),
     now(),
-    jsonb_build_object('role', p_role),
+    v_app_meta,
     jsonb_build_object(
       'display_name', p_display_name,
       'must_change_password', coalesce(p_require_password_change, true)
@@ -226,6 +252,14 @@ begin
     type         = excluded.type,
     moderation   = excluded.moderation;
 
+  -- Para alunos: criar registo em student_accounts com número de processo
+  if p_type = 'student' and p_process_number is not null and trim(p_process_number) <> '' then
+    insert into public.student_accounts (id, process_number)
+    values (v_uid, trim(p_process_number))
+    on conflict (id) do update set
+      process_number = excluded.process_number;
+  end if;
+
   return v_uid;
 end;
 $$;
@@ -236,12 +270,74 @@ $$;
 revoke execute on function public.admin_list_users()                                             from public;
 revoke execute on function public.admin_set_user_role(uuid, text)                                from public;
 revoke execute on function public.admin_set_user_area(uuid, uuid)                                from public;
-revoke execute on function public.admin_create_platform_user(text, text, text, text, text, text, boolean) from public;
+revoke execute on function public.admin_create_platform_user(text, text, text, text, text, text, boolean, text, text) from public;
 
 grant execute on function public.admin_list_users()                                              to authenticated;
 grant execute on function public.admin_set_user_role(uuid, text)                                 to authenticated;
 grant execute on function public.admin_set_user_area(uuid, uuid)                                 to authenticated;
-grant execute on function public.admin_create_platform_user(text, text, text, text, text, text, boolean)  to authenticated;
+grant execute on function public.admin_create_platform_user(text, text, text, text, text, text, boolean, text, text)  to authenticated;
+
+-- ============================================================
+-- 5.1) Garantir artefactos de conta ao alterar tipo (SUPER_ADMIN)
+--      Chamado quando o super-admin muda o type de um utilizador existente.
+-- ============================================================
+create or replace function public.admin_ensure_account_artifacts(
+  p_target_uid   uuid,
+  p_type         text,
+  p_display_name text   default null,
+  p_process_number text default null
+)
+returns jsonb
+language plpgsql
+security definer
+as $$
+declare
+  v_ensured boolean := false;
+  v_reason  text    := 'ok';
+begin
+  if public.current_app_role() <> 'SUPER_ADMIN' then
+    raise exception 'Acesso negado: requer SUPER_ADMIN';
+  end if;
+
+  if p_target_uid is null then
+    return jsonb_build_object('ensured', false, 'reason', 'invalid-input');
+  end if;
+
+  if p_type not in ('student', 'company', 'external', 'admin') then
+    return jsonb_build_object('ensured', false, 'reason', 'invalid-type');
+  end if;
+
+  -- Actualizar o perfil
+  update public.user_profiles
+  set
+    type         = p_type::public.account_type,
+    display_name = coalesce(nullif(trim(p_display_name), ''), display_name)
+  where id = p_target_uid;
+
+  v_ensured := true;
+
+  -- Para alunos: garantir registo em student_accounts
+  if p_type = 'student' then
+    if p_process_number is not null and trim(p_process_number) <> '' then
+      insert into public.student_accounts (id, process_number)
+      values (p_target_uid, trim(p_process_number))
+      on conflict (id) do update set
+        process_number = excluded.process_number;
+    else
+      -- Sem número de processo: criar registo mínimo se ainda não existir
+      insert into public.student_accounts (id)
+      values (p_target_uid)
+      on conflict (id) do nothing;
+      v_reason := 'student-no-process-number';
+    end if;
+  end if;
+
+  return jsonb_build_object('ensured', v_ensured, 'reason', v_reason);
+end;
+$$;
+
+revoke execute on function public.admin_ensure_account_artifacts(uuid, text, text, text) from public;
+grant  execute on function public.admin_ensure_account_artifacts(uuid, text, text, text) to authenticated;
 
 -- ============================================================
 -- 7) Eliminar utilizador — remove auth + perfil (SUPER_ADMIN)

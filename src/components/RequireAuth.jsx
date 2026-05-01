@@ -1,6 +1,7 @@
 import { Navigate, Outlet, matchPath, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { signOut } from "../services/authService.js";
+import { resolveAccessProfile } from "../utils/accessControl.js";
 
 function PendingApprovalScreen() {
   return (
@@ -59,12 +60,16 @@ export default function RequireAuth({ children }) {
     return <PendingApprovalScreen />;
   }
 
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isCompanyUser = userProfile?.type === "company" || role === "COMPANY";
-  const isStudentUser = userProfile?.type === "student" || role === "STUDENT";
-  const isExternalUser = userProfile?.type === "external" || role === "EXTERNAL";
-  const isSuperAdmin  = role === "SUPER_ADMIN";
-  const isAdmin       = isSuperAdmin || role === "ADMIN_1";
+  const {
+    isCompanyUser,
+    isStudentUser,
+    isExternalUser,
+    isSuperAdmin,
+    isAdmin,
+  } = resolveAccessProfile({
+    role: authProfile?.role,
+    type: userProfile?.type,
+  });
 
   // SUPER_ADMIN: acesso total a todas as páginas e funcionalidades
   if (isSuperAdmin) {

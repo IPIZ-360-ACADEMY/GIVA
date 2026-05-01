@@ -3,6 +3,11 @@ import { useOutletContext } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import {
+  defaultModerationForAccountType,
+  defaultRoleForAccountType,
+  getAllowedRolesForType,
+} from "../utils/accessControl.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { listTrainingAreas } from "../services/trainingAreaService.js";
 import { uploadAvatar } from "../services/profilesService.js";
@@ -14,6 +19,7 @@ import {
   adminUpdateUserProfile,
   adminCreatePlatformUser,
   adminDeleteUser,
+  getStudentProcessNumberFromIdentifier,
 } from "../services/usersAdminService.js";
 
 // ── helpers ───────────────────────────────────────────────────
@@ -31,11 +37,8 @@ const ROLE_LABELS = {
   authenticated: { label: "Utilizador",   color: "#6b7280" },
 };
 
-const KNOWN_ROLES = new Set(["SUPER_ADMIN", "ADMIN_1", "COMPANY", "authenticated"]);
-
 function normalizeRole(value) {
-  const role = String(value ?? "").trim();
-  return KNOWN_ROLES.has(role) ? role : "authenticated";
+  return defaultRoleForAccountType("external", value);
 }
 
 const MODERATION_LABELS = {
@@ -114,7 +117,7 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
     avatar_url: user.avatar_url ?? "",
     type: user.type ?? "external",
     moderation: normModeration(user.moderation),
-    role: normalizeRole(user.role),
+    role: defaultRoleForAccountType(user.type ?? "external", user.role),
   });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -155,8 +158,8 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
         await adminEnsureAccountTypeArtifacts(user.id, form.type, form.display_name.trim());
       }
 
-      const currentRole = normalizeRole(user.role);
-      const nextRole = isSuperAdmin ? defaultRoleForType(form.type, normalizeRole(form.role)) : currentRole;
+      const currentRole = defaultRoleForAccountType(user.type ?? form.type, user.role);
+      const nextRole = isSuperAdmin ? defaultRoleForAccountType(form.type, form.role) : currentRole;
       if (isSuperAdmin && nextRole !== currentRole) {
         await adminSetUserRole(user.id, nextRole);
       }
@@ -273,23 +276,8 @@ const BLANK_USER = {
   areaId: "",
 };
 
-const ROLE_OPTIONS_BY_TYPE = {
-  student: ["authenticated"],
-  company: ["COMPANY"],
-  external: ["authenticated"],
-  admin: ["ADMIN_1", "SUPER_ADMIN"],
-};
-
 function normalizeRoleByType(type, role) {
-  const options = ROLE_OPTIONS_BY_TYPE[type] ?? ["authenticated"];
-  return options.includes(role) ? role : options[0];
-}
-
-function defaultRoleForType(type, fallbackRole = "authenticated") {
-  if (type === "company") return "COMPANY";
-  if (type === "admin") return "ADMIN_1";
-  if (type === "student" || type === "external") return "authenticated";
-  return fallbackRole || "authenticated";
+  return defaultRoleForAccountType(type, role);
 }
 
 function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
@@ -316,7 +304,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     setForm((prev) => ({
       ...prev,
       type: nextType,
-      role: normalizeRoleByType(nextType, prev.role),
+      role: defaultRoleForAccountType(nextType, prev.role),
       areaId: nextType === "admin" ? prev.areaId : "",
       email: "", // Limpar email ao mudar tipo
     }));
@@ -385,8 +373,11 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
 
     setSubmitting(true);
     try {
-      const moderation = form.type === "company" ? "pending" : "active";
+      const moderation = defaultModerationForAccountType(form.type);
       const finalEmail = getDisplayEmail(form.type, form.email);
+      const processNumber = form.type === "student"
+        ? getStudentProcessNumberFromIdentifier(form.email)
+        : null;
 
       const uid = await adminCreatePlatformUser({
         email: finalEmail,
@@ -395,33 +386,13 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
         type: form.type,
         role: form.role,
         moderation,
+        processNumber,
+        areaId: form.areaId,
         requirePasswordChange: true,
       });
 
-      const artifactsStatus = await adminEnsureAccountTypeArtifacts(
-        uid,
-        form.type,
-        form.display_name.trim()
-      );
-
-      if (artifactsStatus?.reason === "rls-blocked") {
-        toast(
-          "Utilizador criado, mas os artefactos do tipo de conta não puderam ser garantidos por RLS. Verifique as políticas SQL.",
-          "error"
-        );
-      }
-
       if (form.role === "ADMIN_1") {
-        try {
-          await adminSetUserArea(uid, form.areaId);
-        } catch (scopeErr) {
-          try {
-            await adminDeleteUser(uid);
-          } catch {
-            // best effort rollback
-          }
-          throw new Error(`Falha ao associar área ao coordenador: ${scopeErr.message}. Execute o SQL de RPC admin_set_user_area.`);
-        }
+        await adminSetUserArea(uid, form.areaId);
       }
 
       toast(`Utilizador criado — ID: ${uid}`);
@@ -446,7 +417,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     );
   }
 
-  const roleOptions = ROLE_OPTIONS_BY_TYPE[form.type] ?? ["authenticated"];
+  const roleOptions = getAllowedRolesForType(form.type);
 
   return (
     <div style={{ maxWidth: "640px" }}>

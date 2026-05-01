@@ -4,7 +4,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DataTable from "../components/DataTable.jsx";
 import StudentProfileModal from "../components/StudentProfileModal.jsx";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { canUseInternshipsApi, listInternships } from "../services/internshipsService.js";
 import { listProfilesByType } from "../services/profilesService.js";
 import { adminListUsers } from "../services/usersAdminService.js";
@@ -204,13 +204,10 @@ function parseDateLabel(value) {
 
 export default function InternshipsPage() {
   const { showToast, t } = useOutletContext();
-  const { user, userProfile, authProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
+  const { isAdmin: isAdminView, isStudentUser: isStudentView, isCompanyUser: isCompanyView } = useAccessProfile();
   const savedFilters = useMemo(() => readStoredFilters(), []);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isAdminView = role === "SUPER_ADMIN" || role === "ADMIN_1";
-  const isStudentView = role === "STUDENT" || userProfile?.type === "student";
-  const isCompanyView = role === "COMPANY" || userProfile?.type === "company";
   const copy = {
     active: t("internships.active"),
     monitoring: t("internships.monitoring"),
@@ -339,7 +336,7 @@ export default function InternshipsPage() {
     return () => {
       active = false;
     };
-  }, [authLoading, isAdminView, isCompanyView, isStudentView, user?.id, userProfile]);
+  }, [authLoading, isAdminView, isCompanyView, isStudentView, user?.id]);
 
   useEffect(() => {
     localStorage.setItem(

@@ -1,4 +1,50 @@
 import { supabase } from "../lib/supabase.js";
+import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
+import {
+  defaultModerationForAccountType,
+  defaultRoleForAccountType,
+  normalizeAccountType,
+} from "../utils/accessControl.js";
+
+export function getStudentProcessNumberFromIdentifier(identifier) {
+  const raw = String(identifier ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (!raw.includes("@")) {
+    return normalizeStudentProcessNumber(raw) || null;
+  }
+
+  const [localPart = ""] = raw.toLowerCase().split("@");
+  if (!localPart.startsWith("aluno.")) {
+    return null;
+  }
+
+  return normalizeStudentProcessNumber(localPart.slice("aluno.".length)) || null;
+}
+
+function normalizeUserPayload(payload = {}) {
+  const type = normalizeAccountType(payload.type, "external");
+  const role = defaultRoleForAccountType(type, payload.role);
+  const moderation = payload.moderation ?? defaultModerationForAccountType(type);
+  const processNumber = type === "student"
+    ? normalizeStudentProcessNumber(payload.processNumber ?? getStudentProcessNumberFromIdentifier(payload.email)) || null
+    : null;
+  const areaId = role === "ADMIN_1" ? String(payload.areaId ?? "").trim() || null : null;
+
+  return {
+    email: String(payload.email ?? "").trim().toLowerCase(),
+    password: payload.password,
+    display_name: String(payload.display_name ?? "").trim(),
+    type,
+    role,
+    moderation,
+    processNumber,
+    areaId,
+    requirePasswordChange: payload.requirePasswordChange ?? true,
+  };
+}
 
 /** Lista todos os utilizadores com email, bio e role JWT. Requer ADMIN_1+. */
 export async function adminListUsers() {
@@ -42,91 +88,38 @@ export async function adminDeleteUser(uid) {
 
 /** Cria utilizador na plataforma via RPC. Requer SUPER_ADMIN. */
 export async function adminCreatePlatformUser(payload) {
+  const normalized = normalizeUserPayload(payload);
   const { data, error } = await supabase.rpc("admin_create_platform_user", {
-    p_email: payload.email,
-    p_password: payload.password,
-    p_display_name: payload.display_name,
-    p_type: payload.type,
-    p_role: payload.role,
-    p_moderation: payload.moderation ?? "active",
-    p_require_password_change: payload.requirePasswordChange ?? true,
+    p_email: normalized.email,
+    p_password: normalized.password,
+    p_display_name: normalized.display_name,
+    p_type: normalized.type,
+    p_role: normalized.role,
+    p_moderation: normalized.moderation,
+    p_require_password_change: normalized.requirePasswordChange,
+    p_process_number: normalized.processNumber,
+    p_area_id: normalized.areaId,
   });
   if (error) throw error;
   return data;
 }
 
-async function ensureStudentAccount(uid) {
-  const { data: existing, error: checkError } = await supabase
-    .from("student_accounts")
-    .select("id")
-    .eq("id", uid)
-    .maybeSingle();
-  if (checkError) throw checkError;
-  if (existing) return;
-
-  const base = `MIG-${uid.slice(0, 8).toUpperCase()}`;
-  let processNumber = base;
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const { error } = await supabase
-      .from("student_accounts")
-      .insert({ id: uid, process_number: processNumber });
-
-    if (!error) return;
-    if (error.code !== "23505") throw error;
-
-    processNumber = `${base}-${Math.floor(Math.random() * 900 + 100)}`;
-  }
-
-  throw new Error("Não foi possível garantir registo de estudante (process_number duplicado).");
-}
-
-async function ensureCompanyAccount(uid, displayName) {
-  const { data: existing, error: checkError } = await supabase
-    .from("company_accounts")
-    .select("id")
-    .eq("id", uid)
-    .maybeSingle();
-  if (checkError) throw checkError;
-  if (existing) return;
-
-  const baseNif = `TMP-${uid.replace(/-/g, "").slice(0, 9).toUpperCase()}`;
-  let nif = baseNif;
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const { error } = await supabase
-      .from("company_accounts")
-      .insert({ id: uid, empresa: displayName || "Empresa sem nome", nif });
-
-    if (!error) return;
-    if (error.code !== "23505") throw error;
-
-    nif = `${baseNif}${Math.floor(Math.random() * 9)}`;
-  }
-
-  throw new Error("Não foi possível garantir registo de empresa (NIF duplicado).");
-}
-
 /** Garante registos de contas específicas quando o tipo é alterado por super-admin. */
-export async function adminEnsureAccountTypeArtifacts(uid, type, displayName = "") {
+export async function adminEnsureAccountTypeArtifacts(uid, type, displayName = "", options = {}) {
   if (!uid || !type) return { ensured: false, reason: "invalid-input" };
 
-  try {
-    if (type === "student") {
-      await ensureStudentAccount(uid);
-      return { ensured: true };
-    }
-    if (type === "company") {
-      await ensureCompanyAccount(uid, displayName);
-      return { ensured: true };
-    }
-    return { ensured: false, reason: "not-required" };
-  } catch (error) {
-    // Em ambientes com RLS estrita no client, a criação de artefatos pode ser bloqueada.
-    // Não impede a mudança de tipo no perfil; devolvemos estado para logging/telemetria.
-    if (error?.code === "42501") {
-      return { ensured: false, reason: "rls-blocked" };
-    }
-    throw error;
-  }
+  const normalizedType = normalizeAccountType(type);
+  const processNumber = normalizedType === "student"
+    ? normalizeStudentProcessNumber(options.processNumber ?? getStudentProcessNumberFromIdentifier(options.email)) || null
+    : null;
+
+  const { data, error } = await supabase.rpc("admin_ensure_account_artifacts", {
+    p_target_uid: uid,
+    p_type: normalizedType,
+    p_display_name: String(displayName ?? "").trim() || null,
+    p_process_number: processNumber,
+  });
+
+  if (error) throw error;
+  return data ?? { ensured: true, account_type: normalizedType };
 }

@@ -4,7 +4,7 @@ import { matchesSearch } from "../utils/search.js";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DataTable from "../components/DataTable.jsx";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { canUseInternshipsApi, listInternships } from "../services/internshipsService.js";
 import { canUsePartnersApi, listPartners } from "../services/partnersService.js";
 import { canUseDocumentsApi, listDocuments } from "../services/documentsService.js";
@@ -78,10 +78,8 @@ function fmtPercent(value, fallback = "-") {
 
 export default function DashboardPage() {
   const { query, currentDate, showToast, t } = useOutletContext();
-  const { authProfile, user, userProfile } = useAuth();
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isStudentView = role === "STUDENT" || userProfile?.type === "student";
-  const isAdminView = role === "SUPER_ADMIN" || role === "ADMIN_1";
+  const { user } = useAuth();
+  const { isStudentUser: isStudentView, isAdmin: isAdminView } = useAccessProfile();
 
   const [internships, setInternships] = useState([]);
   const [partners, setPartners] = useState([]);
@@ -737,7 +735,7 @@ export default function DashboardPage() {
           <h3>{topClass}</h3>
           <p>{classDistribution[0]?.percent ?? 0}% da base de alunos.</p>
         </article>
-        {role !== "STUDENT" && (
+        {!isStudentView && (
           <article className="stat-card">
             <div className="stat-head">
               <span>Taxa de ocupação das vagas</span>
@@ -801,7 +799,7 @@ export default function DashboardPage() {
 
       {!isStudentView && (
       <section className="panel-grid dashboard-panels">
-        {role !== "STUDENT" && (
+        {!isStudentView && (
           <PanelSection title="Pulso operacional de candidaturas" className="panel dashboard-panel">
             <div className="dashboard-distribution-grid">
               <section className="dashboard-distribution-card">

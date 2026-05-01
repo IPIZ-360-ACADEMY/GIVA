@@ -4,7 +4,7 @@ import { matchesSearch } from "../utils/search.js";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DocumentSubmitModal from "../components/DocumentSubmitModal.jsx";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAccessProfile } from "../contexts/AuthContext.jsx";
 import { listManualClasses } from "../services/classesService.js";
 import { listPartners } from "../services/partnersService.js";
 import {
@@ -239,9 +239,7 @@ function toSafeBlobUrl(value) {
 
 export default function DocumentsPage() {
   const { query, showToast, t } = useOutletContext();
-  const { authProfile } = useAuth();
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isAdmin = role === "ADMIN_1" || role === "SUPER_ADMIN";
+  const { isAdmin } = useAccessProfile();
   const copy = {
     review: t("common.inReview"),
     published: t("common.approved"),

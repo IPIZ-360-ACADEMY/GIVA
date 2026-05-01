@@ -4,6 +4,7 @@ import logoImage from "../../images/logo.png";
 import fallbackAvatar from "../../images/perfil-1.jpg";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { createTranslator, resolveDateLocale } from "../utils/i18n.js";
+import { resolveAccessProfile } from "../utils/accessControl.js";
 import { getUnreadCount, subscribeToConversations } from "../services/chatService.js";
 import NotifToastContainer from "./NotifToast.jsx";
 import TopProgressBar from "./TopProgressBar.jsx";
@@ -36,13 +37,18 @@ export default function AppShell() {
   const profileRole = authEnabled && authProfile.role
     ? String(authProfile.role).replaceAll("_", " ")
     : t("profile.role");
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isCompanyUser = userProfile?.type === "company" || role === "COMPANY";
-  const isStudentUser = userProfile?.type === "student" || role === "STUDENT";
-  const isExternalUser = userProfile?.type === "external" || role === "EXTERNAL";
-  const isSuperAdmin  = role === "SUPER_ADMIN";
-  const isAdmin1      = role === "ADMIN_1";
-  const isAdmin       = isSuperAdmin || isAdmin1;
+  const {
+    normalizedRole,
+    isCompanyUser,
+    isStudentUser,
+    isExternalUser,
+    isSuperAdmin,
+    isAdmin1,
+    isAdmin,
+  } = useMemo(
+    () => resolveAccessProfile({ role: authProfile?.role, type: userProfile?.type }),
+    [authProfile?.role, userProfile?.type]
+  );
 
   const navItems = useMemo(
     () => {
@@ -121,7 +127,7 @@ export default function AppShell() {
         { to: "/config", icon: "settings", label: t("nav.settings") },
       ];
     },
-    [t, authProfile, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isAdmin1, isSuperAdmin]
+    [t, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isAdmin1, isSuperAdmin]
   );
 
   const navSections = useMemo(() => {

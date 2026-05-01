@@ -11,6 +11,7 @@ import {
 import { supabase } from "../lib/supabase.js";
 import { getUnreadNotifCount, subscribeToNotifications } from "../services/notificationsService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
+import { resolveAccessProfile } from "../utils/accessControl.js";
 
 const AuthContext = createContext(null);
 
@@ -192,4 +193,17 @@ export function useAuth() {
   }
 
   return context;
+}
+
+/**
+ * Hook de conveniência: devolve o perfil de acesso completo (isAdmin, isStudentUser, etc.)
+ * combinando o JWT role (app_metadata) com o type da tabela user_profiles.
+ * Usa resolveAccessProfile para garantir consistência em toda a aplicação.
+ */
+export function useAccessProfile() {
+  const { authProfile, userProfile } = useAuth();
+  return useMemo(
+    () => resolveAccessProfile({ role: authProfile?.role, type: userProfile?.type }),
+    [authProfile?.role, userProfile?.type],
+  );
 }

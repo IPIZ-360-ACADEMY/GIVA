@@ -133,7 +133,7 @@ export default function LoginPage() {
         <div className="login-box">
           <div className="login-box-head">
             <h1>{t("login.title")}</h1>
-            <p>A validar sessao...</p>
+            <p>Reconectando ao sistema...</p>
           </div>
         </div>
       </main>
@@ -214,7 +214,6 @@ export default function LoginPage() {
             </button>
           </div>
         )}
-
         <p className="login-box-footer">{t("login.badge")}</p>
         <p style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.85rem" }}>
           Ainda não tens conta?{" "}

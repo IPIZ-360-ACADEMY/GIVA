@@ -4,17 +4,12 @@ import CreatePostCard from "../components/CreatePostCard.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import PostCard from "../components/PostCard.jsx";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { getBookmarkedPostIds, getBookmarkedPosts, getFeedPosts, sharePost, subscribeToFeed, toggleReaction } from "../services/postsService.js";
 export default function HomePage() {
   const { t } = useOutletContext();
-  const { user, userProfile, authProfile } = useAuth();
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isSuperAdmin = role === "SUPER_ADMIN";
-  const isAdmin1 = role === "ADMIN_1";
-  const isAdmin = isSuperAdmin || isAdmin1;
-  const isStudent = role === "STUDENT" || userProfile?.type === "student";
-  const isExternal = role === "EXTERNAL" || userProfile?.type === "external";
+  const { user } = useAuth();
+  const { isSuperAdmin, isAdmin1, isAdmin, isStudentUser: isStudent, isExternalUser: isExternal } = useAccessProfile();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -41,6 +36,7 @@ export default function HomePage() {
       return [...rows].sort((a, b) => {
         const scoreA = (a.reactions?.length ?? 0) + (a.comments_count?.[0]?.count ?? 0) * 2 + (a.shares_count?.[0]?.count ?? 0) * 3;
         const scoreB = (b.reactions?.length ?? 0) + (b.comments_count?.[0]?.count ?? 0) * 2 + (b.shares_count?.[0]?.count ?? 0) * 3;
+        //Conts for updates and more committs sistems - no code more than 25 lines
         return scoreB - scoreA;
       });
     }
@@ -65,7 +61,7 @@ export default function HomePage() {
         setPosts((prev) => reset ? data : [...prev, ...data]);
       }
     } catch (err) {
-      setError(err.message ?? "Erro ao carregar publicações");
+      setError(err.message ?? "Erro ao carregar publicações!");
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -86,7 +82,7 @@ export default function HomePage() {
           cursorRef.current = fresh[fresh.length - 1]?.created_at ?? null;
           setError("");
         } catch (err) {
-          setError(err?.message ?? "Não foi possível atualizar o feed em tempo real.");
+          setError(err?.message ?? "Não foi possível atualizar o feed em tempo real, Verifique sua conecção.");
         }
       });
     }

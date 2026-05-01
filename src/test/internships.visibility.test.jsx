@@ -62,9 +62,18 @@ vi.mock("react-router-dom", () => ({
   }),
 }));
 
-vi.mock("../contexts/AuthContext.jsx", () => ({
-  useAuth: () => mocks.auth,
-}));
+vi.mock("../contexts/AuthContext.jsx", async (importOriginal) => {
+  const actual = await importOriginal();
+  const { resolveAccessProfile } = await import("../utils/accessControl.js");
+  return {
+    ...actual,
+    useAuth: () => mocks.auth,
+    useAccessProfile: () => resolveAccessProfile({
+      role: mocks.auth.authProfile?.role,
+      type: mocks.auth.userProfile?.type,
+    }),
+  };
+});
 
 vi.mock("../components/PageHeader.jsx", () => ({
   default: ({ title, meta }) => (

@@ -120,14 +120,19 @@ vi.mock("react-router-dom", () => ({
   }),
 }));
 
-vi.mock("../contexts/AuthContext.jsx", () => ({
-  useAuth: () => ({
-    authProfile: {
-      role: "ADMIN_1",
-      areaId: "11111111-1111-1111-1111-111111111111",
-    },
-  }),
-}));
+vi.mock("../contexts/AuthContext.jsx", async (importOriginal) => {
+  const actual = await importOriginal();
+  const { resolveAccessProfile } = await import("../utils/accessControl.js");
+  const authData = {
+    authProfile: { role: "ADMIN_1", areaId: "11111111-1111-1111-1111-111111111111" },
+    userProfile: { type: "admin" },
+  };
+  return {
+    ...actual,
+    useAuth: () => authData,
+    useAccessProfile: () => resolveAccessProfile({ role: authData.authProfile.role, type: authData.userProfile.type }),
+  };
+});
 
 vi.mock("../components/PageHeader.jsx", () => ({
   default: ({ title, description, meta }) => (

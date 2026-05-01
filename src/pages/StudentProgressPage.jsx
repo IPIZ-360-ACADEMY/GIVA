@@ -2,19 +2,16 @@ import { Navigate, useParams, useOutletContext } from "react-router-dom";
 import { useEffect, useState } from "react";
 import CompanyProgressTimeline from "../components/CompanyProgressTimeline.jsx";
 import { listStudentApplications } from "../services/jobApplicationService.js";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 
 export default function StudentProgressPage() {
   const { t } = useOutletContext();
   const { studentId } = useParams();
-  const { user, userProfile, authProfile } = useAuth();
+  const { user } = useAuth();
+  const { isAdmin, isCompanyUser } = useAccessProfile();
   const [applications, setApplications] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const role = String(authProfile?.role ?? "").toUpperCase();
-  const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN_1";
-  const isCompanyUser = userProfile?.type === "company" || role === "COMPANY";
   const targetStudentId = studentId || user?.id;
 
   useEffect(() => {
