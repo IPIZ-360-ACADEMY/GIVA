@@ -19,7 +19,7 @@ import { acceptJobApplication, rejectJobApplication } from "../services/jobAppli
 import { listPartners } from "../services/partnersService.js";
 import { registerStudentUnified } from "../services/studentRegistryService.js";
 import { createTranslator } from "../utils/i18n.js";
-import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
+import { normalizeStudentProcessNumber, validateIpizProcessNumber } from "../utils/processNumber.js";
 import { matchesSearch } from "../utils/search.js";
 
 // ── helpers ──────────────────────────────────────────────────
@@ -48,11 +48,6 @@ function Avatar({ url, name, size = 40 }) {
 
 function Badge({ label, variant = "neutral" }) {
   return <span className={`tools-badge tools-badge-${variant}`}>{label}</span>;
-}
-
-function buildProcessNumber(areaCode, sequence, courseCode) {
-  const seq = String(Math.max(1, Number(sequence) || 1)).padStart(4, "0");
-  return `${String(areaCode ?? "").toUpperCase()}-${seq}-${String(courseCode ?? "").toUpperCase()}`;
 }
 
 function formatPhoneAO(value) {
@@ -221,12 +216,23 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
   });
   const [areas, setAreas] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isExterno, setIsExterno] = useState(false);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    listManualClasses().then((rows) => setClasses(rows ?? [])).catch(() => setClasses([]));
+  }, []);
+
+  const filteredClasses = useMemo(
+    () => (form.areaId ? classes.filter((cls) => cls.areaId === form.areaId) : classes),
+    [classes, form.areaId]
+  );
 
   useEffect(() => {
     let active = true;
@@ -299,7 +305,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
     }
 
     if (key === "areaId") {
-      setForm((prev) => ({ ...prev, areaId: value, courseId: "", curso: "", processo: "" }));
+      setForm((prev) => ({ ...prev, areaId: value, courseId: "", curso: "", processo: "", turma: "" }));
       setError("");
       setSuccess(false);
       return;
@@ -338,8 +344,9 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
       return;
     }
 
-    if (!form.processo.trim()) {
-      setError("Preencha o número de processo antes de registar o aluno.");
+    const processValidation = validateIpizProcessNumber(form.processo);
+    if (!processValidation.valid) {
+      setError(processValidation.error);
       return;
     }
 
@@ -408,6 +415,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
       });
       setPhotoFile(null);
       setPhotoPreview(null);
+      setIsExterno(false);
       onRegistered?.();
       showToast("Aluno registado com sucesso!", "success");
     } catch (err) {
@@ -450,10 +458,22 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
             <input
               value={form.processo}
               onChange={(e) => set("processo", e.target.value)}
-              placeholder="Ex: INFO-0001-TI"
+              placeholder={(() => {
+                const area = areas.find((a) => a.id === form.areaId);
+                const initial = area ? String(area.name ?? area.code ?? "").trim().toUpperCase().charAt(0) : "X";
+                return isExterno ? `${initial}735A` : `${initial}723`;
+              })()}
               autoCapitalize="characters"
               required
             />
+            <label className="tools-checkbox-label">
+              <input
+                type="checkbox"
+                checked={isExterno}
+                onChange={(e) => { setIsExterno(e.target.checked); set("processo", ""); }}
+              />
+              Aluno externo (de outra instituição) — número termina em A
+            </label>
           </div>
           <div className="form-field">
             <label>Email *</label>
@@ -470,7 +490,22 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
           </div>
           <div className="form-field">
             <label>Turma</label>
-            <input value={form.turma} onChange={(e) => set("turma", e.target.value)} placeholder="Ex: 11-TI-A" />
+            {filteredClasses.length > 0 ? (
+              <select value={form.turma} onChange={(e) => set("turma", e.target.value)}>
+                <option value="">Selecionar turma...</option>
+                {filteredClasses.map((cls) => (
+                  <option key={cls.id} value={cls.turma}>
+                    {cls.turma} — {cls.curso} ({cls.anoLetivo})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={form.turma}
+                onChange={(e) => set("turma", e.target.value)}
+                placeholder={form.areaId ? "Sem turmas registadas para esta área" : "Ex: 11-TI-A"}
+              />
+            )}
           </div>
           <div className="form-field">
             <label>Área de formação *</label>
