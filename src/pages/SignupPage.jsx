@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import {
-  PENDING_STUDENT_OAUTH_KEY,
+  PENDING_STUDENT_OAUTH_STORAGE,
   signInWithOAuth,
   signUpStudent,
   signUpWithType,
@@ -193,11 +193,11 @@ export default function SignupPage() {
       createdAt: Date.now(),
     };
 
-    sessionStorage.setItem(PENDING_STUDENT_OAUTH_KEY, JSON.stringify(payload));
+    sessionStorage.setItem(PENDING_STUDENT_OAUTH_STORAGE, JSON.stringify(payload));
     const { error: oauthError } = await signInWithOAuth(provider);
 
     if (oauthError) {
-      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_KEY);
+      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
       setOauthProviderLoading("");
       setError("Não foi possível iniciar login com provedor externo. Tenta novamente.");
       return;

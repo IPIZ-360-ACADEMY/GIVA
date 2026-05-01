@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
-  PENDING_STUDENT_OAUTH_KEY,
+  PENDING_STUDENT_OAUTH_STORAGE,
   getAuthProfile,
   getCurrentSession,
   isAuthEnabled,
@@ -26,27 +26,27 @@ export function AuthProvider({ children }) {
   const finalizePendingStudentOAuth = useCallback(async (user) => {
     if (!authEnabled || !user?.id) return;
 
-    const raw = sessionStorage.getItem(PENDING_STUDENT_OAUTH_KEY);
+    const raw = sessionStorage.getItem(PENDING_STUDENT_OAUTH_STORAGE);
     if (!raw) return;
 
     let pending;
     try {
       pending = JSON.parse(raw);
     } catch {
-      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_KEY);
+      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
       return;
     }
 
     const createdAt = Number(pending?.createdAt ?? 0);
     const expired = Number.isFinite(createdAt) && createdAt > 0 && Date.now() - createdAt > 30 * 60 * 1000;
     if (expired) {
-      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_KEY);
+      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
       return;
     }
 
     const processNumber = normalizeStudentProcessNumber(pending?.processNumber);
     if (!processNumber) {
-      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_KEY);
+      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
       return;
     }
 
@@ -74,10 +74,10 @@ export function AuthProvider({ children }) {
       }
 
       if (studentError) throw studentError;
-      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_KEY);
+      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
     } catch (error) {
       console.error("Falha ao concluir cadastro OAuth de aluno:", error);
-      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_KEY);
+      sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
     }
   }, [authEnabled]);
 

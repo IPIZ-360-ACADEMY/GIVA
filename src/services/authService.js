@@ -2,7 +2,7 @@ import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 
 const DEFAULT_EMAIL_DOMAIN = "giva.ao";
-export const PENDING_STUDENT_OAUTH_KEY = "giva.pendingStudentOAuth";
+export const PENDING_STUDENT_OAUTH_STORAGE = "giva.pendingStudentOAuth";
 
 function isUuid(value) {
   const normalized = String(value ?? "").trim();

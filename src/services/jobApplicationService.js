@@ -376,16 +376,6 @@ export async function acceptJobApplication(applicationId, notes = "") {
     return null;
   }
 
-  // Incrementar vagas preenchidas
-  const { error: vagasError } = await supabase.rpc("increment_vagas_preenchidas", {
-    id: application.partner_id,
-    increment: 1,
-  });
-
-  if (vagasError && !isMissingRpc(vagasError)) {
-    console.warn("[jobApplicationService] Could not update vagas_preenchidas");
-  }
-
   const { data: existingProgress } = await supabase
     .from("company_progress")
     .select("id")
