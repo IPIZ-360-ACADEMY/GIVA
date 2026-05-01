@@ -165,6 +165,7 @@ function PostRow({ post, onApprove, onReject }) {
 const BLANK_STUDENT = {
   full_name: "", process_number: "", email: "", phone_number: "", date_of_birth: "",
   training_area_id: "", turma: "", course: "",
+  password: "", confirmPassword: "",
   guardian_name: "", guardian_phone: "", guardian_relation: "",
 };
 
@@ -188,10 +189,16 @@ function StudentRegisterSection({ toast, authProfile }) {
 
   function set(k, v) { setForm((p) => ({ ...p, [k]: v })); }
 
+  const loginEmailPreview = form.process_number.trim()
+    ? `aluno.${normalizeStudentProcessNumber(form.process_number).toLowerCase()}@${String(import.meta.env.VITE_AUTH_EMAIL_DOMAIN ?? "").trim().toLowerCase() || "giva.ao"}`
+    : "aluno.processo@giva.ao";
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.full_name.trim()) { toast("Nome completo é obrigatório.", "error"); return; }
     if (!form.process_number.trim()) { toast("Número de processo é obrigatório.", "error"); return; }
+    if (form.password.length < 8) { toast("A palavra-passe deve ter pelo menos 8 caracteres.", "error"); return; }
+    if (form.password !== form.confirmPassword) { toast("As palavras-passe não coincidem.", "error"); return; }
     if (form.date_of_birth && form.date_of_birth > maxDob) {
       toast("Data de nascimento não pode ser no futuro.", "error");
       return;
@@ -208,12 +215,19 @@ function StudentRegisterSection({ toast, authProfile }) {
         trainingAreaId: form.training_area_id || null,
         className: form.turma,
         courseCode: form.course,
+        loginPassword: form.password,
         guardianName: form.guardian_name,
         guardianPhone: form.guardian_phone,
         guardianRelation: form.guardian_relation,
       });
 
-      setResult({ processNumber: registered.processNumber, name: registered.fullName, turma: form.turma });
+      setResult({
+        processNumber: registered.processNumber,
+        name: registered.fullName,
+        turma: form.turma,
+        loginEmail: registered.loginEmail,
+        authAlreadyExists: registered.authAlreadyExists,
+      });
       setForm(BLANK_STUDENT);
       toast(`Aluno registado — Nº ${registered.processNumber}`);
     } catch (err) {
@@ -261,6 +275,29 @@ function StudentRegisterSection({ toast, authProfile }) {
             <div className="form-field">
               <label htmlFor="as-email">Email (opcional)</label>
               <input id="as-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="as-password">Palavra-passe de acesso *</label>
+              <input
+                id="as-password"
+                type="password"
+                minLength={8}
+                value={form.password}
+                onChange={(e) => set("password", e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+              />
+              <small className="form-hint">Login automático do aluno: {loginEmailPreview}</small>
+            </div>
+            <div className="form-field">
+              <label htmlFor="as-password-confirm">Confirmar palavra-passe *</label>
+              <input
+                id="as-password-confirm"
+                type="password"
+                minLength={8}
+                value={form.confirmPassword}
+                onChange={(e) => set("confirmPassword", e.target.value)}
+                placeholder="Repete a palavra-passe"
+              />
             </div>
             {areas.length > 0 && (
               <div className="form-field">
@@ -319,12 +356,15 @@ function StudentRegisterSection({ toast, authProfile }) {
             <div className="admin-process-number">{result.processNumber}</div>
             <p className="admin-process-name">{result.name}</p>
             {result.turma && <p className="meta">Turma: {result.turma}</p>}
+            {result.loginEmail && <p className="meta">Login: {result.loginEmail}</p>}
             <button className="btn secondary" style={{ marginTop: "0.75rem" }} onClick={copyProcess}>
               <span className="material-icons-sharp">{copied ? "check" : "content_copy"}</span>
               {copied ? "Copiado!" : "Copiar Nº de Processo"}
             </button>
             <p className="form-hint" style={{ marginTop: "0.75rem" }}>
-              Confirme este número com o aluno; será necessário para criar a conta GIVA no login.
+              {result.authAlreadyExists
+                ? "A conta de acesso já existia para este processo e mantém a palavra-passe anterior."
+                : "O aluno já pode iniciar sessão com este login e a palavra-passe definida no registo."}
             </p>
           </div>
         ) : (

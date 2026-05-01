@@ -6,11 +6,6 @@ const INITIAL_FORM = {
   curso: "",
   turma: "",
   supervisor: "",
-  total: "0",
-  ativos: "0",
-  monitoramento: "0",
-  risco: "0",
-  mediaNota: "0.0",
 };
 
 function parseSchoolYear(value) {
@@ -57,11 +52,11 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
       curso: String(form.curso).trim().toUpperCase(),
       turma: String(form.turma).trim(),
       supervisor: String(form.supervisor).trim(),
-      total: Math.max(0, Number(form.total) || 0),
-      ativos: Math.max(0, Number(form.ativos) || 0),
-      monitoramento: Math.max(0, Number(form.monitoramento) || 0),
-      risco: Math.max(0, Number(form.risco) || 0),
-      mediaNota: String(form.mediaNota).trim() || "0.0",
+      total: 0,
+      ativos: 0,
+      monitoramento: 0,
+      risco: 0,
+      mediaNota: "0.0",
     };
 
     if (!payload.anoLetivo || !payload.curso || !payload.turma) {
@@ -77,16 +72,6 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
 
     if (schoolYear.startYear < new Date().getFullYear()) {
       onSave(null, t("classModal.toast.pastSchoolYear"));
-      return;
-    }
-
-    if (!payload.supervisor) {
-      onSave(null, t("classModal.toast.requiredSupervisor"));
-      return;
-    }
-
-    if (payload.ativos + payload.monitoramento + payload.risco > payload.total) {
-      onSave(null, t("classModal.toast.stateOverflow"));
       return;
     }
 
@@ -154,31 +139,6 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
                 <div className="form-field">
                   <label htmlFor="class-supervisor">{t("classModal.label.supervisor")}</label>
                   <input id="class-supervisor" value={form.supervisor} placeholder="Professor responsável" onChange={(e) => handleChange({ supervisor: e.target.value })} />
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="class-total">{t("classModal.label.total")}</label>
-                  <input id="class-total" type="number" min="0" value={form.total} onChange={(e) => handleChange({ total: e.target.value })} />
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="class-media">{t("classModal.label.avgGrade")}</label>
-                  <input id="class-media" value={form.mediaNota} placeholder="14.5" onChange={(e) => handleChange({ mediaNota: e.target.value })} />
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="class-active">{t("classModal.label.active")}</label>
-                  <input id="class-active" type="number" min="0" value={form.ativos} onChange={(e) => handleChange({ ativos: e.target.value })} />
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="class-monitoring">{t("classModal.label.monitoring")}</label>
-                  <input id="class-monitoring" type="number" min="0" value={form.monitoramento} onChange={(e) => handleChange({ monitoramento: e.target.value })} />
-                </div>
-
-                <div className="form-field">
-                  <label htmlFor="class-risk">{t("classModal.label.risk")}</label>
-                  <input id="class-risk" type="number" min="0" value={form.risco} onChange={(e) => handleChange({ risco: e.target.value })} />
                 </div>
               </div>
             </section>

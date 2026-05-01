@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase.js";
+import { normalizeAuthIdentifier, signUpStudent } from "./authService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 
 function nullableTrim(value) {
@@ -22,6 +23,7 @@ function currentDateLabel() {
 export async function registerStudentUnified(input) {
   const processNumber = normalizeStudentProcessNumber(input?.processNumber);
   const fullName = String(input?.fullName ?? "").trim();
+  const loginPassword = typeof input?.loginPassword === "string" ? input.loginPassword : "";
 
   if (!fullName) throw new Error("Nome completo é obrigatório.");
   if (!processNumber) throw new Error("Número de processo é obrigatório.");
@@ -111,9 +113,29 @@ export async function registerStudentUnified(input) {
     }
   }
 
+  const loginEmail = normalizeAuthIdentifier(processNumber);
+  let authCreated = false;
+  let authAlreadyExists = false;
+
+  if (loginPassword) {
+    const { error: signUpError } = await signUpStudent(processNumber, loginPassword, fullName, studentRow.id);
+    if (signUpError) {
+      const signUpMessage = String(signUpError.message ?? "");
+      authAlreadyExists = /already/i.test(signUpMessage) || /registered/i.test(signUpMessage);
+      if (!authAlreadyExists) {
+        throw new Error(`Aluno registado, mas não foi possível criar a conta de acesso: ${signUpMessage || "erro desconhecido"}`);
+      }
+    } else {
+      authCreated = true;
+    }
+  }
+
   return {
     studentId: studentRow.id,
     processNumber,
     fullName: studentRow.full_name,
+    loginEmail,
+    authCreated,
+    authAlreadyExists,
   };
 }

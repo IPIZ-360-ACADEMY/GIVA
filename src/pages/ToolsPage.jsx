@@ -212,7 +212,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
   const [form, setForm] = useState({
     nome: "", processo: "", email: "", telefone: "",
     turma: "", curso: "", courseId: "", areaId: "", anoLetivo: new Date().getFullYear() + "/" + (new Date().getFullYear() + 1),
-    dataNasc: "", bi: "", morada: "",
+    dataNasc: "", bi: "", morada: "", password: "", confirmPassword: "",
   });
   const [areas, setAreas] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -222,6 +222,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [credentialInfo, setCredentialInfo] = useState(null);
   const [isExterno, setIsExterno] = useState(false);
   const fileRef = useRef(null);
 
@@ -233,6 +234,17 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
     () => (form.areaId ? classes.filter((cls) => cls.areaId === form.areaId) : classes),
     [classes, form.areaId]
   );
+
+  const loginEmailPreview = useMemo(() => {
+    const normalizedProcess = normalizeStudentProcessNumber(form.processo);
+    if (!normalizedProcess) {
+      return "aluno.processo@giva.ao";
+    }
+
+    const configuredDomain = String(import.meta.env.VITE_AUTH_EMAIL_DOMAIN ?? "").trim().toLowerCase();
+    const domain = configuredDomain || "giva.ao";
+    return `aluno.${normalizedProcess.toLowerCase()}@${domain}`;
+  }, [form.processo]);
 
   useEffect(() => {
     let active = true;
@@ -308,6 +320,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
       setForm((prev) => ({ ...prev, areaId: value, courseId: "", curso: "", processo: "", turma: "" }));
       setError("");
       setSuccess(false);
+      setCredentialInfo(null);
       return;
     }
 
@@ -321,12 +334,14 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
       }));
       setError("");
       setSuccess(false);
+      setCredentialInfo(null);
       return;
     }
 
     setForm((prev) => ({ ...prev, [key]: nextValue }));
     setError("");
     setSuccess(false);
+    setCredentialInfo(null);
   }
 
   function handlePhoto(e) {
@@ -347,6 +362,16 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
     const processValidation = validateIpizProcessNumber(form.processo);
     if (!processValidation.valid) {
       setError(processValidation.error);
+      return;
+    }
+
+    if (form.password.length < 8) {
+      setError("A palavra-passe deve ter pelo menos 8 caracteres.");
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError("As palavras-passe não coincidem.");
       return;
     }
 
@@ -391,7 +416,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
         }
       }
 
-      await registerStudentUnified({
+      const registered = await registerStudentUnified({
         fullName: form.nome,
         processNumber: normalizedProcess,
         email: form.email,
@@ -405,19 +430,29 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
         courseCode: selectedCourse?.code || selectedArea?.code || form.curso,
         schoolYear: form.anoLetivo,
         bi: form.bi,
+        loginPassword: form.password,
       });
 
       setSuccess(true);
+      setCredentialInfo({
+        loginEmail: registered.loginEmail,
+        authCreated: registered.authCreated,
+        authAlreadyExists: registered.authAlreadyExists,
+      });
       setForm({
         nome: "", processo: "", email: "", telefone: "",
         turma: "", curso: "", courseId: "", areaId: authProfile?.areaId ?? fallbackAreaId ?? "", anoLetivo: new Date().getFullYear() + "/" + (new Date().getFullYear() + 1),
-        dataNasc: "", bi: "", morada: "",
+        dataNasc: "", bi: "", morada: "", password: "", confirmPassword: "",
       });
       setPhotoFile(null);
       setPhotoPreview(null);
       setIsExterno(false);
       onRegistered?.();
-      showToast("Aluno registado com sucesso!", "success");
+      if (registered.authAlreadyExists) {
+        showToast(`Aluno registado. A conta ${registered.loginEmail} já existia.`, "success");
+      } else {
+        showToast(`Aluno registado com sucesso. Login: ${registered.loginEmail}`, "success");
+      }
     } catch (err) {
       setError(err.message ?? "Erro ao registar aluno.");
     }
@@ -480,6 +515,29 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
             <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="aluno@ipiz.ao" required />
           </div>
           <div className="form-field">
+            <label>Palavra-passe de acesso *</label>
+            <input
+              type="password"
+              minLength={8}
+              value={form.password}
+              onChange={(e) => set("password", e.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              required
+            />
+            <small className="form-hint">Login automático do aluno: {loginEmailPreview}</small>
+          </div>
+          <div className="form-field">
+            <label>Confirmar palavra-passe *</label>
+            <input
+              type="password"
+              minLength={8}
+              value={form.confirmPassword}
+              onChange={(e) => set("confirmPassword", e.target.value)}
+              placeholder="Repete a palavra-passe"
+              required
+            />
+          </div>
+          <div className="form-field">
             <label>Telefone</label>
             <input
               value={form.telefone}
@@ -540,7 +598,13 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
         </div>
 
         {error && <p className="tools-error">{error}</p>}
-        {success && <p className="tools-success">✓ Aluno registado com sucesso!</p>}
+        {success && (
+          <p className="tools-success">
+            ✓ Aluno registado com sucesso!
+            {credentialInfo?.loginEmail ? ` Login: ${credentialInfo.loginEmail}.` : ""}
+            {credentialInfo?.authAlreadyExists ? " A conta já existia e mantém a password anterior." : ""}
+          </p>
+        )}
 
         <div className="tools-form-actions">
           <button type="submit" className="btn primary" disabled={submitting}>
