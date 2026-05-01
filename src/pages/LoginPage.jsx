@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
-  normalizeAuthIdentifier,
+  resolveAuthLoginEmail,
   signInWithOAuth,
   signUpStudent,
   verifyStudentProcessNumber,
@@ -44,6 +44,10 @@ export default function LoginPage() {
   function resolveAuthErrorMessage(error) {
     const message = String(error?.message ?? "").toLowerCase();
 
+    if (message.includes("email not confirmed") || message.includes("email_not_confirmed")) {
+      return "Conta criada, mas o e-mail ainda não foi confirmado. Verifica a tua caixa de entrada e confirma o e-mail para entrar.";
+    }
+
     if (message.includes("invalid login credentials") || message.includes("invalid credentials")) {
       return t("login.authInvalid");
     }
@@ -68,8 +72,8 @@ export default function LoginPage() {
 
     setSubmitting(true);
     const rawIdentifier = identifier.trim();
-    const isProcessNumber = !rawIdentifier.includes("@");
-    const normalizedIdentifier = normalizeAuthIdentifier(identifier);
+    const isProcessNumber = /^[A-Za-z]\d{1,4}A?$/.test(rawIdentifier);
+    const normalizedIdentifier = await resolveAuthLoginEmail(identifier);
     const { error } = await signInWithPassword({ email: normalizedIdentifier, password });
     setSubmitting(false);
 

@@ -88,6 +88,66 @@ export function normalizeAuthIdentifier(identifier) {
   return `aluno.${localPart}@${domain}`;
 }
 
+function isMissingRelationError(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("does not exist") || message.includes("relation") || message.includes("auth_login_aliases");
+}
+
+function normalizeAlias(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+async function upsertLoginAliases(rows) {
+  if (!isAuthEnabled() || !Array.isArray(rows) || rows.length === 0) {
+    return { error: null };
+  }
+
+  const payload = rows
+    .map((row) => ({
+      user_id: row.user_id,
+      alias: normalizeAlias(row.alias),
+      login_email: normalizeAlias(row.login_email),
+      account_type: normalizeAlias(row.account_type || "external"),
+    }))
+    .filter((row) => row.user_id && row.alias && row.login_email);
+
+  if (payload.length === 0) {
+    return { error: null };
+  }
+
+  const { error } = await supabase
+    .from("auth_login_aliases")
+    .upsert(payload, { onConflict: "alias" });
+
+  // Se a migração ainda não foi aplicada, não bloquear registo/login.
+  if (error && isMissingRelationError(error)) {
+    return { error: null };
+  }
+
+  return { error };
+}
+
+export async function resolveAuthLoginEmail(identifier) {
+  const raw = String(identifier ?? "").trim();
+  if (!raw) return "";
+
+  if (!isAuthEnabled()) {
+    return normalizeAuthIdentifier(raw);
+  }
+
+  const { data, error } = await supabase.rpc("resolve_login_email", {
+    p_identifier: raw,
+  });
+
+  if (!error && data) {
+    const resolved = String(data).trim().toLowerCase();
+    if (resolved) return resolved;
+  }
+
+  // Fallback para comportamento antigo quando RPC/migração ainda não existir.
+  return normalizeAuthIdentifier(raw);
+}
+
 export async function getRequiredSession() {
   const session = await getCurrentSession();
   if (!session?.user?.id) {
@@ -258,6 +318,22 @@ export async function signUpStudent(processNumber, password, displayName, studen
     if (retryError) return { data, error: retryError };
   }
 
+  const { error: aliasError } = await upsertLoginAliases([
+    {
+      user_id: userId,
+      alias: normalizedProcessNumber,
+      login_email: syntheticEmail,
+      account_type: "student",
+    },
+    {
+      user_id: userId,
+      alias: syntheticEmail,
+      login_email: syntheticEmail,
+      account_type: "student",
+    },
+  ]);
+  if (aliasError) return { data, error: aliasError };
+
   return { data, error: null };
 }
 
@@ -298,8 +374,10 @@ export async function signUpWithType(email, password, displayName, type, typeDat
     return { data: null, error: new Error("Supabase Auth is not configured") };
   }
 
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: normalizedEmail,
     password,
     options: { data: { display_name: displayName } },
   });
@@ -321,6 +399,38 @@ export async function signUpWithType(email, password, displayName, type, typeDat
       .from("company_accounts")
       .insert({ id: userId, ...typeData });
     if (companyError) return { data, error: companyError };
+
+    const aliases = [
+      {
+        user_id: userId,
+        alias: normalizedEmail,
+        login_email: normalizedEmail,
+        account_type: "company",
+      },
+    ];
+
+    const nif = String(typeData?.nif ?? "").trim();
+    if (nif) {
+      aliases.push({
+        user_id: userId,
+        alias: nif,
+        login_email: normalizedEmail,
+        account_type: "company",
+      });
+    }
+
+    const { error: aliasError } = await upsertLoginAliases(aliases);
+    if (aliasError) return { data, error: aliasError };
+  } else {
+    const { error: aliasError } = await upsertLoginAliases([
+      {
+        user_id: userId,
+        alias: normalizedEmail,
+        login_email: normalizedEmail,
+        account_type: type,
+      },
+    ]);
+    if (aliasError) return { data, error: aliasError };
   }
 
   return { data, error: null };
