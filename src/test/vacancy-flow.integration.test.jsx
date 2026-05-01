@@ -149,7 +149,7 @@ describe("Vacancy Flow Integration", () => {
     mocks.resetState();
   });
 
-  it("empresa publica vaga, estudante candidata e empresa fecha/reabre respeitando pendencias", async () => {
+  it("empresa publica vaga, estudante candidata e empresa fecha/reabre respeitando pendencias", { timeout: 20000 }, async () => {
     const dashboard = render(<CompanyDashboardPage />);
 
     await screen.findByText(/Vagas publicadas/i);

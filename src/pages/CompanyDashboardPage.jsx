@@ -16,7 +16,7 @@ import {
   insertCompanyBatchAuditRows,
   listCompanyBatchAuditRows,
 } from "../services/companyBatchAuditService.js";
-import CompanyProgressTimeline from "../components/CompanyProgressTimeline.jsx";
+import InternDetailPanel from "../components/InternDetailPanel.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 
 function getPendingDays(appliedAt) {
@@ -69,6 +69,8 @@ export default function CompanyDashboardPage() {
   const [batchConfirmTarget, setBatchConfirmTarget] = useState(null);
   const [batchReportRows, setBatchReportRows] = useState([]);
   const [lastBatchSummary, setLastBatchSummary] = useState(null);
+  const [internSearch, setInternSearch] = useState("");
+  const [expandedInternId, setExpandedInternId] = useState(null);
   const [slaQuickFilter, setSlaQuickFilter] = useState("all");
   const [reportBatchFilter, setReportBatchFilter] = useState("");
   const [reportActionFilter, setReportActionFilter] = useState("all");
@@ -909,6 +911,97 @@ export default function CompanyDashboardPage() {
           )}
         </div>
       )}
+        {/* Tab: Estagiários — acompanhamento individual rico */}
+        {activeTab === "interns" && (
+          <div>
+            {accepted.length === 0 ? (
+              <p className="empty-state-text">{t("companyDashboard.noInterns")}</p>
+            ) : (
+              <>
+                {/* Pesquisa de estagiários */}
+                <div style={{ marginBottom: "1rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    value={internSearch}
+                    onChange={(e) => setInternSearch(e.target.value)}
+                    placeholder="Pesquisar estagiário por nome ou e-mail..."
+                    style={{ flex: 1, minWidth: 220, padding: "0.5rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
+                  />
+                  {internSearch && (
+                    <button className="btn ghost" onClick={() => setInternSearch("")}>Limpar</button>
+                  )}
+                  <span style={{ fontSize: "0.82rem", opacity: 0.7 }}>
+                    {accepted.filter((app) => {
+                      const s = internSearch.trim().toLowerCase();
+                      if (!s) return true;
+                      return (
+                        String(app.student?.full_name ?? "").toLowerCase().includes(s) ||
+                        String(app.student?.email ?? "").toLowerCase().includes(s)
+                      );
+                    }).length} estagiário(s)
+                  </span>
+                </div>
+
+                {/* Cards de estagiários */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {accepted
+                    .filter((app) => {
+                      const s = internSearch.trim().toLowerCase();
+                      if (!s) return true;
+                      return (
+                        String(app.student?.full_name ?? "").toLowerCase().includes(s) ||
+                        String(app.student?.email ?? "").toLowerCase().includes(s)
+                      );
+                    })
+                    .map((app) => {
+                      const isExpanded = expandedInternId === app.id;
+                      return (
+                        <div key={app.id} className="panel-card" style={{ padding: 0, overflow: "hidden" }}>
+                          {/* Cabeçalho do card — clicável para expandir */}
+                          <button
+                            type="button"
+                            onClick={() => setExpandedInternId(isExpanded ? null : app.id)}
+                            style={{
+                              display: "flex", alignItems: "center", gap: "0.85rem",
+                              width: "100%", padding: "1rem 1.25rem",
+                              background: isExpanded ? "var(--surface-subtle, #f8fafc)" : "transparent",
+                              border: "none", borderBottom: isExpanded ? "1px solid var(--border-color, #e2e8f0)" : "none",
+                              cursor: "pointer", textAlign: "left",
+                            }}
+                          >
+                            <span className="material-icons" style={{ fontSize: "2rem", color: "var(--accent-color, #3b82f6)", flexShrink: 0 }}>account_circle</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700 }}>{app.student?.full_name ?? "—"}</div>
+                              <div style={{ fontSize: "0.8rem", opacity: 0.65 }}>
+                                {app.student?.email ?? ""}
+                                {app.vacancy?.title ? ` · ${app.vacancy.title}` : ""}
+                                {app.accepted_at ? ` · Aceite: ${new Date(app.accepted_at).toLocaleDateString("pt-AO")}` : ""}
+                              </div>
+                            </div>
+                            <span className="material-icons" style={{ opacity: 0.5, transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "none" }}>
+                              expand_more
+                            </span>
+                          </button>
+
+                          {/* Painel de detalhe expandível */}
+                          {isExpanded && (
+                            <div style={{ padding: "1.25rem" }}>
+                              <InternDetailPanel
+                                app={app}
+                                partnerId={partner.id}
+                                isCompanyView={true}
+                                t={t}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
       {/* Tab: Applications */}
       {activeTab !== "interns" && (
