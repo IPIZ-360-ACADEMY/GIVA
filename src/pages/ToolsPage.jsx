@@ -90,7 +90,7 @@ function parseSchoolYear(value) {
 function isPastSchoolYear(value) {
   const parsed = parseSchoolYear(value);
   if (!parsed) return false;
-  return parsed.startYear < new Date().getFullYear();
+  return parsed.endYear < new Date().getFullYear();
 }
 
 // ── Tabs ─────────────────────────────────────────────────────

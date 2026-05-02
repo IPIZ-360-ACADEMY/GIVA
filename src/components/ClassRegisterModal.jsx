@@ -70,7 +70,7 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
       return;
     }
 
-    if (schoolYear.startYear < new Date().getFullYear()) {
+    if (schoolYear.endYear < new Date().getFullYear()) {
       onSave(null, t("classModal.toast.pastSchoolYear"));
       return;
     }
