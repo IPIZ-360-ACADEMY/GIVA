@@ -1208,6 +1208,8 @@ function TurmasTab({ showToast, areaId }) {
   const [showModal, setShowModal] = useState(false);
   const [query, setQuery] = useState("");
   const [areas, setAreas] = useState([]);
+  const [classAreaId, setClassAreaId] = useState("");
+  const [classAreaCourses, setClassAreaCourses] = useState([]);
   const [targetCourses, setTargetCourses] = useState([]);
   const [transferring, setTransferring] = useState(false);
   const [transferForm, setTransferForm] = useState({
@@ -1259,6 +1261,7 @@ function TurmasTab({ showToast, areaId }) {
         const nextAreas = data ?? [];
         setAreas(nextAreas);
         const fallback = areaId ?? nextAreas[0]?.id ?? "";
+        setClassAreaId((prev) => prev || fallback);
         setTransferForm((prev) => ({
           ...prev,
           areaId: prev.areaId || fallback,
@@ -1272,6 +1275,32 @@ function TurmasTab({ showToast, areaId }) {
       active = false;
     };
   }, [areaId]);
+
+  useEffect(() => {
+    if (!areaId) return;
+    setClassAreaId(areaId);
+  }, [areaId]);
+
+  useEffect(() => {
+    let active = true;
+    if (!classAreaId) {
+      setClassAreaCourses([]);
+      return;
+    }
+
+    listCoursesByArea(classAreaId, { includeInactive: false })
+      .then((data) => {
+        if (!active) return;
+        setClassAreaCourses(data ?? []);
+      })
+      .catch(() => {
+        if (active) setClassAreaCourses([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [classAreaId]);
 
   useEffect(() => {
     let active = true;
@@ -1427,26 +1456,21 @@ function TurmasTab({ showToast, areaId }) {
   const classCourseOptions = useMemo(() => {
     const options = new Set();
 
-    for (const course of targetCourses) {
+    for (const course of classAreaCourses) {
       const code = String(course?.code ?? "").trim().toUpperCase();
       if (code) options.add(code);
     }
 
-    for (const row of rows) {
-      const code = String(row?.curso ?? "").trim().toUpperCase();
-      if (code) options.add(code);
-    }
-
-    for (const item of registeredClasses) {
-      const code = String(item?.curso ?? "").trim().toUpperCase();
-      if (code) options.add(code);
-    }
-
     return Array.from(options).sort((a, b) => a.localeCompare(b));
-  }, [targetCourses, rows, registeredClasses]);
+  }, [classAreaCourses]);
 
   function handleSave(payload, validationError) {
     if (validationError) { showToast(validationError, "error"); return false; }
+
+    if (!classAreaId) {
+      showToast("Selecione uma área de formação para registar a turma.", "error");
+      return false;
+    }
 
     if (!parseSchoolYear(payload?.anoLetivo)) {
       showToast("Ano lectivo inválido. Use o formato YYYY/YYYY.", "error");
@@ -1458,7 +1482,12 @@ function TurmasTab({ showToast, areaId }) {
       return false;
     }
 
-    const payloadWithScope = { ...payload, areaId: areaId ?? null };
+    if (!classCourseOptions.includes(String(payload?.curso ?? "").trim().toUpperCase())) {
+      showToast("Selecione um curso já registado na área escolhida.", "error");
+      return false;
+    }
+
+    const payloadWithScope = { ...payload, areaId: classAreaId };
     const key = `${payloadWithScope.anoLetivo}|${payloadWithScope.curso}|${payloadWithScope.turma}`;
     const exists = rows.some((r) => `${r.anoLetivo}|${r.curso}|${r.turma}` === key) ||
       registeredClasses.some((r) => `${r.anoLetivo}|${r.curso}|${r.turma}` === key);
@@ -1660,6 +1689,10 @@ function TurmasTab({ showToast, areaId }) {
           onClose={() => setShowModal(false)}
           onSave={handleSave}
           t={t}
+          areaOptions={areas}
+          selectedAreaId={classAreaId}
+          onAreaChange={setClassAreaId}
+          areaLocked={Boolean(areaId)}
           courseOptions={classCourseOptions}
         />
       )}

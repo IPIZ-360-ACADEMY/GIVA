@@ -19,8 +19,24 @@ function parseSchoolYear(value) {
   return { startYear, endYear };
 }
 
-export default function ClassRegisterModal({ onClose, onSave, t, courseOptions = [] }) {
+export default function ClassRegisterModal({
+  onClose,
+  onSave,
+  t,
+  areaOptions = [],
+  selectedAreaId = "",
+  onAreaChange,
+  areaLocked = false,
+  courseOptions = [],
+}) {
   const [form, setForm] = useState(INITIAL_FORM);
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      curso: courseOptions.includes(current.curso) ? current.curso : "",
+    }));
+  }, [courseOptions]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -58,6 +74,11 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
       risco: 0,
       mediaNota: "0.0",
     };
+
+    if (!selectedAreaId) {
+      onSave(null, "Selecione uma área de formação.");
+      return;
+    }
 
     if (!payload.anoLetivo || !payload.curso || !payload.turma) {
       onSave(null, t("classModal.toast.required"));
@@ -106,6 +127,24 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
 
               <div className="form-grid">
                 <div className="form-field">
+                  <label htmlFor="class-area">Área</label>
+                  <select
+                    id="class-area"
+                    value={selectedAreaId}
+                    onChange={(e) => onAreaChange?.(e.target.value)}
+                    disabled={areaLocked}
+                    required
+                  >
+                    <option value="">Selecionar área...</option>
+                    {areaOptions.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {area.code} - {area.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
                   <label htmlFor="class-year">{t("classModal.label.schoolYear")}</label>
                   <input
                     id="class-year"
@@ -118,16 +157,21 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
                 </div>
 
                 <div className="form-field">
-                  <label htmlFor="class-course">{t("classModal.label.course")}</label>
-                  {courseOptions.length > 0 ? (
-                    <select id="class-course" value={form.curso} onChange={(e) => handleChange({ curso: e.target.value })}>
-                      <option value="">{t("classModal.option.selectCourse")}</option>
-                      {courseOptions.map((courseCode) => (
-                        <option key={courseCode} value={courseCode}>{courseCode}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input id="class-course" value={form.curso} placeholder="TI" onChange={(e) => handleChange({ curso: e.target.value })} />
+                  <label htmlFor="class-course">{t("classModal.label.course")} *</label>
+                  <select
+                    id="class-course"
+                    value={form.curso}
+                    onChange={(e) => handleChange({ curso: e.target.value })}
+                    disabled={courseOptions.length === 0}
+                    required
+                  >
+                    <option value="">{t("classModal.option.selectCourse")}</option>
+                    {courseOptions.map((courseCode) => (
+                      <option key={courseCode} value={courseCode}>{courseCode}</option>
+                    ))}
+                  </select>
+                  {courseOptions.length === 0 && (
+                    <small className="form-hint">Sem cursos registados nesta área.</small>
                   )}
                 </div>
 
@@ -147,7 +191,9 @@ export default function ClassRegisterModal({ onClose, onSave, t, courseOptions =
 
         <div className="pmodal-footer">
           <button className="btn ghost" type="button" onClick={onClose}>{t("classModal.cancel")}</button>
-          <button className="btn primary" type="submit" form="class-register-form">{t("classModal.save")}</button>
+          <button className="btn primary" type="submit" form="class-register-form" disabled={!selectedAreaId || courseOptions.length === 0}>
+            {t("classModal.save")}
+          </button>
         </div>
       </div>
     </div>,
