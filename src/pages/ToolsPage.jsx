@@ -25,10 +25,11 @@ import { matchesSearch } from "../utils/search.js";
 // ── helpers ──────────────────────────────────────────────────
 function Avatar({ url, name, size = 40 }) {
   const initials = (name ?? "?").slice(0, 1).toUpperCase();
-  if (url) {
+  const safeUrl = typeof url === "string" && url.startsWith("https://") ? url : null;
+  if (safeUrl) {
     return (
       <img
-        src={url}
+        src={safeUrl}
         alt={name ?? ""}
         className="tools-avatar"
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover" }}
@@ -224,6 +225,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
   const [success, setSuccess] = useState(false);
   const [credentialInfo, setCredentialInfo] = useState(null);
   const [isExterno, setIsExterno] = useState(false);
+  const [turmaCustom, setTurmaCustom] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -318,6 +320,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
 
     if (key === "areaId") {
       setForm((prev) => ({ ...prev, areaId: value, courseId: "", curso: "", processo: "", turma: "" }));
+      setTurmaCustom(false);
       setError("");
       setSuccess(false);
       setCredentialInfo(null);
@@ -447,6 +450,7 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
       setPhotoFile(null);
       setPhotoPreview(null);
       setIsExterno(false);
+      setTurmaCustom(false);
       onRegistered?.();
       if (registered.authAlreadyExists) {
         showToast(`Aluno registado. A conta ${registered.loginEmail} já existia.`, "success");
@@ -549,19 +553,42 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
           <div className="form-field">
             <label>Turma</label>
             {filteredClasses.length > 0 ? (
-              <select value={form.turma} onChange={(e) => set("turma", e.target.value)}>
-                <option value="">Selecionar turma...</option>
-                {filteredClasses.map((cls) => (
-                  <option key={cls.id} value={cls.turma}>
-                    {cls.turma} — {cls.curso} ({cls.anoLetivo})
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  value={turmaCustom ? "__nova__" : (form.turma || "")}
+                  onChange={(e) => {
+                    if (e.target.value === "__nova__") {
+                      setTurmaCustom(true);
+                      set("turma", "");
+                    } else {
+                      setTurmaCustom(false);
+                      set("turma", e.target.value);
+                    }
+                  }}
+                >
+                  <option value="">Selecionar turma...</option>
+                  {filteredClasses.map((cls) => (
+                    <option key={cls.id} value={cls.turma}>
+                      {cls.turma} — {cls.curso} ({cls.anoLetivo})
+                    </option>
+                  ))}
+                  <option value="__nova__">Outra turma (escrever manualmente)…</option>
+                </select>
+                {turmaCustom && (
+                  <input
+                    value={form.turma}
+                    onChange={(e) => set("turma", e.target.value)}
+                    placeholder="Ex: 11-TI-A"
+                    autoFocus
+                    style={{ marginTop: "0.4rem" }}
+                  />
+                )}
+              </>
             ) : (
               <input
                 value={form.turma}
                 onChange={(e) => set("turma", e.target.value)}
-                placeholder={form.areaId ? "Sem turmas registadas para esta área" : "Ex: 11-TI-A"}
+                placeholder={form.areaId ? "Sem turmas nesta área — escreva o nome" : "Ex: 11-TI-A"}
               />
             )}
           </div>
