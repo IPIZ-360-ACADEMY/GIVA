@@ -225,7 +225,6 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
   const [success, setSuccess] = useState(false);
   const [credentialInfo, setCredentialInfo] = useState(null);
   const [isExterno, setIsExterno] = useState(false);
-  const [turmaCustom, setTurmaCustom] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -320,7 +319,6 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
 
     if (key === "areaId") {
       setForm((prev) => ({ ...prev, areaId: value, courseId: "", curso: "", processo: "", turma: "" }));
-      setTurmaCustom(false);
       setError("");
       setSuccess(false);
       setCredentialInfo(null);
@@ -450,7 +448,6 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
       setPhotoFile(null);
       setPhotoPreview(null);
       setIsExterno(false);
-      setTurmaCustom(false);
       onRegistered?.();
       if (registered.authAlreadyExists) {
         showToast(`Aluno registado. A conta ${registered.loginEmail} já existia.`, "success");
@@ -551,45 +548,20 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
             />
           </div>
           <div className="form-field">
-            <label>Turma</label>
+            <label>Turma *</label>
             {filteredClasses.length > 0 ? (
-              <>
-                <select
-                  value={turmaCustom ? "__nova__" : (form.turma || "")}
-                  onChange={(e) => {
-                    if (e.target.value === "__nova__") {
-                      setTurmaCustom(true);
-                      set("turma", "");
-                    } else {
-                      setTurmaCustom(false);
-                      set("turma", e.target.value);
-                    }
-                  }}
-                >
-                  <option value="">Selecionar turma...</option>
-                  {filteredClasses.map((cls) => (
-                    <option key={cls.id} value={cls.turma}>
-                      {cls.turma} — {cls.curso} ({cls.anoLetivo})
-                    </option>
-                  ))}
-                  <option value="__nova__">Outra turma (escrever manualmente)…</option>
-                </select>
-                {turmaCustom && (
-                  <input
-                    value={form.turma}
-                    onChange={(e) => set("turma", e.target.value)}
-                    placeholder="Ex: 11-TI-A"
-                    autoFocus
-                    style={{ marginTop: "0.4rem" }}
-                  />
-                )}
-              </>
+              <select value={form.turma} onChange={(e) => set("turma", e.target.value)} required>
+                <option value="">Selecionar turma...</option>
+                {filteredClasses.map((cls) => (
+                  <option key={cls.id} value={cls.turma}>
+                    {cls.turma} — {cls.curso} ({cls.anoLetivo})
+                  </option>
+                ))}
+              </select>
             ) : (
-              <input
-                value={form.turma}
-                onChange={(e) => set("turma", e.target.value)}
-                placeholder={form.areaId ? "Sem turmas nesta área — escreva o nome" : "Ex: 11-TI-A"}
-              />
+              <div style={{ padding: "0.6rem", borderRadius: "0.4rem", border: "1px solid var(--border-light)", backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                {form.areaId ? "Nenhuma turma registada para esta área. Contacta o administrador." : "Seleciona primeiro uma área de formação"}
+              </div>
             )}
           </div>
           <div className="form-field">
