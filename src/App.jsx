@@ -23,6 +23,8 @@ const StudentProgressPage = lazy(() => import("./pages/StudentProgressPage.jsx")
 const TrainingAreasPage = lazy(() => import("./pages/TrainingAreasPage.jsx"));
 const EvaluationsPageEnhanced = lazy(() => import("./pages/EvaluationsPageEnhanced.jsx"));
 const CompanyDashboardPage = lazy(() => import("./pages/CompanyDashboardPage.jsx"));
+const RbacStudentJobsPage = lazy(() => import("./pages/RbacStudentJobsPage.jsx"));
+const RbacCompanyApplicationsPage = lazy(() => import("./pages/RbacCompanyApplicationsPage.jsx"));
 const SignupPage =  lazy(() => import("./pages/SignupPage.jsx"));
 const HomePage = lazy(() => import("./pages/HomePage.jsx"));
 const ChatPage = lazy(() => import("./pages/ChatPage.jsx"));
@@ -51,6 +53,8 @@ const APP_ROUTES = [
   { path: "/perfil/:studentId", element: <StudentProfilePage /> },
   { path: "/progresso/:studentId", element: <StudentProgressPage /> },
   { path: "/empresa", element: <CompanyDashboardPage /> },
+  { path: "/rbac/vagas", element: <RbacStudentJobsPage /> },
+  { path: "/rbac/candidaturas", element: <RbacCompanyApplicationsPage /> },
   { path: "/admin", element: <AdminPage /> },
   { path: "/ferramentas", element: <ToolsPage /> },
   { path: "/utilizadores", element: <LegacyRedirect to="/ferramentas?tab=utilizadores" /> },

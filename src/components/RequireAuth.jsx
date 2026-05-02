@@ -64,6 +64,8 @@ export default function RequireAuth({ children }) {
     isCompanyUser,
     isStudentUser,
     isExternalUser,
+    isCoordinatorUser,
+    isTeacherUser,
     isSuperAdmin,
     isAdmin,
   } = resolveAccessProfile({
@@ -78,7 +80,7 @@ export default function RequireAuth({ children }) {
 
   // Empresa: só pode aceder às rotas de empresa
   if (isCompanyUser) {
-    const companyAllowedRoutes = ["/empresa", "/notificacoes", "/chat", "/config"];
+    const companyAllowedRoutes = ["/empresa", "/rbac/candidaturas", "/notificacoes", "/chat", "/config"];
     const canAccessPath = companyAllowedRoutes.some((basePath) =>
       location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
     );
@@ -104,6 +106,7 @@ export default function RequireAuth({ children }) {
     const studentAllowedRoutes = [
       "/",
       "/home",
+      "/rbac/vagas",
       "/estagios",
       "/avaliacoes",
       "/documentos",
@@ -129,6 +132,29 @@ export default function RequireAuth({ children }) {
     // Alunos só podem aceder ao próprio perfil e progresso.
     if (targetStudentId && user?.id && targetStudentId !== user.id) {
       return <Navigate to={`/perfil/${user.id}`} replace state={{ from: location.pathname }} />;
+    }
+  }
+
+  // Coordenador e Professor: escopo académico próprio + vistas RBAC
+  if ((isCoordinatorUser || isTeacherUser) && !isAdmin) {
+    const academicAllowedRoutes = [
+      "/",
+      "/home",
+      "/rbac/vagas",
+      "/empresa",
+      "/documentos",
+      "/chat",
+      "/notificacoes",
+      "/config",
+      "/turmas",
+      "/turmas/detalhe",
+    ];
+    const canAccessPath = academicAllowedRoutes.some((basePath) =>
+      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
+    );
+
+    if (!canAccessPath) {
+      return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
   }
 

@@ -42,6 +42,8 @@ export default function AppShell() {
     isCompanyUser,
     isStudentUser,
     isExternalUser,
+    isCoordinatorUser,
+    isTeacherUser,
     isSuperAdmin,
     isAdmin1,
     isAdmin,
@@ -89,6 +91,7 @@ export default function AppShell() {
       if (isCompanyUser) {
         return [
           { to: "/empresa", icon: "business_center", label: t("nav.companyDashboard") },
+          { to: "/rbac/candidaturas", icon: "fact_check", label: "Candidaturas RBAC" },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
           { to: "/config", icon: "settings", label: t("nav.settings") },
@@ -100,8 +103,22 @@ export default function AppShell() {
         return [
           { to: "/home", icon: "public", label: "Comunidade" },
           { to: "/", icon: "dashboard", label: t("nav.dashboard") },
+          { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
           { to: "/estagios", icon: "work_history", label: t("nav.internships") },
           { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
+          { to: "/documentos", icon: "description", label: t("nav.documents") },
+          { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
+          { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
+          { to: "/config", icon: "settings", label: t("nav.settings") },
+        ];
+      }
+
+      if (isCoordinatorUser || isTeacherUser) {
+        return [
+          { to: "/home", icon: "public", label: "Comunidade" },
+          { to: "/", icon: "dashboard", label: t("nav.dashboard") },
+          { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
+          { to: "/turmas", icon: "school", label: "Turmas" },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
@@ -124,11 +141,11 @@ export default function AppShell() {
         { to: "/config", icon: "settings", label: t("nav.settings") },
       ];
     },
-    [t, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isAdmin1, isSuperAdmin]
+    [t, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isCoordinatorUser, isTeacherUser, isAdmin1, isSuperAdmin]
   );
 
   const navSections = useMemo(() => {
-    const baseRoutes = new Set(["/home", "/", "/estagios", "/avaliacoes", "/documentos", "/parceiros", "/empresa"]);
+    const baseRoutes = new Set(["/home", "/", "/rbac/vagas", "/rbac/candidaturas", "/estagios", "/avaliacoes", "/documentos", "/parceiros", "/empresa", "/turmas"]);
     const collaborationRoutes = new Set(["/chat", "/notificacoes"]);
     const adminRoutes = new Set(["/admin", "/ferramentas", "/ferramentas?tab=utilizadores", "/config"]);
 

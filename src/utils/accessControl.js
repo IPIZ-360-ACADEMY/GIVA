@@ -1,5 +1,15 @@
-const KNOWN_ACCOUNT_TYPES = new Set(["student", "company", "admin", "external"]);
-const KNOWN_PLATFORM_ROLES = new Set(["SUPER_ADMIN", "ADMIN_1", "COMPANY", "STUDENT", "EXTERNAL", "authenticated"]);
+const KNOWN_ACCOUNT_TYPES = new Set(["student", "company", "admin", "external", "coordinator", "teacher"]);
+const KNOWN_PLATFORM_ROLES = new Set([
+  "SUPER_ADMIN",
+  "ADMIN",
+  "ADMIN_1",
+  "COORDINATOR",
+  "TEACHER",
+  "COMPANY",
+  "STUDENT",
+  "EXTERNAL",
+  "authenticated",
+]);
 
 export function normalizeAccountType(value, fallback = "external") {
   const normalized = String(value ?? "").trim().toLowerCase();
@@ -29,6 +39,8 @@ export function getAllowedRolesForType(type) {
   const normalizedType = normalizeAccountType(type);
 
   if (normalizedType === "company") return ["COMPANY"];
+  if (normalizedType === "coordinator") return ["COORDINATOR", "ADMIN", "ADMIN_1", "SUPER_ADMIN"];
+  if (normalizedType === "teacher") return ["TEACHER", "ADMIN", "ADMIN_1", "SUPER_ADMIN"];
   if (normalizedType === "admin") return ["ADMIN_1", "SUPER_ADMIN"];
   if (normalizedType === "student") return ["authenticated", "STUDENT"];
   return ["authenticated", "EXTERNAL"];
@@ -61,8 +73,11 @@ export function resolveAccessProfile({ role, type }) {
   const normalizedType = normalizeAccountType(type);
   const normalizedRole = defaultRoleForAccountType(normalizedType, role);
   const isSuperAdmin = normalizedRole === "SUPER_ADMIN";
+  const isAdminCore = normalizedRole === "ADMIN";
   const isAdmin1 = normalizedRole === "ADMIN_1";
-  const isAdmin = isSuperAdmin || isAdmin1 || normalizedType === "admin";
+  const isCoordinatorUser = normalizedRole === "COORDINATOR" || normalizedType === "coordinator";
+  const isTeacherUser = normalizedRole === "TEACHER" || normalizedType === "teacher";
+  const isAdmin = isSuperAdmin || isAdminCore || isAdmin1 || normalizedType === "admin";
   const isCompanyUser = normalizedType === "company" || normalizedRole === "COMPANY";
   const isStudentUser = normalizedType === "student" || normalizedRole === "STUDENT";
   const isExternalUser = normalizedType === "external" || normalizedRole === "EXTERNAL";
@@ -71,8 +86,11 @@ export function resolveAccessProfile({ role, type }) {
     normalizedType,
     normalizedRole,
     isSuperAdmin,
+    isAdminCore,
     isAdmin1,
     isAdmin,
+    isCoordinatorUser,
+    isTeacherUser,
     isCompanyUser,
     isStudentUser,
     isExternalUser,
