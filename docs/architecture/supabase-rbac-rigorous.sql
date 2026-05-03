@@ -5,14 +5,26 @@
 
 create schema if not exists rbac;
 
-create type if not exists rbac.user_role as enum (
-  'SUPER_ADMIN',
-  'ADMIN',
-  'COORDINATOR',
-  'TEACHER',
-  'STUDENT',
-  'COMPANY'
-);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_type t
+    join pg_namespace n on n.oid = t.typnamespace
+    where t.typname = 'user_role'
+      and n.nspname = 'rbac'
+  ) then
+    create type rbac.user_role as enum (
+      'SUPER_ADMIN',
+      'ADMIN',
+      'COORDINATOR',
+      'TEACHER',
+      'STUDENT',
+      'COMPANY'
+    );
+  end if;
+end
+$$;
 
 create table if not exists rbac.users (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -364,13 +376,13 @@ begin
     raise exception 'Status invalido';
   end if;
 
-  select a.*, j.company_id
-  into v_app, v_job_company
+  select j.company_id
+  into v_job_company
   from rbac.applications a
   join rbac.jobs j on j.id = a.job_id
   where a.id = p_application_id;
 
-  if v_app.id is null then
+  if not found then
     raise exception 'Candidatura nao encontrada';
   end if;
 
