@@ -434,6 +434,25 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
         loginPassword: form.password,
       });
 
+      if (registered.authAlreadyExists) {
+        setSuccess(false);
+        setCredentialInfo({
+          loginEmail: registered.loginEmail,
+          authCreated: false,
+          authAlreadyExists: true,
+        });
+        setError(
+          `Já existe conta de acesso para este processo (${registered.loginEmail}). ` +
+          "A password introduzida agora não substitui a password antiga."
+        );
+        showToast(
+          `Conta já existente para ${registered.loginEmail}. A password anterior mantém-se.`,
+          "error"
+        );
+        setSubmitting(false);
+        return;
+      }
+
       setSuccess(true);
       setCredentialInfo({
         loginEmail: registered.loginEmail,
