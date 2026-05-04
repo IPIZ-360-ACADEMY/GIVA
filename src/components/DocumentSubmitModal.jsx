@@ -160,9 +160,13 @@ export default function DocumentSubmitModal({
                   <input
                     id="doc-folder-path"
                     value={form.folderPath ?? ""}
-                    placeholder="Ex: contratos/2026/fornecedores"
+                    placeholder={form.contextType === "class" ? "Gerado automaticamente por área/curso/turma" : "Ex: contratos/2026/fornecedores"}
+                    readOnly={form.contextType === "class"}
                     onChange={(event) => handleFolderPathChange(event.target.value)}
                   />
+                  {form.contextType === "class" ? (
+                    <small className="meta">A pasta da turma é atribuída automaticamente para manter a organização.</small>
+                  ) : null}
                 </div>
 
                 <div className="form-field">

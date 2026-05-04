@@ -4,9 +4,11 @@ import { matchesSearch } from "../utils/search.js";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DocumentSubmitModal from "../components/DocumentSubmitModal.jsx";
-import { useAccessProfile } from "../contexts/AuthContext.jsx";
+import { useAccessProfile, useAuth } from "../contexts/AuthContext.jsx";
 import { listManualClasses } from "../services/classesService.js";
 import { listPartners } from "../services/partnersService.js";
+import { listCoursesByArea, listTrainingAreas } from "../services/trainingAreaService.js";
+import { filterByCoordinatorScope, hasCoordinatorScope } from "../utils/coordinationScope.js";
 import {
   bulkUploadDocuments,
   canUseDocumentsApi,
@@ -145,6 +147,54 @@ function getDocFolderPath(doc) {
   return normalizeFolderPath(doc.folderPath) || buildLegacyPath(doc.folderName, doc.subfolderName);
 }
 
+function normalizeFolderSegment(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/[\\/]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+}
+
+function getAreaLabel(areaRow, areaId) {
+  if (!areaRow) {
+    return areaId ? `area-${String(areaId).slice(0, 8)}` : "area-sem-definicao";
+  }
+  const raw = areaRow.code || areaRow.name || areaId;
+  const segment = normalizeFolderSegment(raw);
+  return segment ? `area-${segment}` : `area-${String(areaId ?? "sem-definicao").slice(0, 8)}`;
+}
+
+function getCourseLabel(courseLike, fallbackCode) {
+  const raw = courseLike?.code || courseLike?.name || fallbackCode;
+  const segment = normalizeFolderSegment(raw);
+  if (!segment) return "curso-sem-definicao";
+  return `curso-${segment}`;
+}
+
+function getClassLabel(classLike) {
+  const raw = classLike?.turma || classLike?.className || classLike?.id;
+  const segment = normalizeFolderSegment(raw);
+  if (!segment) return "turma-sem-definicao";
+  return `turma-${segment}`;
+}
+
+function buildClassHierarchyPath(classRow, areaById, coursesByArea, fallbackAreaId) {
+  const resolvedAreaId = classRow?.areaId || fallbackAreaId || null;
+  const areaLabel = getAreaLabel(areaById.get(String(resolvedAreaId ?? "")), resolvedAreaId);
+  const areaCourses = coursesByArea.get(String(resolvedAreaId ?? "")) ?? [];
+  const mappedCourse = areaCourses.find((course) => String(course.code ?? "").toUpperCase() === String(classRow?.curso ?? "").toUpperCase());
+  const courseLabel = getCourseLabel(mappedCourse, classRow?.curso);
+  const classLabel = getClassLabel(classRow);
+
+  return normalizeFolderPath(`${areaLabel}/${courseLabel}/${classLabel}`);
+}
+
+function buildGeneralAreaPath(areaById, areaId) {
+  return normalizeFolderPath(`${getAreaLabel(areaById.get(String(areaId ?? "")), areaId)}/geral`);
+}
+
 function getImmediateChildrenFolders(docs, currentPath) {
   const current = normalizeFolderPath(currentPath);
   const baseSegments = splitFolderPath(current);
@@ -239,7 +289,8 @@ function toSafeBlobUrl(value) {
 
 export default function DocumentsPage() {
   const { query, showToast, t } = useOutletContext();
-  const { isAdmin } = useAccessProfile();
+  const { isAdmin, isCoordinatorUser } = useAccessProfile();
+  const { authProfile } = useAuth();
   const copy = {
     review: t("common.inReview"),
     published: t("common.approved"),
@@ -287,6 +338,8 @@ export default function DocumentsPage() {
   });
   const [classOptions, setClassOptions] = useState([]);
   const [partnerOptions, setPartnerOptions] = useState([]);
+  const [areaOptions, setAreaOptions] = useState([]);
+  const [coursesByArea, setCoursesByArea] = useState(new Map());
   // Admin: upload em lote
   const [bulkFiles, setBulkFiles] = useState([]);
   const [bulkProgress, setBulkProgress] = useState([]); // [{name, status: 'pending'|'ok'|'error', msg}]
@@ -296,6 +349,38 @@ export default function DocumentsPage() {
   const previewBlobUrlRef = useRef("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
+
+  const effectiveFallbackAreaId = useMemo(() => authProfile?.areaId ?? null, [authProfile?.areaId]);
+  const areaById = useMemo(() => new Map(areaOptions.map((area) => [String(area.id), area])), [areaOptions]);
+  const classById = useMemo(() => new Map(classOptions.map((item) => [String(item.id), item])), [classOptions]);
+
+  const scopedClassOptions = useMemo(() => {
+    if (!isCoordinatorUser) return classOptions;
+    return filterByCoordinatorScope(classOptions, authProfile, {
+      areaKeys: ["areaId", "area_id"],
+      courseCodeKeys: ["curso", "course", "course_code"],
+    });
+  }, [classOptions, isCoordinatorUser, authProfile]);
+
+  const scopedClassIds = useMemo(() => new Set(scopedClassOptions.map((row) => String(row.id))), [scopedClassOptions]);
+
+  const autoHierarchyFolders = useMemo(() => {
+    const folders = new Set();
+
+    for (const classRow of scopedClassOptions) {
+      const fullPath = buildClassHierarchyPath(classRow, areaById, coursesByArea, effectiveFallbackAreaId);
+      const segments = splitFolderPath(fullPath);
+      for (let i = 1; i <= segments.length; i += 1) {
+        folders.add(segments.slice(0, i).join("/"));
+      }
+    }
+
+    if (!folders.size && effectiveFallbackAreaId) {
+      folders.add(buildGeneralAreaPath(areaById, effectiveFallbackAreaId));
+    }
+
+    return Array.from(folders).sort((a, b) => a.localeCompare(b, "pt", { sensitivity: "base" }));
+  }, [scopedClassOptions, areaById, coursesByArea, effectiveFallbackAreaId]);
 
   function resetFormState() {
     setForm({
@@ -340,6 +425,9 @@ export default function DocumentsPage() {
       versao: "v1.0",
       categoria: "geral",
       folderPath: form.folderPath,
+      contextType: form.contextType,
+      classGroupId: form.classGroupId,
+      partnerId: form.partnerId,
       folderName: form.folderName,
       subfolderName: form.subfolderName,
     });
@@ -364,7 +452,7 @@ export default function DocumentsPage() {
     setBulkFiles([]);
     setBulkUploading(false);
     if (bulkInputRef.current) bulkInputRef.current.value = "";
-  }, [bulkFiles, apiMode, showToast]);
+  }, [bulkFiles, apiMode, showToast, form.folderPath, form.contextType, form.classGroupId, form.partnerId, form.folderName, form.subfolderName]);
 
   useEffect(() => {
     let active = true;
@@ -442,6 +530,29 @@ export default function DocumentsPage() {
   }, []);
 
   useEffect(() => {
+    if (form.contextType !== "class") {
+      return;
+    }
+
+    const selectedClass = classById.get(String(form.classGroupId ?? ""));
+    if (!selectedClass) {
+      return;
+    }
+
+    const autoPath = buildClassHierarchyPath(selectedClass, areaById, coursesByArea, effectiveFallbackAreaId);
+    if (!autoPath || autoPath === form.folderPath) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      folderPath: autoPath,
+      folderName: splitFolderPath(autoPath)[0] ?? "",
+      subfolderName: splitFolderPath(autoPath)[1] ?? "",
+    }));
+  }, [form.contextType, form.classGroupId, form.folderPath, classById, areaById, coursesByArea, effectiveFallbackAreaId]);
+
+  useEffect(() => {
     try {
       localStorage.setItem(LOCAL_FOLDERS_STORAGE_KEY, JSON.stringify(virtualFolders));
     } catch {
@@ -491,9 +602,10 @@ export default function DocumentsPage() {
 
     async function loadContextOptions() {
       try {
-        const [classesRows, partnersRows] = await Promise.all([
+        const [classesRows, partnersRows, areasRows] = await Promise.all([
           listManualClasses().catch(() => []),
           canUseDocumentsApi() ? listPartners().catch(() => []) : Promise.resolve([]),
+          listTrainingAreas().catch(() => []),
         ]);
 
         if (!active) {
@@ -502,12 +614,32 @@ export default function DocumentsPage() {
 
         setClassOptions(Array.isArray(classesRows) ? classesRows : []);
         setPartnerOptions(Array.isArray(partnersRows) ? partnersRows : []);
+
+        const safeAreas = Array.isArray(areasRows) ? areasRows : [];
+        setAreaOptions(safeAreas);
+
+        const perAreaPairs = await Promise.all(
+          safeAreas.map(async (area) => {
+            const areaId = String(area.id ?? "");
+            if (!areaId) return [areaId, []];
+            const rows = await listCoursesByArea(areaId).catch(() => []);
+            return [areaId, Array.isArray(rows) ? rows : []];
+          })
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setCoursesByArea(new Map(perAreaPairs));
       } catch {
         if (!active) {
           return;
         }
         setClassOptions([]);
         setPartnerOptions([]);
+        setAreaOptions([]);
+        setCoursesByArea(new Map());
       }
     }
 
@@ -518,26 +650,47 @@ export default function DocumentsPage() {
     };
   }, []);
 
+  const scopedDocs = useMemo(() => {
+    if (!isCoordinatorUser || !hasCoordinatorScope(authProfile)) {
+      return docs;
+    }
+
+    return docs.filter((doc) => {
+      if (doc.contextType === "class") {
+        return scopedClassIds.has(String(doc.classGroupId ?? ""));
+      }
+
+      // Compatibilidade com registos antigos sem areaId: não ocultar por ausência de metadado.
+      if (!doc.areaId) {
+        return true;
+      }
+
+      return filterByCoordinatorScope([doc], authProfile, {
+        areaKeys: ["areaId", "area_id"],
+      }).length > 0;
+    });
+  }, [docs, isCoordinatorUser, authProfile, scopedClassIds]);
+
   const quickFilteredDocs = useMemo(() => {
     const isArchived = (doc) => String(doc.estado ?? "").toLowerCase() === "archived";
 
     if (quickFilter === "general") {
-      return docs.filter((doc) => doc.contextType === "general" && !isArchived(doc));
+      return scopedDocs.filter((doc) => doc.contextType === "general" && !isArchived(doc));
     }
     if (quickFilter === "class") {
-      return docs.filter((doc) => doc.contextType === "class" && !isArchived(doc));
+      return scopedDocs.filter((doc) => doc.contextType === "class" && !isArchived(doc));
     }
     if (quickFilter === "company") {
-      return docs.filter((doc) => doc.contextType === "company" && !isArchived(doc));
+      return scopedDocs.filter((doc) => doc.contextType === "company" && !isArchived(doc));
     }
     if (quickFilter === "pinned") {
-      return docs.filter((doc) => Boolean(doc.isPinned) && !isArchived(doc));
+      return scopedDocs.filter((doc) => Boolean(doc.isPinned) && !isArchived(doc));
     }
     if (quickFilter === "archived") {
-      return docs.filter((doc) => isArchived(doc));
+      return scopedDocs.filter((doc) => isArchived(doc));
     }
-    return docs.filter((doc) => !isArchived(doc));
-  }, [docs, quickFilter]);
+    return scopedDocs.filter((doc) => !isArchived(doc));
+  }, [scopedDocs, quickFilter]);
 
   const explorerSourceDocs = useMemo(
     () => quickFilteredDocs.filter((doc) => matchesSearch(query, `${titleLabel(doc.titulo, t)} ${doc.tipo} ${doc.versao} ${doc.categoria} ${doc.descricao} ${stateLabel(doc.estado, copy)} ${getDocFolderPath(doc)}`)),
@@ -547,6 +700,9 @@ export default function DocumentsPage() {
   const explorerFolderChildren = useMemo(
     () => {
       const allPaths = new Set(virtualFolders.map((path) => normalizeFolderPath(path)).filter(Boolean));
+      for (const autoPath of autoHierarchyFolders) {
+        allPaths.add(normalizeFolderPath(autoPath));
+      }
 
       for (const doc of explorerSourceDocs) {
         const path = getDocFolderPath(doc);
@@ -562,13 +718,17 @@ export default function DocumentsPage() {
 
       return getImmediateChildrenFromPaths(Array.from(allPaths), currentFolderPath);
     },
-    [explorerSourceDocs, currentFolderPath, virtualFolders]
+    [explorerSourceDocs, currentFolderPath, virtualFolders, autoHierarchyFolders]
   );
 
   const allKnownFolderPaths = useMemo(() => {
     const allPaths = new Set(virtualFolders.map((path) => normalizeFolderPath(path)).filter(Boolean));
 
-    for (const doc of docs) {
+    for (const autoPath of autoHierarchyFolders) {
+      allPaths.add(normalizeFolderPath(autoPath));
+    }
+
+    for (const doc of scopedDocs) {
       const path = getDocFolderPath(doc);
       if (!path) {
         continue;
@@ -581,7 +741,7 @@ export default function DocumentsPage() {
     }
 
     return Array.from(allPaths).sort((a, b) => a.localeCompare(b, "pt", { sensitivity: "base" }));
-  }, [docs, virtualFolders]);
+  }, [scopedDocs, virtualFolders, autoHierarchyFolders]);
 
   const explorerVisibleDocs = useMemo(() => {
     const current = normalizeFolderPath(currentFolderPath);
@@ -1122,14 +1282,25 @@ export default function DocumentsPage() {
     setSubmitting(true);
 
     try {
+      const selectedClass = classById.get(String(form.classGroupId ?? ""));
+      const autoClassPath = form.contextType === "class" && selectedClass
+        ? buildClassHierarchyPath(selectedClass, areaById, coursesByArea, effectiveFallbackAreaId)
+        : "";
+      const autoGeneralPath = !autoClassPath && effectiveFallbackAreaId
+        ? buildGeneralAreaPath(areaById, effectiveFallbackAreaId)
+        : "";
+
       let uploadData = null;
       if (selectedFile) {
-        uploadData = await uploadDocumentFile(selectedFile, form);
+        uploadData = await uploadDocumentFile(selectedFile, {
+          ...form,
+          folderPath: autoClassPath || normalizeFolderPath(form.folderPath) || autoGeneralPath,
+        });
       }
 
       const payload = {
         ...form,
-        folderPath: normalizeFolderPath(form.folderPath || [form.folderName, form.subfolderName].filter(Boolean).join("/")),
+        folderPath: autoClassPath || normalizeFolderPath(form.folderPath || [form.folderName, form.subfolderName].filter(Boolean).join("/")) || autoGeneralPath,
         arquivoUrl: uploadData?.arquivoUrl ?? form.arquivoUrl,
         arquivoPath: uploadData?.arquivoPath ?? form.arquivoPath,
       };
@@ -1637,7 +1808,7 @@ export default function DocumentsPage() {
           }}
           onFormChange={(partial) => setForm((current) => ({ ...current, ...partial }))}
           onFileChange={setSelectedFile}
-          classOptions={classOptions}
+          classOptions={scopedClassOptions}
           partnerOptions={partnerOptions}
           t={t}
         />
