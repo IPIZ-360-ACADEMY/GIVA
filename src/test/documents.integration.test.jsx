@@ -23,9 +23,9 @@ const mocks = vi.hoisted(() => {
         classGroupId: null,
         partnerId: null,
         isPinned: false,
-        folderPath: "",
-        folderName: "",
-        subfolderName: "",
+        folderPath: "area-11111111/geral",
+        folderName: "area-11111111",
+        subfolderName: "geral",
         createdAt: "2026-04-20T10:00:00.000Z",
         updatedAt: "2026-04-20T10:00:00.000Z",
       },
@@ -88,9 +88,9 @@ const mocks = vi.hoisted(() => {
           classGroupId: null,
           partnerId: null,
           isPinned: false,
-          folderPath: "",
-          folderName: "",
-          subfolderName: "",
+          folderPath: "area-11111111/geral",
+          folderName: "area-11111111",
+          subfolderName: "geral",
           createdAt: "2026-04-20T10:00:00.000Z",
           updatedAt: "2026-04-20T10:00:00.000Z",
         },
@@ -190,22 +190,18 @@ describe("Documents integration", () => {
     URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
-  it("executa upload em lote, abre preview e remove documento", async () => {
-    const { container } = render(<DocumentsPage />);
+  it("abre preview e remove documento dentro da area", async () => {
+    render(<DocumentsPage />);
 
-    await screen.findByRole("heading", { name: /centro documental/i });
+    const areaLabel = screen.getByText(/^11111111$/i);
+    fireEvent.click(areaLabel.closest(".doc-folder-card"));
 
-    const fileInput = container.querySelector("#admin-bulk-input");
-    const qaFile = new File(["id,descricao\n1,qa"], "qa-integration.csv", { type: "text/csv" });
-    fireEvent.change(fileInput, { target: { files: [qaFile] } });
+    await screen.findByPlaceholderText(/pesquisar pastas/i);
 
-    fireEvent.click(screen.getByRole("button", { name: /guardar no sistema/i }));
+    const generalLabel = screen.getByText(/^geral$/i);
+    fireEvent.click(generalLabel.closest(".doc-folder-card"));
 
-    await waitFor(() => {
-      expect(mocks.bulkUploadDocuments).toHaveBeenCalledTimes(1);
-    });
-
-    const uploadedTitle = await screen.findByRole("heading", { name: /qa-integration\.csv/i });
+    const uploadedTitle = await screen.findByRole("heading", { name: /seeded-preview\.pdf/i });
     const uploadedCard = uploadedTitle.closest("article");
 
     fireEvent.click(within(uploadedCard).getByRole("button", { name: /^abrir$/i }));
@@ -222,39 +218,25 @@ describe("Documents integration", () => {
 
     await waitFor(() => {
       expect(mocks.deleteDocument).toHaveBeenCalledTimes(1);
-      expect(screen.queryByRole("heading", { name: /qa-integration\.csv/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: /seeded-preview\.pdf/i })).not.toBeInTheDocument();
     });
   });
 
-  it("mostra erro e mantém grelha estável quando upload em lote falha", async () => {
-    const { container } = render(<DocumentsPage />);
+  it("mostra apenas areas na raiz e ativa criacao ao entrar na area", async () => {
+    render(<DocumentsPage />);
 
-    await screen.findByRole("heading", { name: /centro documental/i });
+    expect(screen.queryByPlaceholderText(/pesquisar pastas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /novo documento da/i })).not.toBeInTheDocument();
 
-    const fileInput = container.querySelector("#admin-bulk-input");
-    const brokenFile = new File(["id,descricao\n2,broken"], "qa-broken.csv", { type: "text/csv" });
+    expect(screen.getByText(/^11111111$/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /seeded-preview\.pdf/i })).not.toBeInTheDocument();
 
-    mocks.bulkUploadDocuments.mockResolvedValueOnce([
-      {
-        file: brokenFile,
-        result: null,
-        error: new Error("Falha storage"),
-      },
-    ]);
-
-    fireEvent.change(fileInput, { target: { files: [brokenFile] } });
-    fireEvent.click(screen.getByRole("button", { name: /guardar no sistema/i }));
+    const areaLabel = screen.getByText(/^11111111$/i);
+    fireEvent.click(areaLabel.closest(".doc-folder-card"));
 
     await waitFor(() => {
-      expect(mocks.bulkUploadDocuments).toHaveBeenCalledTimes(1);
-      expect(mocks.showToast).toHaveBeenCalledWith(
-        expect.stringContaining("falharam"),
-        "error"
-      );
+      expect(screen.getByPlaceholderText(/pesquisar pastas/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /novo documento da/i })).toBeEnabled();
     });
-
-    expect(screen.getByText(/qa-broken\.csv/i)).toBeInTheDocument();
-    expect(screen.getByText(/falha storage/i)).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: /qa-broken\.csv/i })).not.toBeInTheDocument();
   });
 });

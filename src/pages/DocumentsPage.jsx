@@ -1,7 +1,6 @@
 import { useOutletContext } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchesSearch } from "../utils/search.js";
-import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DocumentSubmitModal from "../components/DocumentSubmitModal.jsx";
 import { useAccessProfile, useAuth } from "../contexts/AuthContext.jsx";
@@ -22,6 +21,7 @@ import {
 } from "../services/documentsService.js";
 
 const LOCAL_FOLDERS_STORAGE_KEY = "giva.documents.virtual-folders";
+const EXPLORER_COLLAPSED_STORAGE_KEY = "giva.documents.explorer-collapsed";
 
 function stateLabel(state, copy) {
   if (state === "published") {
@@ -297,6 +297,45 @@ function toSafeBlobUrl(value) {
   return raw.startsWith("blob:") ? raw : "";
 }
 
+function getRootFolderPresentation(folderName) {
+  const key = String(folderName ?? "").trim().toLowerCase();
+
+  if (key === "area-bt") {
+    return { tone: "green", label: "Informática", icon: "computer" };
+  }
+  if (key === "area-eet") {
+    return { tone: "orange", label: "Eletricidade", icon: "flash_on" };
+  }
+  if (key === "area-info") {
+    return { tone: "blue", label: "Mecânica", icon: "precision_manufacturing" };
+  }
+  if (key === "sala-3-manh") {
+    return { tone: "red", label: "TLQB", icon: "science" };
+  }
+
+  return { tone: "slate", label: "Área", icon: "folder" };
+}
+
+function getFolderDisplayName(folderSegment) {
+  const raw = String(folderSegment ?? "").trim();
+  if (!raw) return "";
+
+  const withoutPrefix = raw
+    .replace(/^area-/i, "")
+    .replace(/^curso-/i, "")
+    .replace(/^turma-/i, "");
+
+  const compact = withoutPrefix.replace(/[_-]+/g, " ").trim();
+  if (!compact) return raw;
+
+  // Para códigos curtos (ex.: BT, EET, INFO), usar abreviação em maiúsculas.
+  if (/^[a-z0-9]{2,8}$/i.test(withoutPrefix)) {
+    return withoutPrefix.toUpperCase();
+  }
+
+  return compact;
+}
+
 export default function DocumentsPage() {
   const { query, showToast, t } = useOutletContext();
   const { isAdmin, isCoordinatorUser } = useAccessProfile();
@@ -333,6 +372,9 @@ export default function DocumentsPage() {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [sortBy, setSortBy] = useState("az"); // "az" | "date"
   const [quickFilter, setQuickFilter] = useState("all"); // all|general|class|company|pinned|archived
+  const [docStateFilter, setDocStateFilter] = useState("all"); // all|review|published|archived|pinned
+  const [folderSearchQuery, setFolderSearchQuery] = useState("");
+  const [isExplorerCollapsed, setIsExplorerCollapsed] = useState(false);
   const [currentFolderPath, setCurrentFolderPath] = useState("");
   const [virtualFolders, setVirtualFolders] = useState([]);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -596,6 +638,15 @@ export default function DocumentsPage() {
   }, []);
 
   useEffect(() => {
+    try {
+      const stored = String(localStorage.getItem(EXPLORER_COLLAPSED_STORAGE_KEY) ?? "").trim();
+      setIsExplorerCollapsed(stored === "1");
+    } catch {
+      setIsExplorerCollapsed(false);
+    }
+  }, []);
+
+  useEffect(() => {
     if (form.contextType !== "class") {
       return;
     }
@@ -625,6 +676,14 @@ export default function DocumentsPage() {
       // localStorage indisponível
     }
   }, [virtualFolders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXPLORER_COLLAPSED_STORAGE_KEY, isExplorerCollapsed ? "1" : "0");
+    } catch {
+      // localStorage indisponível
+    }
+  }, [isExplorerCollapsed]);
 
   useEffect(() => {
     let active = true;
@@ -787,6 +846,30 @@ export default function DocumentsPage() {
     [explorerSourceDocs, currentFolderPath, virtualFolders, autoHierarchyFolders]
   );
 
+  const visibleFolderChildren = useMemo(() => {
+    const source = explorerFolderChildren;
+
+    const q = String(folderSearchQuery ?? "").trim().toLowerCase();
+    if (!q) return source;
+
+    return source.filter((path) => {
+      const segments = splitFolderPath(path);
+      const label = String(segments[segments.length - 1] ?? path).toLowerCase();
+      return label.includes(q) || String(path).toLowerCase().includes(q);
+    });
+  }, [explorerFolderChildren, folderSearchQuery, currentFolderPath]);
+
+  const classPathToId = useMemo(() => {
+    const map = new Map();
+    for (const classRow of scopedClassOptions) {
+      const classPath = buildClassHierarchyPath(classRow, areaById, coursesByArea, effectiveFallbackAreaId);
+      if (classPath) {
+        map.set(classPath, String(classRow.id));
+      }
+    }
+    return map;
+  }, [scopedClassOptions, areaById, coursesByArea, effectiveFallbackAreaId]);
+
   const allKnownFolderPaths = useMemo(() => {
     const allPaths = new Set(virtualFolders.map((path) => normalizeFolderPath(path)).filter(Boolean));
 
@@ -811,6 +894,9 @@ export default function DocumentsPage() {
 
   const explorerVisibleDocs = useMemo(() => {
     const current = normalizeFolderPath(currentFolderPath);
+    if (!current) {
+      return [];
+    }
     return explorerSourceDocs.filter((doc) => getDocFolderPath(doc) === current);
   }, [explorerSourceDocs, currentFolderPath]);
 
@@ -831,6 +917,21 @@ export default function DocumentsPage() {
     }
     return breadcrumbs[breadcrumbs.length - 2].path;
   }, [breadcrumbs]);
+
+  const currentFolderType = useMemo(() => {
+    const current = normalizeFolderPath(currentFolderPath);
+    if (!current) return "root";
+
+    const parts = splitFolderPath(current);
+    const leaf = parts[parts.length - 1] ?? "";
+    if (leaf === "geral") return "general";
+    if (leaf.startsWith("turma-")) return "class";
+    if (leaf.startsWith("curso-")) return "course";
+    if (leaf.startsWith("area-")) return "area";
+    return "folder";
+  }, [currentFolderPath]);
+
+  const isRootLevel = currentFolderType === "root";
 
   useEffect(() => {
     const current = normalizeFolderPath(currentFolderPath);
@@ -878,10 +979,21 @@ export default function DocumentsPage() {
     };
   }, [folderContextMenu.open]);
 
-  const filteredDocs = useMemo(
-    () => explorerVisibleDocs,
-    [explorerVisibleDocs]
-  );
+  const filteredDocs = useMemo(() => {
+    if (docStateFilter === "review") {
+      return explorerVisibleDocs.filter((doc) => String(doc.estado ?? "").toLowerCase() === "review");
+    }
+    if (docStateFilter === "published") {
+      return explorerVisibleDocs.filter((doc) => String(doc.estado ?? "").toLowerCase() === "published");
+    }
+    if (docStateFilter === "archived") {
+      return explorerVisibleDocs.filter((doc) => String(doc.estado ?? "").toLowerCase() === "archived");
+    }
+    if (docStateFilter === "pinned") {
+      return explorerVisibleDocs.filter((doc) => Boolean(doc.isPinned));
+    }
+    return explorerVisibleDocs;
+  }, [explorerVisibleDocs, docStateFilter]);
 
   const sortedDocs = useMemo(() => {
     const list = [...filteredDocs];
@@ -1090,6 +1202,26 @@ export default function DocumentsPage() {
 
   function closeFolderContextMenu() {
     setFolderContextMenu({ open: false, x: 0, y: 0, folderPath: "" });
+  }
+
+  function handleQuickCreateForCurrentFolder() {
+    const normalizedPath = normalizeFolderPath(currentFolderPath);
+    const classId = classPathToId.get(normalizedPath) ?? "";
+    const isClassFolder = currentFolderType === "class" && Boolean(classId);
+
+    setForm((current) => ({
+      ...current,
+      contextType: isClassFolder ? "class" : "general",
+      classGroupId: isClassFolder ? classId : "",
+      partnerId: "",
+      folderPath: normalizedPath,
+      folderName: splitFolderPath(normalizedPath)[0] ?? "",
+      subfolderName: splitFolderPath(normalizedPath)[1] ?? "",
+    }));
+
+    setEditingId(null);
+    setSelectedFile(null);
+    setShowSubmitModal(true);
   }
 
   function handleCreateSubfolder(parentFolderPath) {
@@ -1394,298 +1526,237 @@ export default function DocumentsPage() {
 
   return (
     <main className="page page-documents">
-      <PageHeader
-        title={t("documents.title")}
-        description={t("documents.description")}
-        meta={
-          <button
-            className="btn primary"
-            type="button"
-            onClick={() => {
-              resetFormState();
-              setShowSubmitModal(true);
-            }}
-          >
-            <span className="material-icons-sharp" aria-hidden="true">upload_file</span>
-            {t("documents.submit")}
-          </button>
-        }
-      />
+      <PanelSection>
+        <div className="doc-explorer-shell" role="region" aria-label="Explorador documental">
+          <div className={`doc-workspace${isRootLevel ? " --root" : ""}`}>
+            <aside className={`doc-explorer-sidebar${!isRootLevel && isExplorerCollapsed ? " --collapsed" : ""}`}>
+              {!isRootLevel ? (
+                <>
+                  <div className="doc-explorer-sidebar-header">
+                    <strong>Pastas</strong>
+                    <button
+                      type="button"
+                      className="btn ghost doc-explorer-toggle"
+                      onClick={() => setIsExplorerCollapsed((value) => !value)}
+                      aria-label={isExplorerCollapsed ? "Expandir painel" : "Recolher painel"}
+                      title={isExplorerCollapsed ? "Expandir" : "Recolher"}
+                    >
+                      <span className="material-icons-sharp" aria-hidden="true">
+                        {isExplorerCollapsed ? "keyboard_double_arrow_right" : "keyboard_double_arrow_left"}
+                      </span>
+                    </button>
+                  </div>
 
-      {isAdmin ? (
-        <PanelSection title="Administração — Upload em Lote">
-          <div className="admin-bulk-upload">
-            <p className="meta" style={{ marginBottom: "0.75rem" }}>
-              Selecione um ou vários ficheiros para guardar diretamente no sistema. Cada ficheiro é armazenado no banco de dados automaticamente.
-            </p>
-            <div className="bulk-upload-controls">
-              <label className="btn ghost" htmlFor="admin-bulk-input" style={{ cursor: "pointer" }}>
-                <span className="material-icons-sharp" aria-hidden="true">folder_open</span>
-                Selecionar Ficheiros
-              </label>
-              <input
-                ref={bulkInputRef}
-                id="admin-bulk-input"
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv"
-                onChange={handleBulkFileChange}
-                style={{ display: "none" }}
-              />
-              {bulkFiles.length > 0 ? (
-                <span className="meta" style={{ alignSelf: "center" }}>
-                  {bulkFiles.length} ficheiro(s) selecionado(s)
-                </span>
+                  {!isExplorerCollapsed ? (
+                    <>
+                  <label className="doc-folder-search" htmlFor="folder-search-input">
+                    <span className="material-icons-sharp" aria-hidden="true">search</span>
+                    <input
+                      id="folder-search-input"
+                      type="search"
+                      value={folderSearchQuery}
+                      onChange={(event) => setFolderSearchQuery(event.target.value)}
+                      placeholder="Pesquisar pastas"
+                    />
+                  </label>
+
+                  <div className="doc-folder-grid">
+                    {visibleFolderChildren.map((path) => {
+                      const segments = splitFolderPath(path);
+                      const folderLabel = segments[segments.length - 1] ?? path;
+                      const folderDisplayLabel = getFolderDisplayName(folderLabel);
+                      const directDocCount = explorerSourceDocs.filter((doc) => getDocFolderPath(doc) === path).length;
+                      const childFoldersCount = allKnownFolderPaths.filter((knownPath) => {
+                        const normalizedKnown = normalizeFolderPath(knownPath);
+                        if (!normalizedKnown.startsWith(`${path}/`)) {
+                          return false;
+                        }
+                        return splitFolderPath(normalizedKnown).length === splitFolderPath(path).length + 1;
+                      }).length;
+
+                      return (
+                        <div
+                          key={path}
+                          className="doc-folder-card"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setCurrentFolderPath(path)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setCurrentFolderPath(path);
+                            }
+                          }}
+                          onContextMenu={(event) => openFolderContextMenu(event, path)}
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            handleFolderDrop(path);
+                            setDraggingDocId(null);
+                          }}
+                        >
+                          <span className="material-icons-sharp" aria-hidden="true">folder</span>
+                          <span className="doc-folder-main">
+                            <span className="doc-folder-name">{folderDisplayLabel}</span>
+                            <span className="doc-folder-meta">{directDocCount} doc(s) - {childFoldersCount} subpasta(s)</span>
+                          </span>
+                          {!isRootLevel ? (
+                            <button
+                              type="button"
+                              className="doc-folder-menu-trigger"
+                              aria-label={`Abrir menu da pasta ${folderLabel}`}
+                              title="Mais opções"
+                              onClick={(event) => openFolderContextMenuFromButton(event, path)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  openFolderContextMenuFromButton(event, path);
+                                }
+                              }}
+                            >
+                              <span className="material-icons-sharp" aria-hidden="true">more_vert</span>
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+
+                    {visibleFolderChildren.length === 0 ? (
+                      <p className="meta" style={{ padding: "0.5rem 0" }}>
+                        {isRootLevel ? "Nenhuma pasta disponível." : "Nenhuma pasta encontrada para a pesquisa atual."}
+                      </p>
+                    ) : null}
+                  </div>
+                  </>
+                ) : null}
+                </>
               ) : null}
-              <button
-                className="btn primary"
-                type="button"
-                disabled={bulkUploading || bulkFiles.length === 0}
-                onClick={handleBulkUpload}
-              >
-                {bulkUploading ? (
-                  <>
-                    <span className="material-icons-sharp" aria-hidden="true" style={{ animation: "spin 1s linear infinite" }}>sync</span>
-                    A guardar...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-icons-sharp" aria-hidden="true">save</span>
-                    Guardar no Sistema
-                  </>
-                )}
-              </button>
-            </div>
 
-            {bulkProgress.length > 0 ? (
-              <ul className="bulk-progress-list">
-                {bulkProgress.map((item, idx) => (
-                  <li
-                    key={idx}
-                    className={`bulk-progress-item bulk-progress-${item.status}`}
+              {isRootLevel ? (
+                <div className="doc-folder-grid">
+                  {visibleFolderChildren.map((path, index) => {
+                    const segments = splitFolderPath(path);
+                    const folderLabel = segments[segments.length - 1] ?? path;
+                    const folderDisplayLabel = getFolderDisplayName(folderLabel);
+                    const visual = getRootFolderPresentation(folderLabel);
+                    const directDocCount = explorerSourceDocs.filter((doc) => getDocFolderPath(doc) === path).length;
+                    const childFoldersCount = allKnownFolderPaths.filter((knownPath) => {
+                      const normalizedKnown = normalizeFolderPath(knownPath);
+                      if (!normalizedKnown.startsWith(`${path}/`)) {
+                        return false;
+                      }
+                      return splitFolderPath(normalizedKnown).length === splitFolderPath(path).length + 1;
+                    }).length;
+
+                    return (
+                      <div
+                        key={path}
+                        className={`doc-root-tile doc-root-tile--${visual.tone}`}
+                        role="button"
+                        tabIndex={0}
+                        style={{ animationDelay: `${Math.min(index * 45, 260)}ms` }}
+                        onClick={() => setCurrentFolderPath(path)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setCurrentFolderPath(path);
+                          }
+                        }}
+                      >
+                        <div className="doc-folder-card doc-folder-card--entry">
+                          <span className="material-icons-sharp" aria-hidden="true">folder</span>
+                          <span className="doc-folder-main">
+                            <span className="doc-folder-name">{folderDisplayLabel}</span>
+                            <span className="doc-folder-meta">{directDocCount} doc(s) - {childFoldersCount} subpasta(s)</span>
+                          </span>
+                          <button
+                            type="button"
+                            className="doc-folder-menu-trigger"
+                            aria-label={`Abrir menu da pasta ${folderLabel}`}
+                            title="Mais opções"
+                            onClick={(event) => openFolderContextMenuFromButton(event, path)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                openFolderContextMenuFromButton(event, path);
+                              }
+                            }}
+                          >
+                            <span className="material-icons-sharp" aria-hidden="true">more_vert</span>
+                          </button>
+                        </div>
+                        <span className={`doc-root-tag doc-root-tag--${visual.tone}`}>
+                          <span className="material-icons-sharp" aria-hidden="true">{visual.icon}</span>
+                          {visual.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  {visibleFolderChildren.length === 0 ? (
+                    <p className="meta" style={{ padding: "0.5rem 0" }}>
+                      Nenhuma pasta disponível.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </aside>
+
+            {!isRootLevel ? (
+              <div className="doc-explorer-main">
+                <div className="doc-context-actions" role="group" aria-label="Ações rápidas da pasta atual">
+                  <button
+                    className="btn ghost"
+                    type="button"
+                    onClick={() => setCurrentFolderPath(parentFolderPath)}
+                    aria-label="Voltar à pasta anterior"
+                    title="Voltar"
+                  >
+                    <span className="material-icons-sharp" aria-hidden="true">arrow_back</span>
+                  </button>
+                  <select
+                    className="btn ghost doc-sort-btn"
+                    value={sortBy}
+                    onChange={(event) => setSortBy(event.target.value)}
+                    aria-label="Ordenação de documentos"
+                  >
+                    <option value="az">A-Z</option>
+                    <option value="date">Mais recentes</option>
+                  </select>
+                  <select
+                    className="btn ghost doc-sort-btn"
+                    value={docStateFilter}
+                    onChange={(event) => setDocStateFilter(event.target.value)}
+                    aria-label="Filtro de documentos"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="review">Em revisão</option>
+                    <option value="published">Publicados</option>
+                    <option value="archived">Arquivados</option>
+                    <option value="pinned">Fixados</option>
+                  </select>
+                  <button
+                    className="btn primary"
+                    type="button"
+                    onClick={handleQuickCreateForCurrentFolder}
                   >
                     <span className="material-icons-sharp" aria-hidden="true">
-                      {item.status === "ok" ? "check_circle" : item.status === "error" ? "error" : "hourglass_empty"}
+                      {currentFolderType === "class" ? "assignment" : currentFolderType === "course" ? "menu_book" : currentFolderType === "area" ? "domain" : "note_add"}
                     </span>
-                    <span className="bulk-item-name">{item.name}</span>
-                    <span className="bulk-item-msg">{item.msg}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        </PanelSection>
-      ) : null}
-
-      <PanelSection title={t("documents.library")}>
-        <div className="doc-grid-toolbar">
-          <button
-            className={`btn ghost doc-sort-btn${quickFilter === "all" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setQuickFilter("all")}
-          >
-            Tudo
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${quickFilter === "general" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setQuickFilter("general")}
-          >
-            Geral
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${quickFilter === "class" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setQuickFilter("class")}
-          >
-            Turma
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${quickFilter === "company" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setQuickFilter("company")}
-          >
-            Empresa
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${quickFilter === "pinned" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setQuickFilter("pinned")}
-          >
-            Fixados
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${quickFilter === "archived" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setQuickFilter("archived")}
-          >
-            Arquivados
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${sortBy === "az" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setSortBy("az")}
-          >
-            <span className="material-icons-sharp" aria-hidden="true">sort_by_alpha</span>
-            A &rarr; Z
-          </button>
-          <button
-            className={`btn ghost doc-sort-btn${sortBy === "date" ? " --active" : ""}`}
-            type="button"
-            onClick={() => setSortBy("date")}
-          >
-            <span className="material-icons-sharp" aria-hidden="true">schedule</span>
-            Mais recentes
-          </button>
-          <button
-            className="btn ghost doc-sort-btn"
-            type="button"
-            onClick={() => setCreateFolderOpen((open) => !open)}
-          >
-            <span className="material-icons-sharp" aria-hidden="true">create_new_folder</span>
-            Nova pasta
-          </button>
-          <span className="meta" style={{ marginLeft: "auto", alignSelf: "center" }}>
-            {sortedDocs.length} documento(s) na pasta atual
-          </span>
-        </div>
-
-        {createFolderOpen ? (
-          <form className="doc-folder-create-form" onSubmit={handleCreateFolder}>
-            <input
-              value={newFolderName}
-              onChange={(event) => setNewFolderName(event.target.value)}
-              placeholder="Nome da nova pasta"
-            />
-            <button className="btn primary" type="submit">
-              Criar pasta
-            </button>
-            <button className="btn ghost" type="button" onClick={() => setCreateFolderOpen(false)}>
-              Cancelar
-            </button>
-          </form>
-        ) : null}
-
-        <div className="doc-bulk-actions">
-          <button className="btn ghost" type="button" onClick={toggleSelectAllVisibleDocs}>
-            {sortedDocs.length > 0 && sortedDocs.every((doc) => selectedDocIds.has(doc.id))
-              ? "Desmarcar visíveis"
-              : "Selecionar visíveis"}
-          </button>
-          <span className="meta">{selectedDocIds.size} selecionado(s)</span>
-          <select
-            className="btn ghost doc-sort-btn"
-            value={bulkMoveTargetPath}
-            onChange={(event) => setBulkMoveTargetPath(event.target.value)}
-            aria-label="Mover selecionados para"
-          >
-            <option value="">Raiz</option>
-            {allKnownFolderPaths.map((path) => (
-              <option key={path} value={path}>{path}</option>
-            ))}
-          </select>
-          <button className="btn primary" type="button" disabled={!selectedDocIds.size} onClick={handleMoveSelectedDocs}>
-            Mover selecionados
-          </button>
-        </div>
-
-        <div className="doc-explorer-shell">
-          <div className="doc-breadcrumbs">
-            {breadcrumbs.map((item) => (
-              <button
-                key={item.path || "root"}
-                type="button"
-                className={`doc-breadcrumb-btn${normalizeFolderPath(item.path) === normalizeFolderPath(currentFolderPath) ? " --active" : ""}`}
-                onClick={() => setCurrentFolderPath(item.path)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  handleFolderDrop(item.path);
-                  setDraggingDocId(null);
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="doc-folder-grid">
-            {normalizeFolderPath(currentFolderPath) ? (
-              <button
-                type="button"
-                className="doc-folder-card"
-                onClick={() => setCurrentFolderPath(parentFolderPath)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  handleFolderDrop(parentFolderPath);
-                  setDraggingDocId(null);
-                }}
-              >
-                <span className="material-icons-sharp" aria-hidden="true">arrow_upward</span>
-                <span>Subir um nível</span>
-              </button>
-            ) : null}
-
-            {explorerFolderChildren.map((path) => {
-              const segments = splitFolderPath(path);
-              const folderLabel = segments[segments.length - 1] ?? path;
-              const directDocCount = explorerSourceDocs.filter((doc) => getDocFolderPath(doc) === path).length;
-              const childFoldersCount = allKnownFolderPaths.filter((knownPath) => {
-                const normalizedKnown = normalizeFolderPath(knownPath);
-                if (!normalizedKnown.startsWith(`${path}/`)) {
-                  return false;
-                }
-                return splitFolderPath(normalizedKnown).length === splitFolderPath(path).length + 1;
-              }).length;
-
-              return (
-                <div
-                  key={path}
-                  className="doc-folder-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setCurrentFolderPath(path)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setCurrentFolderPath(path);
-                    }
-                  }}
-                  onContextMenu={(event) => openFolderContextMenu(event, path)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    handleFolderDrop(path);
-                    setDraggingDocId(null);
-                  }}
-                >
-                  <span className="material-icons-sharp" aria-hidden="true">folder</span>
-                  <span className="doc-folder-main">
-                    <span className="doc-folder-name">{folderLabel}</span>
-                    <span className="doc-folder-meta">{directDocCount} doc(s) - {childFoldersCount} subpasta(s)</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="doc-folder-menu-trigger"
-                    aria-label={`Abrir menu da pasta ${folderLabel}`}
-                    title="Mais opções"
-                    onClick={(event) => openFolderContextMenuFromButton(event, path)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openFolderContextMenuFromButton(event, path);
-                      }
-                    }}
-                  >
-                    <span className="material-icons-sharp" aria-hidden="true">more_vert</span>
+                    {currentFolderType === "class"
+                      ? "Novo documento da turma"
+                      : currentFolderType === "course"
+                        ? "Novo documento do curso"
+                        : currentFolderType === "area"
+                          ? "Novo documento da área"
+                          : "Novo documento nesta pasta"}
                   </button>
                 </div>
-              );
-            })}
+              </div>
+            ) : null}
           </div>
 
-          {folderContextMenu.open ? (
+          {!isRootLevel && folderContextMenu.open ? (
             <div
               className="doc-folder-context-menu"
               style={{ top: folderContextMenu.y, left: folderContextMenu.x }}
@@ -1734,11 +1805,11 @@ export default function DocumentsPage() {
           ) : null}
         </div>
 
-        {loading ? (
+        {!isRootLevel && loading ? (
           <p className="meta loading-state">A carregar documentos...</p>
-        ) : sortedDocs.length === 0 ? (
+        ) : !isRootLevel && sortedDocs.length === 0 ? (
           <p className="meta" style={{ padding: "2.5rem 0", textAlign: "center" }}>Nenhum documento encontrado.</p>
-        ) : (
+        ) : !isRootLevel ? (
           <div className="doc-grid">
             {sortedDocs.map((doc) => {
               const extension = extractDocExtension(doc);
@@ -1859,7 +1930,7 @@ export default function DocumentsPage() {
               );
             })}
           </div>
-        )}
+        ) : null}
       </PanelSection>
 
       {showSubmitModal ? (

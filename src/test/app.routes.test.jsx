@@ -62,7 +62,7 @@ describe("App routes", () => {
   it("redireciona rota legada /docs para /documentos", async () => {
     renderWithRoute("/docs");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: nameIncludes("centro documental") })).toBeInTheDocument();
+      expect(screen.getByRole("region", { name: /explorador documental/i })).toBeInTheDocument();
     });
   });
 
@@ -250,7 +250,7 @@ describe("App routes", () => {
   it("renderiza centro documental na rota /documentos", async () => {
     renderWithRoute("/documentos");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: nameIncludes("centro documental") })).toBeInTheDocument();
+      expect(screen.getByRole("region", { name: /explorador documental/i })).toBeInTheDocument();
     });
   });
 
