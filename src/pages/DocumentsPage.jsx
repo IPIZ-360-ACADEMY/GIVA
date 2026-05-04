@@ -316,6 +316,32 @@ function getRootFolderPresentation(folderName) {
   return { tone: "slate", label: "Área", icon: "folder" };
 }
 
+function getFolderContentsStats(folderPath, allKnownFolderPaths, docs) {
+  const normalized = normalizeFolderPath(folderPath);
+  const prefix = normalized ? `${normalized}/` : "";
+
+  const docsCount = docs.filter((doc) => isInsideFolder(getDocFolderPath(doc), normalized)).length;
+
+  const innerPaths = allKnownFolderPaths.filter((p) => {
+    const n = normalizeFolderPath(p);
+    return prefix ? n.startsWith(prefix) : Boolean(n);
+  });
+
+  const coursesCount = new Set(
+    innerPaths
+      .map((p) => splitFolderPath(normalizeFolderPath(p)).find((s) => s.startsWith("curso-")))
+      .filter(Boolean)
+  ).size;
+
+  const classesCount = new Set(
+    innerPaths
+      .map((p) => splitFolderPath(normalizeFolderPath(p)).find((s) => s.startsWith("turma-")))
+      .filter(Boolean)
+  ).size;
+
+  return { docsCount, coursesCount, classesCount };
+}
+
 function getFolderDisplayName(folderSegment) {
   const raw = String(folderSegment ?? "").trim();
   if (!raw) return "";
@@ -1565,14 +1591,7 @@ export default function DocumentsPage() {
                       const segments = splitFolderPath(path);
                       const folderLabel = segments[segments.length - 1] ?? path;
                       const folderDisplayLabel = getFolderDisplayName(folderLabel);
-                      const directDocCount = explorerSourceDocs.filter((doc) => getDocFolderPath(doc) === path).length;
-                      const childFoldersCount = allKnownFolderPaths.filter((knownPath) => {
-                        const normalizedKnown = normalizeFolderPath(knownPath);
-                        if (!normalizedKnown.startsWith(`${path}/`)) {
-                          return false;
-                        }
-                        return splitFolderPath(normalizedKnown).length === splitFolderPath(path).length + 1;
-                      }).length;
+                      const { docsCount, coursesCount, classesCount } = getFolderContentsStats(path, allKnownFolderPaths, scopedDocs);
 
                       return (
                         <div
@@ -1598,7 +1617,7 @@ export default function DocumentsPage() {
                           <span className="material-icons-sharp" aria-hidden="true">folder</span>
                           <span className="doc-folder-main">
                             <span className="doc-folder-name">{folderDisplayLabel}</span>
-                            <span className="doc-folder-meta">{directDocCount} doc(s) - {childFoldersCount} subpasta(s)</span>
+                            <span className="doc-folder-meta">{docsCount} doc(s) • {coursesCount} curso(s) • {classesCount} turma(s)</span>
                           </span>
                           {!isRootLevel ? (
                             <button
@@ -1639,14 +1658,7 @@ export default function DocumentsPage() {
                     const folderLabel = segments[segments.length - 1] ?? path;
                     const folderDisplayLabel = getFolderDisplayName(folderLabel);
                     const visual = getRootFolderPresentation(folderLabel);
-                    const directDocCount = explorerSourceDocs.filter((doc) => getDocFolderPath(doc) === path).length;
-                    const childFoldersCount = allKnownFolderPaths.filter((knownPath) => {
-                      const normalizedKnown = normalizeFolderPath(knownPath);
-                      if (!normalizedKnown.startsWith(`${path}/`)) {
-                        return false;
-                      }
-                      return splitFolderPath(normalizedKnown).length === splitFolderPath(path).length + 1;
-                    }).length;
+                    const { docsCount, coursesCount, classesCount } = getFolderContentsStats(path, allKnownFolderPaths, scopedDocs);
 
                     return (
                       <div
@@ -1667,7 +1679,7 @@ export default function DocumentsPage() {
                           <span className="material-icons-sharp" aria-hidden="true">folder</span>
                           <span className="doc-folder-main">
                             <span className="doc-folder-name">{folderDisplayLabel}</span>
-                            <span className="doc-folder-meta">{directDocCount} doc(s) - {childFoldersCount} subpasta(s)</span>
+                            <span className="doc-folder-meta">{docsCount} doc(s) • {coursesCount} curso(s) • {classesCount} turma(s)</span>
                           </span>
                           <button
                             type="button"
