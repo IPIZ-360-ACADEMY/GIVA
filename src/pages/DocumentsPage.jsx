@@ -195,6 +195,16 @@ function buildGeneralAreaPath(areaById, areaId) {
   return normalizeFolderPath(`${getAreaLabel(areaById.get(String(areaId ?? "")), areaId)}/geral`);
 }
 
+function buildAreaFolderPath(areaById, areaId) {
+  return normalizeFolderPath(getAreaLabel(areaById.get(String(areaId ?? "")), areaId));
+}
+
+function buildCourseFolderPath(areaById, areaId, courseLike) {
+  const areaPath = buildAreaFolderPath(areaById, areaId);
+  const coursePath = getCourseLabel(courseLike, courseLike?.code ?? courseLike?.name ?? "");
+  return normalizeFolderPath(`${areaPath}/${coursePath}`);
+}
+
 function getImmediateChildrenFolders(docs, currentPath) {
   const current = normalizeFolderPath(currentPath);
   const baseSegments = splitFolderPath(current);
@@ -354,6 +364,40 @@ export default function DocumentsPage() {
   const areaById = useMemo(() => new Map(areaOptions.map((area) => [String(area.id), area])), [areaOptions]);
   const classById = useMemo(() => new Map(classOptions.map((item) => [String(item.id), item])), [classOptions]);
 
+  const scopedAreaOptions = useMemo(() => {
+    if (!isCoordinatorUser) return areaOptions;
+    if (!authProfile?.areaId) return [];
+    return areaOptions.filter((area) => String(area.id) === String(authProfile.areaId));
+  }, [areaOptions, isCoordinatorUser, authProfile?.areaId]);
+
+  const scopedCoursesByArea = useMemo(() => {
+    if (!isCoordinatorUser) return coursesByArea;
+
+    const next = new Map();
+    const allowedCourseIds = new Set((authProfile?.courseIds ?? []).map((id) => String(id)));
+    const allowedCourseCodes = new Set((authProfile?.courseCodes ?? []).map((code) => String(code).trim().toUpperCase()));
+
+    for (const [areaId, rows] of coursesByArea.entries()) {
+      if (authProfile?.areaId && String(areaId) !== String(authProfile.areaId)) {
+        continue;
+      }
+
+      const filtered = (rows ?? []).filter((course) => {
+        if (!allowedCourseIds.size && !allowedCourseCodes.size) {
+          return true;
+        }
+
+        const byId = allowedCourseIds.has(String(course?.id ?? ""));
+        const byCode = allowedCourseCodes.has(String(course?.code ?? "").trim().toUpperCase());
+        return byId || byCode;
+      });
+
+      next.set(areaId, filtered);
+    }
+
+    return next;
+  }, [coursesByArea, isCoordinatorUser, authProfile]);
+
   const scopedClassOptions = useMemo(() => {
     if (!isCoordinatorUser) return classOptions;
     return filterByCoordinatorScope(classOptions, authProfile, {
@@ -366,6 +410,28 @@ export default function DocumentsPage() {
 
   const autoHierarchyFolders = useMemo(() => {
     const folders = new Set();
+
+    const areasForTree = scopedAreaOptions.length > 0
+      ? scopedAreaOptions
+      : (effectiveFallbackAreaId ? [{ id: effectiveFallbackAreaId, code: null, name: null }] : []);
+
+    for (const area of areasForTree) {
+      const areaId = String(area?.id ?? "");
+      if (!areaId) continue;
+
+      const areaPath = buildAreaFolderPath(areaById, areaId);
+      if (areaPath) {
+        folders.add(areaPath);
+      }
+
+      const courses = scopedCoursesByArea.get(areaId) ?? [];
+      for (const course of courses) {
+        const coursePath = buildCourseFolderPath(areaById, areaId, course);
+        if (coursePath) {
+          folders.add(coursePath);
+        }
+      }
+    }
 
     for (const classRow of scopedClassOptions) {
       const fullPath = buildClassHierarchyPath(classRow, areaById, coursesByArea, effectiveFallbackAreaId);
@@ -380,7 +446,7 @@ export default function DocumentsPage() {
     }
 
     return Array.from(folders).sort((a, b) => a.localeCompare(b, "pt", { sensitivity: "base" }));
-  }, [scopedClassOptions, areaById, coursesByArea, effectiveFallbackAreaId]);
+  }, [scopedAreaOptions, scopedCoursesByArea, scopedClassOptions, areaById, coursesByArea, effectiveFallbackAreaId]);
 
   function resetFormState() {
     setForm({
@@ -774,12 +840,13 @@ export default function DocumentsPage() {
 
     const stillExists =
       explorerSourceDocs.some((doc) => isInsideFolder(getDocFolderPath(doc), current)) ||
-      virtualFolders.some((path) => isInsideFolder(path, current));
+      virtualFolders.some((path) => isInsideFolder(path, current)) ||
+      autoHierarchyFolders.some((path) => isInsideFolder(path, current));
 
     if (!stillExists) {
       setCurrentFolderPath("");
     }
-  }, [explorerSourceDocs, currentFolderPath, virtualFolders]);
+  }, [explorerSourceDocs, currentFolderPath, virtualFolders, autoHierarchyFolders]);
 
   useEffect(() => {
     setBulkMoveTargetPath(normalizeFolderPath(currentFolderPath));

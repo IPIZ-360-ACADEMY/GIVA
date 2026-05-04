@@ -1,11 +1,26 @@
 import { supabase } from "../lib/supabase.js";
 
+function ensureChatApi() {
+  if (!supabase) {
+    throw new Error("Chat indisponível: Supabase não configurado.");
+  }
+}
+
+async function getCurrentUserOrThrow() {
+  ensureChatApi();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) {
+    throw new Error("Sessão inválida para mensagens.");
+  }
+  return user;
+}
+
 /**
  * Lista conversas do utilizador autenticado, ordenadas pela mais recente.
  * Usa 3 queries simples para evitar problemas com self-joins no PostgREST.
  */
 export async function getConversations() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUserOrThrow();
 
   // 1. Participações do utilizador actual
   const { data: myParts, error: e1 } = await supabase
@@ -61,6 +76,10 @@ export async function getConversations() {
  * Encontra ou cria uma conversa 1-a-1 com outro utilizador.
  */
 export async function getOrCreateConversation(otherUserId) {
+  ensureChatApi();
+  if (!otherUserId) {
+    throw new Error("Utilizador de destino inválido.");
+  }
   const { data, error } = await supabase.rpc("create_conversation", {
     other_user_id: otherUserId,
   });
@@ -72,6 +91,8 @@ export async function getOrCreateConversation(otherUserId) {
  * Lista mensagens de uma conversa.
  */
 export async function getMessages(conversationId, limit = 50) {
+  ensureChatApi();
+  if (!conversationId) return [];
   const { data, error } = await supabase
     .from("messages")
     .select("id, content, created_at, sender:user_profiles!sender_id (id, display_name, avatar_url)")
@@ -87,7 +108,13 @@ export async function getMessages(conversationId, limit = 50) {
  * Envia uma mensagem numa conversa.
  */
 export async function sendMessage(conversationId, content) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUserOrThrow();
+  if (!conversationId) {
+    throw new Error("Conversa inválida.");
+  }
+  if (!String(content ?? "").trim()) {
+    throw new Error("Mensagem vazia.");
+  }
   const { data, error } = await supabase
     .from("messages")
     .insert({ conversation_id: conversationId, sender_id: user.id, content })
@@ -102,7 +129,8 @@ export async function sendMessage(conversationId, content) {
  * Marca a conversa como lida (atualiza last_read_at).
  */
 export async function markAsRead(conversationId) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUserOrThrow();
+  if (!conversationId) return;
   const { error } = await supabase
     .from("conversation_participants")
     .update({ last_read_at: new Date().toISOString() })
@@ -115,8 +143,9 @@ export async function markAsRead(conversationId) {
  * Conta mensagens não lidas em todas as conversas.
  */
 export async function getUnreadCount() {
+  if (!supabase) return 0;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return 0;
+  if (!user?.id) return 0;
 
   const { data, error } = await supabase
     .from("conversation_participants")
@@ -149,7 +178,9 @@ export async function getUnreadCount() {
  * Usado para calcular o estado de "visto" nas mensagens.
  */
 export async function getOtherReadAt(conversationId) {
+  if (!supabase || !conversationId) return null;
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) return null;
   const { data, error } = await supabase
     .from("conversation_participants")
     .select("last_read_at")
@@ -211,6 +242,7 @@ export function subscribeToReadReceipts(conversationId, currentUserId, callback)
  * Devolve função de unsubscribe.
  */
 export function subscribeToMessages(conversationId, callback) {
+  if (!supabase || !conversationId) return () => {};
   const channel = supabase
     .channel(`chat:${conversationId}`)
     .on(
@@ -228,6 +260,7 @@ export function subscribeToMessages(conversationId, callback) {
  * Devolve função de unsubscribe.
  */
 export function subscribeToConversations(userId, callback) {
+  if (!supabase || !userId) return () => {};
   const channel = supabase
     .channel(`convs:${userId}`)
     .on(
