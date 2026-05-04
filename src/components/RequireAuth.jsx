@@ -67,6 +67,7 @@ export default function RequireAuth({ children }) {
     isCoordinatorUser,
     isTeacherUser,
     isSuperAdmin,
+    isAdmin1,
     isAdmin,
   } = resolveAccessProfile({
     role: authProfile?.role,
@@ -78,13 +79,45 @@ export default function RequireAuth({ children }) {
     return children ?? <Outlet />;
   }
 
+  // ── Auxiliar: verifica se o pathname actual está numa allowlist ──────────
+  function canAccess(allowedRoutes) {
+    return allowedRoutes.some(
+      (base) => location.pathname === base || location.pathname.startsWith(`${base}/`)
+    );
+  }
+
+  // ADMIN_1: gestor institucional — ferramentas, painel e rotas académicas/operacionais
+  if (isAdmin1) {
+    const admin1AllowedRoutes = [
+      "/",
+      "/home",
+      "/admin",
+      "/ferramentas",
+      "/estagios",
+      "/avaliacoes",
+      "/turmas",
+      "/areas-formacao",
+      "/parceiros",
+      "/documentos",
+      "/rbac/vagas",
+      "/rbac/candidaturas",
+      "/perfil",
+      "/progresso",
+      "/aluno",
+      "/chat",
+      "/notificacoes",
+      "/config",
+    ];
+    if (!canAccess(admin1AllowedRoutes)) {
+      return <Navigate to="/" replace state={{ from: location.pathname }} />;
+    }
+    return children ?? <Outlet />;
+  }
+
   // Empresa: só pode aceder às rotas de empresa
   if (isCompanyUser) {
     const companyAllowedRoutes = ["/empresa", "/rbac/candidaturas", "/notificacoes", "/chat", "/config"];
-    const canAccessPath = companyAllowedRoutes.some((basePath) =>
-      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
-    );
-    if (!canAccessPath) {
+    if (!canAccess(companyAllowedRoutes)) {
       return <Navigate to="/empresa" replace state={{ from: location.pathname }} />;
     }
   }
@@ -92,11 +125,7 @@ export default function RequireAuth({ children }) {
   // Externo: apenas feed/comunidade e configurações
   if (isExternalUser && !isAdmin) {
     const externalAllowedRoutes = ["/home", "/config"];
-    const canAccessPath = externalAllowedRoutes.some((basePath) =>
-      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
-    );
-
-    if (!canAccessPath) {
+    if (!canAccess(externalAllowedRoutes)) {
       return <Navigate to="/home" replace state={{ from: location.pathname }} />;
     }
   }
@@ -118,10 +147,7 @@ export default function RequireAuth({ children }) {
       "/progresso",
       "/perfil-publico",
     ];
-    const canAccessPath = studentAllowedRoutes.some((basePath) =>
-      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
-    );
-    if (!canAccessPath) {
+    if (!canAccess(studentAllowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
@@ -141,34 +167,28 @@ export default function RequireAuth({ children }) {
       "/",
       "/home",
       "/rbac/vagas",
-      "/empresa",
+      "/estagios",
+      "/avaliacoes",
       "/documentos",
       "/chat",
       "/notificacoes",
       "/config",
       "/turmas",
-      "/turmas/detalhe",
+      "/areas-formacao",
+      "/perfil",
+      "/progresso",
     ];
-    const canAccessPath = academicAllowedRoutes.some((basePath) =>
-      location.pathname === basePath || location.pathname.startsWith(`${basePath}/`)
-    );
-
-    if (!canAccessPath) {
+    if (!canAccess(academicAllowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
   }
 
-  // Rotas exclusivas de admin (ADMIN_1 + SUPER_ADMIN)
-  const adminOnlyRoutes = ["/admin", "/ferramentas"];
-  if (adminOnlyRoutes.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`))) {
-    if (!isAdmin) {
-      return <Navigate to="/" replace />;
-    }
-  }
-
-  // Rota exclusiva de SUPER_ADMIN
-  if (location.pathname === "/utilizadores" || location.pathname.startsWith("/utilizadores/")) {
-    if (!isSuperAdmin) {
+  // Qualquer outro perfil admin (ADMIN/isAdminCore) sem role explícita:
+  // bloquear rotas altamente restritas
+  if (isAdmin && !isAdmin1) {
+    // Ferramentas e painel de admin apenas para ADMIN_1/SUPER_ADMIN (já tratados acima)
+    const restrictedRoutes = ["/admin", "/ferramentas", "/utilizadores"];
+    if (canAccess(restrictedRoutes)) {
       return <Navigate to="/" replace />;
     }
   }

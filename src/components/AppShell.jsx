@@ -72,7 +72,7 @@ export default function AppShell() {
         ];
       }
 
-      // ADMIN_1 (Coordenador): acesso restrito à sua área
+      // ADMIN_1: gestor institucional — painel de admin + ferramentas + rotas operacionais
       if (isAdmin1) {
         return [
           { to: "/home", icon: "public", label: "Comunidade" },
@@ -81,6 +81,8 @@ export default function AppShell() {
           { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
           { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
+          { to: "/admin", icon: "admin_panel_settings", label: "Administração" },
+          { to: "/ferramentas", icon: "build", label: "Ferramentas" },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
           { to: "/config", icon: "settings", label: t("nav.settings") },
