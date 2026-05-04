@@ -896,6 +896,15 @@ export default function DocumentsPage() {
     return map;
   }, [scopedClassOptions, areaById, coursesByArea, effectiveFallbackAreaId]);
 
+  const classMetaByPath = useMemo(() => {
+    const map = new Map();
+    for (const [path, classId] of classPathToId) {
+      const classRow = classById.get(classId);
+      if (classRow) map.set(normalizeFolderPath(path), classRow);
+    }
+    return map;
+  }, [classPathToId, classById]);
+
   const allKnownFolderPaths = useMemo(() => {
     const allPaths = new Set(virtualFolders.map((path) => normalizeFolderPath(path)).filter(Boolean));
 
@@ -958,6 +967,41 @@ export default function DocumentsPage() {
   }, [currentFolderPath]);
 
   const isRootLevel = currentFolderType === "root";
+  const isAreaLevel = currentFolderType === "area";
+  const isCourseLevel = currentFolderType === "course";
+  const isClassLevel = currentFolderType === "class";
+
+  const currentTileChildren = useMemo(() => {
+    const isIntermediateLevel = isAreaLevel || isCourseLevel;
+    if (!isIntermediateLevel) {
+      return [];
+    }
+
+    const current = normalizeFolderPath(currentFolderPath);
+    if (!current) {
+      return [];
+    }
+
+    const classPaths = [];
+    for (const classPath of classPathToId.keys()) {
+      const normalizedClassPath = normalizeFolderPath(classPath);
+      if (normalizedClassPath.startsWith(`${current}/`)) {
+        classPaths.push(normalizedClassPath);
+      }
+    }
+
+    return classPaths.sort((a, b) => a.localeCompare(b, "pt", { sensitivity: "base" }));
+  }, [isAreaLevel, isCourseLevel, currentFolderPath, classPathToId]);
+
+  const isIntermediateTileLevel = (isAreaLevel || isCourseLevel) && currentTileChildren.length > 0;
+  const isClassTileLevel = isClassLevel && visibleFolderChildren.length > 0;
+  const isTileFolderLevel = isRootLevel || isIntermediateTileLevel || isClassTileLevel;
+
+  // For tiles at area/course/class level, always derive the visual tone from the area segment (first path segment)
+  const areaSegmentForTone = useMemo(() => {
+    if (isRootLevel) return "";
+    return splitFolderPath(currentFolderPath)[0] ?? "";
+  }, [isRootLevel, currentFolderPath]);
 
   useEffect(() => {
     const current = normalizeFolderPath(currentFolderPath);
@@ -1554,9 +1598,39 @@ export default function DocumentsPage() {
     <main className="page page-documents">
       <PanelSection>
         <div className="doc-explorer-shell" role="region" aria-label="Explorador documental">
-          <div className={`doc-workspace${isRootLevel ? " --root" : ""}`}>
-            <aside className={`doc-explorer-sidebar${!isRootLevel && isExplorerCollapsed ? " --collapsed" : ""}`}>
-              {!isRootLevel ? (
+          {!isRootLevel && isTileFolderLevel ? (
+            <nav className="doc-tile-breadcrumb" aria-label="Navegação de pastas">
+              <button
+                type="button"
+                className="btn ghost doc-tile-back-btn"
+                onClick={() => setCurrentFolderPath(parentFolderPath)}
+                aria-label="Voltar"
+              >
+                <span className="material-icons-sharp" aria-hidden="true">arrow_back</span>
+              </button>
+              <ol className="doc-tile-breadcrumb-list">
+                {breadcrumbs.map((crumb, index) => (
+                  <li key={crumb.path} className="doc-tile-breadcrumb-item">
+                    {index > 0 ? <span className="doc-tile-breadcrumb-sep" aria-hidden="true">›</span> : null}
+                    {index < breadcrumbs.length - 1 ? (
+                      <button
+                        type="button"
+                        className="doc-tile-breadcrumb-link"
+                        onClick={() => setCurrentFolderPath(crumb.path)}
+                      >
+                        {index === 0 ? "Raiz" : getFolderDisplayName(crumb.label)}
+                      </button>
+                    ) : (
+                      <span className="doc-tile-breadcrumb-current">{index === 0 ? "Raiz" : getFolderDisplayName(crumb.label)}</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          ) : null}
+          <div className={`doc-workspace${isTileFolderLevel ? " --root" : ""}`}>
+            <aside className={`doc-explorer-sidebar${!isTileFolderLevel && isExplorerCollapsed ? " --collapsed" : ""}`}>
+              {!isTileFolderLevel ? (
                 <>
                   <div className="doc-explorer-sidebar-header">
                     <strong>Pastas</strong>
@@ -1592,6 +1666,7 @@ export default function DocumentsPage() {
                       const folderLabel = segments[segments.length - 1] ?? path;
                       const folderDisplayLabel = getFolderDisplayName(folderLabel);
                       const { docsCount, coursesCount, classesCount } = getFolderContentsStats(path, allKnownFolderPaths, scopedDocs);
+                      const classMeta = classMetaByPath.get(normalizeFolderPath(path));
 
                       return (
                         <div
@@ -1616,10 +1691,23 @@ export default function DocumentsPage() {
                         >
                           <span className="material-icons-sharp" aria-hidden="true">folder</span>
                           <span className="doc-folder-main">
-                            <span className="doc-folder-name">{folderDisplayLabel}</span>
-                            <span className="doc-folder-meta">{docsCount} doc(s) • {coursesCount} curso(s) • {classesCount} turma(s)</span>
+                            <span className="doc-folder-name">{classMeta ? classMeta.turma : folderDisplayLabel}</span>
+                            {classMeta ? (
+                              <>
+                                <span className="doc-folder-meta doc-folder-meta--rich">
+                                  <span className="doc-folder-meta-chip">{classMeta.anoLetivo}</span>
+                                  <span className="doc-folder-meta-chip">{classMeta.curso}</span>
+                                </span>
+                                <span className="doc-folder-meta">
+                                  {classMeta.total} aluno(s) • {docsCount} ficheiro(s)
+                                  {classMeta.ativos > 0 ? ` • ${classMeta.ativos} ativo(s)` : ""}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="doc-folder-meta">{docsCount} doc(s) • {coursesCount} curso(s) • {classesCount} turma(s)</span>
+                            )}
                           </span>
-                          {!isRootLevel ? (
+                          {!isTileFolderLevel ? (
                             <button
                               type="button"
                               className="doc-folder-menu-trigger"
@@ -1651,14 +1739,17 @@ export default function DocumentsPage() {
                 </>
               ) : null}
 
-              {isRootLevel ? (
+              {isTileFolderLevel ? (
                 <div className="doc-folder-grid">
-                  {visibleFolderChildren.map((path, index) => {
+                  {(isIntermediateTileLevel ? currentTileChildren : visibleFolderChildren).map((path, index) => {
                     const segments = splitFolderPath(path);
                     const folderLabel = segments[segments.length - 1] ?? path;
                     const folderDisplayLabel = getFolderDisplayName(folderLabel);
-                    const visual = getRootFolderPresentation(folderLabel);
+                    const visual = isRootLevel
+                      ? getRootFolderPresentation(folderLabel)
+                      : getRootFolderPresentation(areaSegmentForTone);
                     const { docsCount, coursesCount, classesCount } = getFolderContentsStats(path, allKnownFolderPaths, scopedDocs);
+                    const classMeta = classMetaByPath.get(normalizeFolderPath(path));
 
                     return (
                       <div
@@ -1678,8 +1769,18 @@ export default function DocumentsPage() {
                         <div className="doc-folder-card doc-folder-card--entry">
                           <span className="material-icons-sharp" aria-hidden="true">folder</span>
                           <span className="doc-folder-main">
-                            <span className="doc-folder-name">{folderDisplayLabel}</span>
-                            <span className="doc-folder-meta">{docsCount} doc(s) • {coursesCount} curso(s) • {classesCount} turma(s)</span>
+                            <span className="doc-folder-name">{classMeta ? classMeta.turma : folderDisplayLabel}</span>
+                            {classMeta ? (
+                              <>
+                                <span className="doc-folder-meta doc-folder-meta--rich">
+                                  <span className="doc-folder-meta-chip">{classMeta.anoLetivo}</span>
+                                  <span className="doc-folder-meta-chip">{classMeta.curso}</span>
+                                </span>
+                                <span className="doc-folder-meta">{classMeta.total} aluno(s) • {docsCount} ficheiro(s)</span>
+                              </>
+                            ) : (
+                              <span className="doc-folder-meta">{docsCount} doc(s) • {coursesCount} curso(s) • {classesCount} turma(s)</span>
+                            )}
                           </span>
                           <button
                             type="button"
@@ -1705,7 +1806,7 @@ export default function DocumentsPage() {
                     );
                   })}
 
-                  {visibleFolderChildren.length === 0 ? (
+                  {(isIntermediateTileLevel ? currentTileChildren.length : visibleFolderChildren.length) === 0 ? (
                     <p className="meta" style={{ padding: "0.5rem 0" }}>
                       Nenhuma pasta disponível.
                     </p>
@@ -1714,7 +1815,7 @@ export default function DocumentsPage() {
               ) : null}
             </aside>
 
-            {!isRootLevel ? (
+            {!isTileFolderLevel ? (
               <div className="doc-explorer-main">
                 <div className="doc-context-actions" role="group" aria-label="Ações rápidas da pasta atual">
                   <button
