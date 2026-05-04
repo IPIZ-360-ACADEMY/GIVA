@@ -2,6 +2,8 @@ import { useOutletContext } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { matchesSearch } from "../utils/search.js";
+import { isCoordinatorRole } from "../utils/accessControl.js";
+import { filterByCoordinatorScope } from "../utils/coordinationScope.js";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import DataTable from "../components/DataTable.jsx";
@@ -50,7 +52,10 @@ export default function PartnersPage() {
   const { user, authProfile } = useAuth();
   const userRole = String(authProfile?.role ?? authProfile?.role_name ?? "").toUpperCase();
   const isStudent = userRole === "STUDENT";
-  const isAdminManager = userRole === "ADMIN_1" || userRole === "SUPER_ADMIN";
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const isCoordinator = isCoordinatorRole(userRole);
+  const isCompanyManager = userRole === "COMPANY";
+  const canManagePartners = isSuperAdmin || isCoordinator;
   
   // Partner management
   const [partners, setPartners] = useState([]);
@@ -71,6 +76,22 @@ export default function PartnersPage() {
   const [selectedApplicationForReview, setSelectedApplicationForReview] = useState(null);
   const [openVacanciesByPartner, setOpenVacanciesByPartner] = useState(new Map());
 
+  const coordinatorScopeKey = useMemo(
+    () => {
+      const role = String(authProfile?.role ?? "").toUpperCase();
+      const areaId = String(authProfile?.areaId ?? "");
+      const courseIds = Array.isArray(authProfile?.courseIds) ? authProfile.courseIds.join(",") : "";
+      const courseCodes = Array.isArray(authProfile?.courseCodes) ? authProfile.courseCodes.join(",") : "";
+      return `${role}|${areaId}|${courseIds}|${courseCodes}`;
+    },
+    [
+      authProfile?.role,
+      authProfile?.areaId,
+      Array.isArray(authProfile?.courseIds) ? authProfile.courseIds.join(",") : "",
+      Array.isArray(authProfile?.courseCodes) ? authProfile.courseCodes.join(",") : "",
+    ]
+  );
+
   useEffect(() => {
     let active = true;
 
@@ -87,7 +108,11 @@ export default function PartnersPage() {
         if (!active) {
           return;
         }
-        setPartners(rows.map((item, index) => normalizePartner(item, index)));
+        const normalizedRows = rows.map((item, index) => normalizePartner(item, index));
+        const scopedRows = filterByCoordinatorScope(normalizedRows, authProfile, {
+          areaKeys: ["areaId", "area_id"],
+        });
+        setPartners(isCoordinator ? scopedRows : normalizedRows);
         setApiMode(true);
         setLoading(false);
       } catch {
@@ -105,7 +130,7 @@ export default function PartnersPage() {
     return () => {
       active = false;
     };
-  }, [showToast]);
+  }, [authProfile?.areaId, authProfile?.role, coordinatorScopeKey, isCoordinator, showToast]);
 
   // Load student applications (if student)
   useEffect(() => {
@@ -171,7 +196,7 @@ export default function PartnersPage() {
   // Load company applications (if admin_company)
   useEffect(() => {
     async function loadCompanyApplications() {
-      if (!user?.id || !isAdminManager) {
+      if (!user?.id || !isCompanyManager) {
         return;
       }
       try {
@@ -187,7 +212,7 @@ export default function PartnersPage() {
       }
     }
     loadCompanyApplications();
-  }, [user?.id, isAdminManager]);
+  }, [user?.id, isCompanyManager]);
 
     const getApplicationStatusForPartner = (partnerId) => {
       const app = studentApplications.find((a) => a.partner_id === partnerId);
@@ -311,7 +336,7 @@ export default function PartnersPage() {
               </button>
             )}
 
-            {isAdminManager && (
+            {isCompanyManager && (
               <button
                 type="button"
                 className="btn ghost"
@@ -321,7 +346,7 @@ export default function PartnersPage() {
               </button>
             )}
 
-            {isAdminManager && (
+            {canManagePartners && (
               <button
                 type="button"
                 className="btn ghost"
@@ -334,7 +359,7 @@ export default function PartnersPage() {
               </button>
             )}
 
-            {isAdminManager && (
+            {canManagePartners && (
               <button
                 type="button"
                 className="btn ghost partner-delete-btn"
@@ -361,44 +386,6 @@ export default function PartnersPage() {
               </button>
             )}
 
-            {(!isAdminManager && !isStudent) && (
-              <>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => {
-                    setEditingPartnerId(row.id);
-                    setShowModal(true);
-                  }}
-                >
-                  {t("partners.edit")}
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost partner-delete-btn"
-                  onClick={async () => {
-                    const message = t("partners.confirmDelete").replace("{name}", row.empresa);
-                    if (!window.confirm(message)) {
-                      return;
-                    }
-                    if (!apiMode) {
-                      showToast("Operação indisponível sem ligação Supabase.", "error");
-                      return;
-                    }
-                    try {
-                      await deletePartner(row.id);
-                    } catch {
-                      showToast("Não foi possível remover o parceiro.", "error");
-                      return;
-                    }
-                    setPartners((current) => current.filter((item) => item.id !== row.id));
-                    showToast(t("partners.toast.deleted"));
-                  }}
-                >
-                  {t("partners.delete")}
-                </button>
-              </>
-            )}
           </div>
         );
       },
@@ -440,17 +427,19 @@ export default function PartnersPage() {
         title={t("partners.title")}
         description={t("partners.description")}
         meta={
-          <button
-            className="btn primary"
-            type="button"
-            onClick={() => {
-              setEditingPartnerId(null);
-              setShowModal(true);
-            }}
-          >
-            <span className="material-icons-sharp" aria-hidden="true">add</span>
-            {t("partners.register")}
-          </button>
+          canManagePartners ? (
+            <button
+              className="btn primary"
+              type="button"
+              onClick={() => {
+                setEditingPartnerId(null);
+                setShowModal(true);
+              }}
+            >
+              <span className="material-icons-sharp" aria-hidden="true">add</span>
+              {t("partners.register")}
+            </button>
+          ) : null
         }
       />
 
@@ -477,7 +466,7 @@ export default function PartnersPage() {
         {loading ? <p className="meta loading-state">A carregar parceiros...</p> : <DataTable columns={columns} rows={filtered} />}
       </PanelSection>
 
-        {isAdminManager && (
+        {isCompanyManager && (
           <PanelSection title={t("partners.myApplications") || "Minhas Candidaturas"}>
             <div className="application-filters" style={{ marginBottom: "1.5rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               {["PENDING", "ACCEPTED", "REJECTED", "WITHDRAWN", "COMPLETED"].map((status) => (
@@ -591,7 +580,7 @@ export default function PartnersPage() {
         )}
 
         {/* Review Modal (Company reviewing applications) */}
-        {showReviewModal && selectedApplicationForReview && isAdminManager && (
+        {showReviewModal && selectedApplicationForReview && isCompanyManager && (
           <JobApplicationModal
             applicationId={selectedApplicationForReview.id}
             partnerId={selectedApplicationForReview.partner_id}

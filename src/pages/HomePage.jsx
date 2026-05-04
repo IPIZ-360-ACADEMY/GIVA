@@ -9,7 +9,7 @@ import { getBookmarkedPostIds, getBookmarkedPosts, getFeedPosts, sharePost, subs
 export default function HomePage() {
   const { t } = useOutletContext();
   const { user } = useAuth();
-  const { isSuperAdmin, isAdmin1, isAdmin, isStudentUser: isStudent, isExternalUser: isExternal } = useAccessProfile();
+  const { isSuperAdmin, isCoordinatorUser, isStudentUser: isStudent, isExternalUser: isExternal } = useAccessProfile();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -173,7 +173,7 @@ export default function HomePage() {
       };
     }
 
-    if (isAdmin1) {
+    if (isCoordinatorUser) {
       return {
         title: "Feed Operacional da Coordenação",
         description: "Visão curada para acompanhamento diário da tua operação académica.",

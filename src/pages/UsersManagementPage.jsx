@@ -32,7 +32,9 @@ const TYPE_LABELS = {
 
 const ROLE_LABELS = {
   SUPER_ADMIN:   { label: "Super Admin",   color: "#c2410c" },
-  ADMIN_1:       { label: "Admin",         color: "#b45309" },
+  ADMIN:         { label: "Admin",         color: "#b45309" },
+  COORDINATOR:   { label: "Coordenador",   color: "#0f766e" },
+  ADMIN_1:       { label: "Coordenador",   color: "#0f766e" },
   COMPANY:       { label: "Empresa",       color: "#7856ff" },
   authenticated: { label: "Utilizador",   color: "#6b7280" },
 };
@@ -239,7 +241,8 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
                 <select value={form.role} onChange={(e) => set("role", e.target.value)}>
                   <option value="authenticated">Utilizador (padrão)</option>
                   <option value="COMPANY">Empresa (COMPANY)</option>
-                  <option value="ADMIN_1">Administrador (ADMIN_1)</option>
+                  <option value="COORDINATOR">Coordenador (COORDINATOR)</option>
+                  <option value="ADMIN">Administrador (ADMIN)</option>
                   <option value="SUPER_ADMIN">Super Admin (SUPER_ADMIN)</option>
                 </select>
                 <p className="form-hint">
@@ -336,7 +339,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     if (step === 1) return Boolean(form.type);
     if (step === 2) {
       if (!form.role) return false;
-      if (form.role === "ADMIN_1") return Boolean(form.areaId);
+      if (form.role === "COORDINATOR" || form.role === "ADMIN_1") return Boolean(form.areaId);
       return true;
     }
     if (step === 3) {
@@ -366,8 +369,8 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       toast("As passwords não coincidem.", "error");
       return;
     }
-    if (form.role === "ADMIN_1" && !form.areaId) {
-      toast("Para coordenador (ADMIN_1), a área de formação é obrigatória.", "error");
+    if ((form.role === "COORDINATOR" || form.role === "ADMIN_1") && !form.areaId) {
+      toast("Para coordenador, a área de formação é obrigatória.", "error");
       return;
     }
 
@@ -391,7 +394,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
         requirePasswordChange: true,
       });
 
-      if (form.role === "ADMIN_1") {
+      if (form.role === "COORDINATOR" || form.role === "ADMIN_1") {
         await adminSetUserArea(uid, form.areaId);
       }
 
@@ -462,11 +465,13 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
                     <select value={form.role} onChange={(e) => set("role", e.target.value)}>
                       {roleOptions.includes("authenticated") && <option value="authenticated">Utilizador</option>}
                       {roleOptions.includes("COMPANY") && <option value="COMPANY">Empresa</option>}
-                      {roleOptions.includes("ADMIN_1") && <option value="ADMIN_1">Coordenador (ADMIN_1)</option>}
+                      {roleOptions.includes("COORDINATOR") && <option value="COORDINATOR">Coordenador</option>}
+                      {roleOptions.includes("ADMIN_1") && <option value="ADMIN_1">Coordenador legado (ADMIN_1)</option>}
+                      {roleOptions.includes("ADMIN") && <option value="ADMIN">Administrador</option>}
                       {roleOptions.includes("SUPER_ADMIN") && <option value="SUPER_ADMIN">Super Admin</option>}
                     </select>
                   </div>
-                  {form.role === "ADMIN_1" && (
+                  {(form.role === "COORDINATOR" || form.role === "ADMIN_1") && (
                     <div className="form-field">
                       <label>Área de formação do coordenador *</label>
                       <select value={form.areaId} onChange={(e) => set("areaId", e.target.value)} required>
@@ -533,7 +538,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
                     Confirmar registo: <strong>{form.display_name || "—"}</strong><br />
                     Email de login: <strong>{getDisplayEmail(form.type, form.email) || "—"}</strong><br />
                     Nível de acesso: <strong>{form.role}</strong>
-                    {form.role === "ADMIN_1" ? ` (Área: ${areas.find((a) => a.id === form.areaId)?.nome ?? areas.find((a) => a.id === form.areaId)?.name ?? form.areaId})` : ""}
+                    {(form.role === "COORDINATOR" || form.role === "ADMIN_1") ? ` (Área: ${areas.find((a) => a.id === form.areaId)?.nome ?? areas.find((a) => a.id === form.areaId)?.name ?? form.areaId})` : ""}
                   </p>
                   <p className="form-hint" style={{ marginTop: "0.75rem" }}>
                     A password inicial definida será exigida na primeira autenticação.
@@ -564,7 +569,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       <div className="admin-process-empty" style={{ marginTop: "1.5rem", fontSize: "0.82rem" }}>
         <span className="material-icons-sharp">info</span>
         <p>
-          Para coordenadores (ADMIN_1), a área de formação é obrigatória e aplicada no metadata JWT (area_id).
+          Para coordenadores, a área de formação é obrigatória e aplicada no metadata JWT (area_id).
         </p>
       </div>
     </div>
@@ -809,7 +814,9 @@ export default function UsersManagementPage({ embedded = false }) {
               >
                 <option value="">Todos os níveis</option>
                 <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="ADMIN_1">Admin</option>
+                <option value="ADMIN">Admin</option>
+                <option value="COORDINATOR">Coordenador</option>
+                <option value="ADMIN_1">Coordenador legado (ADMIN_1)</option>
                 <option value="COMPANY">Empresa</option>
                 <option value="authenticated">Utilizador</option>
               </select>

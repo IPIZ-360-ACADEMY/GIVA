@@ -86,8 +86,8 @@ describe("ToolsPage role tabs", () => {
     });
   });
 
-  it("oculta tabs extras para ADMIN_1", async () => {
-    mocks.role = "ADMIN_1";
+  it("oculta tabs extras para COORDINATOR", async () => {
+    mocks.role = "COORDINATOR";
     render(<ToolsPage />);
 
     await waitFor(() => {

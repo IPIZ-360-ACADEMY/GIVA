@@ -6,6 +6,7 @@ import TrainingAreaCard from "../components/TrainingAreaCard.jsx";
 import ModalStepper from "../components/ModalStepper.jsx";
 import { listTrainingAreas } from "../services/trainingAreaService.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { isCoordinatorRole } from "../utils/accessControl.js";
 
 export default function TrainingAreasPage() {
   const { t } = useOutletContext();
@@ -22,7 +23,7 @@ export default function TrainingAreasPage() {
     setLoading(true);
     let data = await listTrainingAreas();
     // Se for coordenador, filtra apenas a área atribuída
-    if (authProfile?.role === "ADMIN_1" && authProfile?.areaId) {
+    if (isCoordinatorRole(authProfile?.role) && authProfile?.areaId) {
       data = data.filter((a) => String(a.id) === String(authProfile.areaId));
     }
     setAreas(data);
@@ -100,7 +101,7 @@ export default function TrainingAreasPage() {
         icon="school"
       />
 
-      {(authProfile?.role === "SUPER_ADMIN" || authProfile?.role === "ADMIN_1") && (
+      {(authProfile?.role === "SUPER_ADMIN" || isCoordinatorRole(authProfile?.role)) && (
         <div style={{ marginBottom: 24 }}>
           <button className="btn primary" onClick={() => setShowModal(true)}>
             {t("trainingArea.modal.newStructure")}

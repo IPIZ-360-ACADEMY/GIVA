@@ -5,6 +5,7 @@ import {
 } from "../services/trainingAreaService.js";
 
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { isCoordinatorRole } from "../utils/accessControl.js";
 
 export default function TrainingAreaCard({ area, t, onSelect }) {
   const { authProfile } = useAuth();
@@ -24,7 +25,7 @@ export default function TrainingAreaCard({ area, t, onSelect }) {
     setLoading(true);
     let data = await listCoursesByArea(area.id);
     // Se for coordenador, só mostra cursos da sua área
-    if (authProfile?.role === "ADMIN_1" && authProfile?.areaId && String(area.id) !== String(authProfile.areaId)) {
+    if (isCoordinatorRole(authProfile?.role) && authProfile?.areaId && String(area.id) !== String(authProfile.areaId)) {
       data = [];
     }
     setCourses(data);

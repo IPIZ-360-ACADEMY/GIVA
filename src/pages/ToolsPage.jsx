@@ -21,6 +21,7 @@ import { registerStudentUnified } from "../services/studentRegistryService.js";
 import { createTranslator } from "../utils/i18n.js";
 import { normalizeStudentProcessNumber, validateIpizProcessNumber } from "../utils/processNumber.js";
 import { matchesSearch } from "../utils/search.js";
+import { isCoordinatorRole } from "../utils/accessControl.js";
 
 // ── helpers ──────────────────────────────────────────────────
 function Avatar({ url, name, size = 40 }) {
@@ -2281,6 +2282,7 @@ export default function ToolsPage() {
 
   const _role = String(authProfile?.role ?? "").toUpperCase();
   const isSuperAdmin = _role === "SUPER_ADMIN";
+  const isCoordinator = isCoordinatorRole(_role);
   const visibleTabs = isSuperAdmin ? [...ADMIN_TABS, ...SUPER_ADMIN_TABS] : ADMIN_TABS;
 
   useEffect(() => {
@@ -2298,7 +2300,7 @@ export default function ToolsPage() {
     }
   }, [activeTab, visibleTabs]);
 
-  if (_role !== "ADMIN_1" && _role !== "SUPER_ADMIN") {
+  if (!isCoordinator && !isSuperAdmin) {
     return (
       <div className="page">
         <PageHeader

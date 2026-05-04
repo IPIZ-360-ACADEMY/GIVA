@@ -31,7 +31,7 @@ function normalizeUserPayload(payload = {}) {
   const processNumber = type === "student"
     ? normalizeStudentProcessNumber(payload.processNumber ?? getStudentProcessNumberFromIdentifier(payload.email)) || null
     : null;
-  const areaId = role === "ADMIN_1" ? String(payload.areaId ?? "").trim() || null : null;
+  const areaId = role === "COORDINATOR" ? String(payload.areaId ?? "").trim() || null : null;
 
   return {
     email: String(payload.email ?? "").trim().toLowerCase(),

@@ -45,8 +45,6 @@ export default function AppShell() {
     isCoordinatorUser,
     isTeacherUser,
     isSuperAdmin,
-    isAdmin1,
-    isAdmin,
   } = useMemo(
     () => resolveAccessProfile({ role: authProfile?.role, type: userProfile?.type }),
     [authProfile?.role, userProfile?.type]
@@ -72,16 +70,16 @@ export default function AppShell() {
         ];
       }
 
-      // ADMIN_1: gestor institucional — painel de admin + ferramentas + rotas operacionais
-      if (isAdmin1) {
+      // Coordenador: operação académica escopada à sua coordenação atribuída
+      if (isCoordinatorUser) {
         return [
           { to: "/home", icon: "public", label: "Comunidade" },
           { to: "/", icon: "dashboard", label: t("nav.dashboard") },
           { to: "/estagios", icon: "work_history", label: t("nav.internships") },
           { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
           { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
+          { to: "/turmas", icon: "school", label: "Turmas" },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
-          { to: "/admin", icon: "admin_panel_settings", label: "Administração" },
           { to: "/ferramentas", icon: "build", label: "Ferramentas" },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
@@ -115,7 +113,7 @@ export default function AppShell() {
         ];
       }
 
-      if (isCoordinatorUser || isTeacherUser) {
+      if (isTeacherUser) {
         return [
           { to: "/home", icon: "public", label: "Comunidade" },
           { to: "/", icon: "dashboard", label: t("nav.dashboard") },
@@ -143,7 +141,7 @@ export default function AppShell() {
         { to: "/config", icon: "settings", label: t("nav.settings") },
       ];
     },
-    [t, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isCoordinatorUser, isTeacherUser, isAdmin1, isSuperAdmin]
+    [t, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isCoordinatorUser, isTeacherUser, isSuperAdmin]
   );
 
   const navSections = useMemo(() => {

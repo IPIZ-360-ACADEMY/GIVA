@@ -8,7 +8,7 @@ export default function StudentProfilePage() {
   const { user, userProfile, authProfile } = useAuth();
 
   const role = String(authProfile?.role ?? "").toUpperCase();
-  const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN_1";
+  const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN";
   const isCompanyUser = userProfile?.type === "company" || role === "COMPANY";
   const targetStudentId = studentId || user?.id;
 

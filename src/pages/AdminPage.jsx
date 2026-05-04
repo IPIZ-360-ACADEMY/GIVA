@@ -9,6 +9,7 @@ import { broadcastAnnouncement, sendNotification } from "../services/notificatio
 import { listManualClasses, createManualClass } from "../services/classesService.js";
 import { registerStudentUnified } from "../services/studentRegistryService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
+import { isCoordinatorRole } from "../utils/accessControl.js";
 
 // ── helpers ────────────────────────────────────────────────────
 function Badge({ label, variant = "neutral" }) {
@@ -180,7 +181,7 @@ function StudentRegisterSection({ toast, authProfile }) {
   useEffect(() => {
     let query = supabase.from("training_area").select("id,code,name").eq("is_active", true).order("display_order");
     // Se for coordenador, filtra apenas a área atribuída
-    if (authProfile?.role === "ADMIN_1" && authProfile?.areaId) {
+    if (isCoordinatorRole(authProfile?.role) && authProfile?.areaId) {
       query = query.eq("id", authProfile.areaId);
     }
     query.then(({ data }) => setAreas(data ?? []))

@@ -39,16 +39,23 @@ export function getAllowedRolesForType(type) {
   const normalizedType = normalizeAccountType(type);
 
   if (normalizedType === "company") return ["COMPANY"];
-  if (normalizedType === "coordinator") return ["COORDINATOR", "ADMIN", "ADMIN_1", "SUPER_ADMIN"];
-  if (normalizedType === "teacher") return ["TEACHER", "ADMIN", "ADMIN_1", "SUPER_ADMIN"];
-  if (normalizedType === "admin") return ["ADMIN_1", "SUPER_ADMIN"];
+  if (normalizedType === "coordinator") return ["COORDINATOR", "SUPER_ADMIN"];
+  if (normalizedType === "teacher") return ["TEACHER", "COORDINATOR", "SUPER_ADMIN"];
+  if (normalizedType === "admin") return ["COORDINATOR", "ADMIN", "SUPER_ADMIN"];
   if (normalizedType === "student") return ["authenticated", "STUDENT"];
   return ["authenticated", "EXTERNAL"];
 }
 
+export function isCoordinatorRole(role) {
+  const normalized = normalizePlatformRole(role);
+  return normalized === "COORDINATOR";
+}
+
 export function defaultRoleForAccountType(type, fallback = "authenticated") {
   const allowedRoles = getAllowedRolesForType(type);
-  const normalizedFallback = normalizePlatformRole(fallback);
+  // Normalizar ADMIN_1 legado para COORDINATOR
+  const raw = normalizePlatformRole(fallback);
+  const normalizedFallback = raw === "ADMIN_1" ? "COORDINATOR" : raw;
   return allowedRoles.includes(normalizedFallback) ? normalizedFallback : allowedRoles[0];
 }
 
@@ -75,9 +82,9 @@ export function resolveAccessProfile({ role, type }) {
   const isSuperAdmin = normalizedRole === "SUPER_ADMIN";
   const isAdminCore = normalizedRole === "ADMIN";
   const isAdmin1 = normalizedRole === "ADMIN_1";
-  const isCoordinatorUser = normalizedRole === "COORDINATOR" || normalizedType === "coordinator";
+  const isCoordinatorUser = isCoordinatorRole(normalizedRole) || normalizedType === "coordinator";
   const isTeacherUser = normalizedRole === "TEACHER" || normalizedType === "teacher";
-  const isAdmin = isSuperAdmin || isAdminCore || isAdmin1 || normalizedType === "admin";
+  const isAdmin = isSuperAdmin || isAdminCore || normalizedType === "admin";
   const isCompanyUser = normalizedType === "company" || normalizedRole === "COMPANY";
   const isStudentUser = normalizedType === "student" || normalizedRole === "STUDENT";
   const isExternalUser = normalizedType === "external" || normalizedRole === "EXTERNAL";

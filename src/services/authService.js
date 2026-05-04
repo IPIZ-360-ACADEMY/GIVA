@@ -18,6 +18,46 @@ function normalizeAreaId(areaId) {
   return isUuid(normalized) ? normalized : null;
 }
 
+function normalizeUuidList(value) {
+  if (!value) return [];
+
+  const source = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",")
+      : [value];
+
+  const unique = new Set();
+  for (const item of source) {
+    const normalized = String(item ?? "").trim();
+    if (isUuid(normalized)) {
+      unique.add(normalized);
+    }
+  }
+
+  return Array.from(unique);
+}
+
+function normalizeCourseCodes(value) {
+  if (!value) return [];
+
+  const source = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",")
+      : [value];
+
+  const unique = new Set();
+  for (const item of source) {
+    const normalized = String(item ?? "").trim().toUpperCase();
+    if (normalized) {
+      unique.add(normalized);
+    }
+  }
+
+  return Array.from(unique);
+}
+
 export function isAuthEnabled() {
   return isSupabaseConfigured && Boolean(supabase);
 }
@@ -28,6 +68,8 @@ export function getAuthProfile(user) {
       displayName: null,
       role: null,
       areaId: null,
+      courseIds: [],
+      courseCodes: [],
       email: null,
       mustChangePassword: false,
     };
@@ -35,11 +77,34 @@ export function getAuthProfile(user) {
 
   const metadata = user.user_metadata ?? {};
   const appMetadata = user.app_metadata ?? {};
+  const areaId = normalizeAreaId(appMetadata.area_id ?? metadata.area_id);
+  const courseIds = normalizeUuidList(
+    appMetadata.course_ids
+    ?? appMetadata.assigned_course_ids
+    ?? metadata.course_ids
+    ?? metadata.assigned_course_ids
+    ?? appMetadata.course_id
+    ?? metadata.course_id
+  );
+  const courseCodes = normalizeCourseCodes(
+    appMetadata.course_codes
+    ?? appMetadata.assigned_course_codes
+    ?? metadata.course_codes
+    ?? metadata.assigned_course_codes
+    ?? metadata.course_code
+    ?? appMetadata.course_code
+  );
+
+  // Normalizar ADMIN_1 legado para COORDINATOR (tipo único de coordenador)
+  const rawRole = appMetadata.role ?? metadata.role ?? "authenticated";
+  const role = rawRole === "ADMIN_1" ? "COORDINATOR" : rawRole;
 
   return {
     displayName: metadata.display_name ?? metadata.name ?? user.email ?? null,
-    role: appMetadata.role ?? metadata.role ?? "authenticated",
-    areaId: normalizeAreaId(appMetadata.area_id ?? metadata.area_id),
+    role,
+    areaId,
+    courseIds,
+    courseCodes,
     email: user.email ?? null,
     mustChangePassword: Boolean(metadata.must_change_password),
   };

@@ -67,7 +67,6 @@ export default function RequireAuth({ children }) {
     isCoordinatorUser,
     isTeacherUser,
     isSuperAdmin,
-    isAdmin1,
     isAdmin,
   } = resolveAccessProfile({
     role: authProfile?.role,
@@ -86,12 +85,11 @@ export default function RequireAuth({ children }) {
     );
   }
 
-  // ADMIN_1: gestor institucional — ferramentas, painel e rotas académicas/operacionais
-  if (isAdmin1) {
-    const admin1AllowedRoutes = [
+  // Coordenador (inclui legado ADMIN_1): apenas escopo académico/operacional
+  if (isCoordinatorUser) {
+    const coordinatorAllowedRoutes = [
       "/",
       "/home",
-      "/admin",
       "/ferramentas",
       "/estagios",
       "/avaliacoes",
@@ -108,9 +106,15 @@ export default function RequireAuth({ children }) {
       "/notificacoes",
       "/config",
     ];
-    if (!canAccess(admin1AllowedRoutes)) {
+    if (!canAccess(coordinatorAllowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
+
+    const forbiddenCoordinatorRoutes = ["/admin", "/utilizadores"];
+    if (canAccess(forbiddenCoordinatorRoutes)) {
+      return <Navigate to="/" replace state={{ from: location.pathname }} />;
+    }
+
     return children ?? <Outlet />;
   }
 
@@ -161,8 +165,8 @@ export default function RequireAuth({ children }) {
     }
   }
 
-  // Coordenador e Professor: escopo académico próprio + vistas RBAC
-  if ((isCoordinatorUser || isTeacherUser) && !isAdmin) {
+  // Professor: escopo académico próprio + vistas RBAC
+  if (isTeacherUser && !isAdmin) {
     const academicAllowedRoutes = [
       "/",
       "/home",
@@ -185,9 +189,9 @@ export default function RequireAuth({ children }) {
 
   // Qualquer outro perfil admin (ADMIN/isAdminCore) sem role explícita:
   // bloquear rotas altamente restritas
-  if (isAdmin && !isAdmin1) {
-    // Ferramentas e painel de admin apenas para ADMIN_1/SUPER_ADMIN (já tratados acima)
-    const restrictedRoutes = ["/admin", "/ferramentas", "/utilizadores"];
+  if (isAdmin && !isCoordinatorUser) {
+    // Ferramentas e painel de admin apenas para coordenação/super-admin
+    const restrictedRoutes = ["/admin", "/ferramentas", "/utilizadores", "/parceiros"];
     if (canAccess(restrictedRoutes)) {
       return <Navigate to="/" replace />;
     }

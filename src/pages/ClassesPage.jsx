@@ -3,9 +3,11 @@ import { Link, useOutletContext } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import ClassRegisterModal from "../components/ClassRegisterModal.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import { canUseInternshipsApi, listInternships } from "../services/internshipsService.js";
 import { listManualClasses, createManualClass } from "../services/classesService.js";
 import { matchesSearch } from "../utils/search.js";
+import { filterByCoordinatorScope } from "../utils/coordinationScope.js";
 
 const COURSE_RESOURCES = {
   TI: ["Guia de Desenvolvimento", "Checklist de Sprint", "Template de Relatorio Tecnico"],
@@ -20,6 +22,7 @@ function safeNumber(value, fallback = 0) {
 
 export default function ClassesPage() {
   const { query, t, showToast } = useOutletContext();
+  const { authProfile } = useAuth();
   const [rows, setRows] = useState([]);
   const [registeredClasses, setRegisteredClasses] = useState([]);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -61,9 +64,19 @@ export default function ClassesPage() {
   }, []);
 
   const classGroups = useMemo(() => {
+    const scopedRows = filterByCoordinatorScope(rows, authProfile, {
+      areaKeys: ["areaId", "area_id"],
+      courseCodeKeys: ["curso", "course"],
+    });
+
+    const scopedRegisteredClasses = filterByCoordinatorScope(registeredClasses, authProfile, {
+      areaKeys: ["areaId", "area_id"],
+      courseCodeKeys: ["curso", "course"],
+    });
+
     const byClass = new Map();
 
-    for (const row of rows) {
+    for (const row of scopedRows) {
       if (!matchesSearch(query, `${row.turma} ${row.anoLetivo} ${row.curso} ${row.supervisor} ${row.aluno} ${row.empresa} ${row.email} ${row.telefone}`)) {
         continue;
       }
@@ -92,7 +105,7 @@ export default function ClassesPage() {
       if (row.status === "risk") group.risco += 1;
     }
 
-    for (const item of registeredClasses) {
+    for (const item of scopedRegisteredClasses) {
       if (!matchesSearch(query, `${item.turma} ${item.anoLetivo} ${item.curso} ${item.supervisor}`)) {
         continue;
       }
@@ -152,7 +165,7 @@ export default function ClassesPage() {
             turmas: turmas.sort((a, b) => a.turma.localeCompare(b.turma)),
           })),
       }));
-  }, [query, rows]);
+  }, [authProfile, query, registeredClasses, rows]);
 
   function registerClass(payload, validationError) {
     if (validationError) {
