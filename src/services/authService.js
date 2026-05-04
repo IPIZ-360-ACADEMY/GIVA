@@ -279,6 +279,11 @@ export async function signUpStudent(processNumber, password, displayName, studen
   const localPart = normalizedProcessNumber.toLowerCase();
   const syntheticEmail = `aluno.${localPart}@${domain}`;
 
+  // Guardar sessão do admin ANTES do signUp, pois supabase.auth.signUp()
+  // faz auto-login com o novo utilizador e destrói a sessão activa
+  const { data: sessionData } = await supabase.auth.getSession();
+  const adminSession = sessionData?.session ?? null;
+
   const { data, error } = await supabase.auth.signUp({
     email: syntheticEmail,
     password,
@@ -286,6 +291,14 @@ export async function signUpStudent(processNumber, password, displayName, studen
     // use o nome correcto (em vez de fazer fallback para o email/processo)
     options: { data: { display_name: displayName, full_name: displayName } },
   });
+
+  // Restaurar sessão do admin imediatamente após o signUp
+  if (adminSession) {
+    await supabase.auth.setSession({
+      access_token: adminSession.access_token,
+      refresh_token: adminSession.refresh_token,
+    });
+  }
 
   if (error) return { data: null, error };
   if (!data.user) return { data: null, error: new Error("Utilizador não criado") };
@@ -376,11 +389,23 @@ export async function signUpWithType(email, password, displayName, type, typeDat
 
   const normalizedEmail = String(email ?? "").trim().toLowerCase();
 
+  // Guardar sessão activa (admin) antes do signUp para restaurar depois
+  const { data: sessionData } = await supabase.auth.getSession();
+  const prevSession = sessionData?.session ?? null;
+
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
     password,
     options: { data: { display_name: displayName } },
   });
+
+  // Restaurar sessão anterior imediatamente
+  if (prevSession) {
+    await supabase.auth.setSession({
+      access_token: prevSession.access_token,
+      refresh_token: prevSession.refresh_token,
+    });
+  }
 
   if (error) return { data: null, error };
   if (!data.user) return { data: null, error: new Error("Utilizador não criado") };
