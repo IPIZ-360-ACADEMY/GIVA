@@ -456,178 +456,268 @@ export default function InternshipsPage() {
     }
   ];
 
+  const countByStatus = useMemo(() => ({
+    active: rows.filter((r) => r.status === "active").length,
+    monitoring: rows.filter((r) => r.status === "monitoring").length,
+    risk: rows.filter((r) => r.status === "risk").length,
+  }), [rows]);
+
   return (
     <main className="page page-internships">
-      <PageHeader
-        title={t("internships.title")}
-        description={t("internships.description")}
-        meta={
-          <div className="internships-toolbar">
-            <span className="tag">
-              <span className="material-icons-sharp">filter_alt</span>
-              {t("internships.filter")}
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                <option value="all">{t("internships.all")}</option>
-                <option value="active">{t("internships.active")}</option>
-                <option value="monitoring">{t("internships.monitoring")}</option>
-                <option value="risk">{t("internships.risk")}</option>
-              </select>
-            </span>
 
-            <span className="tag">
-              <span className="material-icons-sharp">calendar_month</span>
-              {t("internships.schoolYear")}
-              <select value={schoolYearFilter} onChange={(event) => setSchoolYearFilter(event.target.value)}>
-                <option value="all">{t("internships.allYears")}</option>
-                {schoolYearOptions.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+      {/* Hero header */}
+      <div className="intern-hero">
+        <div className="intern-hero-inner">
+          <div className="intern-hero-badge">
+            <span className="material-icons-sharp">work_history</span>
+          </div>
+          <div className="intern-hero-text">
+            <h1 className="intern-hero-title">{t("internships.title")}</h1>
+            <p className="intern-hero-sub">{t("internships.description")}</p>
+          </div>
+          <div className="intern-hero-stats">
+            <span className="intern-stat intern-stat--total">
+              <strong>{rows.length}</strong> total
             </span>
-
-            <span className="tag">
-              <span className="material-icons-sharp">groups</span>
-              {t("internships.class")}
-              <select value={classFilter} onChange={(event) => setClassFilter(event.target.value)}>
-                <option value="all">{t("internships.allClasses")}</option>
-                {classOptions.map((className) => (
-                  <option key={className} value={className}>{className}</option>
-                ))}
-              </select>
+            <span className="intern-stat intern-stat--active">
+              <span className="material-icons-sharp">check_circle</span>
+              <strong>{countByStatus.active}</strong> {t("internships.active")}
+            </span>
+            <span className="intern-stat intern-stat--monitoring">
+              <span className="material-icons-sharp">visibility</span>
+              <strong>{countByStatus.monitoring}</strong> {t("internships.monitoring")}
+            </span>
+            <span className="intern-stat intern-stat--risk">
+              <span className="material-icons-sharp">warning</span>
+              <strong>{countByStatus.risk}</strong> {t("internships.risk")}
             </span>
           </div>
-        }
-      />
-
-      <PanelSection title={t("internships.priorityList")}>
-        {loadingRows ? (
-          <p className="meta loading-state">{t("internships.loading")}</p>
-        ) : (
-          <DataTable columns={columns} rows={filtered} />
-        )}
-      </PanelSection>
-
-      <PanelSection title={t("internships.classListTitle")}>
-        <div className="internships-class-controls">
-          <span className="tag">
-            <span className="material-icons-sharp">sort</span>
-            {t("internships.sortBy")}
-            <select value={classSortBy} onChange={(event) => setClassSortBy(event.target.value)}>
-              <option value="grade">{t("internships.sortGrade")}</option>
-              <option value="date">{t("internships.sortDate")}</option>
-              <option value="name">{t("internships.sortName")}</option>
+        </div>
+        <div className="intern-toolbar">
+          <label className="intern-filter-group">
+            <span className="material-icons-sharp">tune</span>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">{t("internships.all")}</option>
+              <option value="active">{t("internships.active")}</option>
+              <option value="monitoring">{t("internships.monitoring")}</option>
+              <option value="risk">{t("internships.risk")}</option>
             </select>
-          </span>
-
-          <span className="tag">
-            <span className="material-icons-sharp">format_list_numbered</span>
-            {t("internships.itemsPerPage")}
-            <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>{size}</option>
+          </label>
+          <label className="intern-filter-group">
+            <span className="material-icons-sharp">calendar_month</span>
+            <select value={schoolYearFilter} onChange={(e) => setSchoolYearFilter(e.target.value)}>
+              <option value="all">{t("internships.allYears")}</option>
+              {schoolYearOptions.map((year) => (
+                <option key={year} value={year}>{year}</option>
               ))}
             </select>
-          </span>
+          </label>
+          <label className="intern-filter-group">
+            <span className="material-icons-sharp">groups</span>
+            <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
+              <option value="all">{t("internships.allClasses")}</option>
+              {classOptions.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+
+
+      {/* Priority table panel */}
+      <div className="intern-panel">
+        <div className="intern-panel-head">
+          <span className="material-icons-sharp">priority_high</span>
+          <h2>{t("internships.priorityList")}</h2>
+          <span className="intern-panel-badge">{filtered.length} {t("internships.studentsCount")}</span>
+        </div>
+        {loadingRows ? (
+          <div className="intern-loading">
+            <span className="material-icons-sharp spin">sync</span>
+            {t("internships.loading")}
+          </div>
+        ) : filtered.length ? (
+          <div className="intern-table-wrap">
+            <table className="intern-table">
+              <thead>
+                <tr>
+                  <th>{t("common.student")}</th>
+                  <th>{t("internships.class")}</th>
+                  <th>{t("common.company")}</th>
+                  <th>{t("internships.startDate")}</th>
+                  <th className="intern-th-center">{t("internships.internshipGrade")}</th>
+                  <th className="intern-th-center">{t("common.status")}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((row) => (
+                  <tr key={row.id} className="intern-row" data-testid={`internship-${row.id}`}>
+                    <td>
+                      <button type="button" className="intern-student-btn" onClick={() => setSelectedStudent(row)}>
+                        {row.photo ? (
+                          <img className="intern-avatar" src={row.photo} alt="" />
+                        ) : (
+                          <span className="intern-avatar intern-avatar--initials" aria-hidden="true">
+                            {initials(row.aluno)}
+                          </span>
+                        )}
+                        <span className="intern-student-name">{row.aluno}</span>
+                      </button>
+                    </td>
+                    <td>
+                      <span className="intern-cell-muted">{row.turma}</span>
+                      <small className="intern-cell-sub">{row.anoLetivo}</small>
+                    </td>
+                    <td>{row.empresa}</td>
+                    <td>{row.inicio}</td>
+                    <td className="intern-th-center">
+                      <span className={`intern-grade intern-grade--${Number(row.nota) >= 14 ? "high" : Number(row.nota) >= 10 ? "mid" : "low"}`}>
+                        {row.nota}
+                      </span>
+                    </td>
+                    <td className="intern-th-center">
+                      <span className={`intern-status-pill intern-status-pill--${row.status}`}>
+                        {statusLabel(row.status, copy)}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="intern-details-btn"
+                        type="button"
+                        onClick={() => showToast(t("internships.toast.details").replace("{name}", toSafeText(row.aluno)))}
+                      >
+                        <span className="material-icons-sharp">open_in_new</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="intern-empty">{t("internships.emptyClasses")}</p>
+        )}
+      </div>
+
+      {/* Class grid panel */}
+      <div className="intern-panel">
+        <div className="intern-panel-head">
+          <span className="material-icons-sharp">school</span>
+          <h2>{t("internships.classListTitle")}</h2>
+          <div className="intern-panel-controls">
+            <label className="intern-filter-group intern-filter-group--sm">
+              <span className="material-icons-sharp">sort</span>
+              <select value={classSortBy} onChange={(e) => setClassSortBy(e.target.value)}>
+                <option value="grade">{t("internships.sortGrade")}</option>
+                <option value="date">{t("internships.sortDate")}</option>
+                <option value="name">{t("internships.sortName")}</option>
+              </select>
+            </label>
+            <label className="intern-filter-group intern-filter-group--sm">
+              <span className="material-icons-sharp">format_list_numbered</span>
+              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
 
-        <div className="class-grid">
-          {loadingRows ? (
-            <p className="meta loading-state">{t("internships.loading")}</p>
-          ) : classGroups.length ? (
-            classGroups.map((group) => {
+        {loadingRows ? (
+          <div className="intern-loading">
+            <span className="material-icons-sharp spin">sync</span>
+            {t("internships.loading")}
+          </div>
+        ) : classGroups.length ? (
+          <div className="intern-class-grid">
+            {classGroups.map((group) => {
               const groupKey = `${group.anoLetivo}-${group.turma}`;
               const totalPages = Math.max(1, Math.ceil(group.alunos.length / pageSize));
               const currentPage = Math.min(classPage[groupKey] ?? 1, totalPages);
               const startIndex = (currentPage - 1) * pageSize;
               const visibleStudents = group.alunos.slice(startIndex, startIndex + pageSize);
+              const avgGrade = group.alunos.length
+                ? (group.alunos.reduce((sum, s) => sum + Number(s.nota), 0) / group.alunos.length).toFixed(1)
+                : "—";
 
               return (
-                <article className="class-card" key={groupKey}>
-                <header className="class-card-head">
-                  <div>
-                    <h4>{group.turma}</h4>
-                    <p>
-                      {t("internships.schoolYear")}: {group.anoLetivo}
-                    </p>
-                    <p>
-                      {t("common.course")}: {group.curso}
-                    </p>
+                <article className="intern-class-card" key={groupKey}>
+                  <header className="intern-class-head">
+                    <div className="intern-class-head-info">
+                      <h4>{group.turma}</h4>
+                      <p>{group.curso} · {group.anoLetivo}</p>
+                    </div>
+                    <div className="intern-class-head-meta">
+                      <span className="intern-class-count">{group.alunos.length}</span>
+                      <small>{t("internships.studentsCount")}</small>
+                    </div>
+                  </header>
+
+                  <div className="intern-class-stats">
+                    <div className="intern-class-stat">
+                      <span className="material-icons-sharp">grade</span>
+                      <span>Média: <strong>{avgGrade}</strong></span>
+                    </div>
+                    <div className="intern-class-stat">
+                      <span className="material-icons-sharp">person</span>
+                      <span>{t("internships.supervisor")}: <strong>{group.supervisor || "—"}</strong></span>
+                    </div>
                   </div>
-                  <span className="tag">{group.alunos.length} {t("internships.studentsCount")}</span>
-                </header>
 
-                <div className="class-list">
-                  {visibleStudents.map((student) => (
-                    <button
-                      className="class-list-item"
-                      key={student.id}
-                      type="button"
-                      onClick={() => setSelectedStudent(student)}
-                    >
-                      <span className="student-avatar-md" aria-hidden="true">{initials(student.aluno)}</span>
-
-                      <div className="class-list-copy">
-                        <strong>{student.aluno}</strong>
-                        <small>
-                          {t("internships.startDate")}: {student.inicio} • {t("internships.internshipGrade")}: {student.nota}
-                        </small>
-                        <small>
-                          {t("internships.lastUpdate")}: {student.ultimaAtualizacao}
-                        </small>
-                      </div>
-
-                      <span className="tag class-list-tag">{statusLabel(student.status, copy)}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {totalPages > 1 ? (
-                  <div className="class-pagination" role="navigation" aria-label={t("internships.paginationLabel")}>
-                    <button
-                      className="btn ghost"
-                      type="button"
-                      onClick={() =>
-                        setClassPage((current) => ({
-                          ...current,
-                          [groupKey]: Math.max(1, (current[groupKey] ?? 1) - 1),
-                        }))
-                      }
-                      disabled={currentPage === 1}
-                    >
-                      {t("internships.previous")}
-                    </button>
-
-                    <span className="meta">
-                      {t("internships.page")}: {currentPage}/{totalPages}
-                    </span>
-
-                    <button
-                      className="btn ghost"
-                      type="button"
-                      onClick={() =>
-                        setClassPage((current) => ({
-                          ...current,
-                          [groupKey]: Math.min(totalPages, (current[groupKey] ?? 1) + 1),
-                        }))
-                      }
-                      disabled={currentPage === totalPages}
-                    >
-                      {t("internships.next")}
-                    </button>
+                  <div className="intern-class-list">
+                    {visibleStudents.map((student) => (
+                      <button
+                        key={student.id}
+                        type="button"
+                        className="intern-class-item"
+                        onClick={() => setSelectedStudent(student)}
+                      >
+                        <span className="intern-avatar intern-avatar--sm intern-avatar--initials" aria-hidden="true">
+                          {initials(student.aluno)}
+                        </span>
+                        <div className="intern-class-item-info">
+                          <strong>{student.aluno}</strong>
+                          <small>{student.empresa} · {t("internships.internshipGrade")}: {student.nota}</small>
+                        </div>
+                        <span className={`intern-status-pill intern-status-pill--${student.status} intern-status-pill--sm`}>
+                          {statusLabel(student.status, copy)}
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                ) : null}
 
-                <footer className="class-card-foot">
-                  {t("internships.supervisor")}: {group.supervisor}
-                </footer>
+                  {totalPages > 1 && (
+                    <div className="intern-class-pager">
+                      <button
+                        className="intern-pager-btn"
+                        type="button"
+                        disabled={currentPage === 1}
+                        onClick={() => setClassPage((c) => ({ ...c, [groupKey]: Math.max(1, (c[groupKey] ?? 1) - 1) }))}
+                      >
+                        <span className="material-icons-sharp">chevron_left</span>
+                      </button>
+                      <span className="intern-pager-info">{currentPage}/{totalPages}</span>
+                      <button
+                        className="intern-pager-btn"
+                        type="button"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setClassPage((c) => ({ ...c, [groupKey]: Math.min(totalPages, (c[groupKey] ?? 1) + 1) }))}
+                      >
+                        <span className="material-icons-sharp">chevron_right</span>
+                      </button>
+                    </div>
+                  )}
                 </article>
               );
-            })
-          ) : (
-            <p className="meta">{t("internships.emptyClasses")}</p>
-          )}
-        </div>
-      </PanelSection>
+            })}
+          </div>
+        ) : (
+          <p className="intern-empty">{t("internships.emptyClasses")}</p>
+        )}
+      </div>
 
       {selectedStudent !== null && (
         <StudentProfileModal

@@ -826,11 +826,17 @@ export default function AdminPage() {
 
   return (
     <div className="admin-page">
-      <PageHeader
-        title="Painel de Administração"
-        subtitle={`Bem-vindo, ${authProfile?.display_name ?? "Administrador"}`}
-        icon="admin_panel_settings"
-      />
+      <div className="admin-hero">
+        <div className="admin-hero-inner">
+          <div className="admin-hero-badge">
+            <span className="material-icons-sharp">admin_panel_settings</span>
+          </div>
+          <div className="admin-hero-text">
+            <h1 className="admin-hero-title">Painel de Administração</h1>
+            <p className="admin-hero-sub">Bem-vindo, {authProfile?.display_name ?? "Administrador"}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Modal global — acessível em qualquer tab */}
       {editingUser && (
@@ -904,7 +910,11 @@ export default function AdminPage() {
 
       {/* Companies */}
       {activeTab === "companies" && (
-        <PanelSection title="Empresas pendentes de aprovação" icon="apartment">
+        <div className="admin-panel">
+          <div className="admin-panel-head">
+            <span className="material-icons-sharp">apartment</span>
+            <h2>Empresas pendentes de aprovação</h2>
+          </div>
           {loadingCompanies ? (
             <p className="admin-loading">A carregar...</p>
           ) : pendingCompanies.length === 0 ? (
@@ -928,12 +938,16 @@ export default function AdminPage() {
               </table>
             </div>
           )}
-        </PanelSection>
+        </div>
       )}
 
       {/* Posts */}
       {activeTab === "posts" && (
-        <PanelSection title="Publicações pendentes de moderação" icon="article">
+        <div className="admin-panel">
+          <div className="admin-panel-head">
+            <span className="material-icons-sharp">article</span>
+            <h2>Publicações pendentes de moderação</h2>
+          </div>
           {loadingPosts ? (
             <p className="admin-loading">A carregar...</p>
           ) : pendingPosts.length === 0 ? (
@@ -957,12 +971,16 @@ export default function AdminPage() {
               </table>
             </div>
           )}
-        </PanelSection>
+        </div>
       )}
 
       {/* Users — lista interativa */}
       {activeTab === "users" && (
-        <PanelSection title="Utilizadores registados" icon="manage_accounts">
+        <div className="admin-panel">
+          <div className="admin-panel-head">
+            <span className="material-icons-sharp">manage_accounts</span>
+            <h2>Utilizadores registados</h2>
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
             <button className="btn secondary sm" onClick={() => setAllUsers([])}>
               <span className="material-icons-sharp">refresh</span>
@@ -1058,7 +1076,7 @@ export default function AdminPage() {
           <p className="form-hint" style={{ marginTop: "0.75rem" }}>
             Criação e gestão avançada de utilizadores foi unificada em Ferramentas.
           </p>
-        </PanelSection>
+        </div>
       )}
 
       {/* ── Gestão Académica ──────────────────────────────────── */}

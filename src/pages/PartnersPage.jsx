@@ -423,127 +423,263 @@ export default function PartnersPage() {
 
   return (
     <main className="page page-partners">
-      <PageHeader
-        title={t("partners.title")}
-        description={t("partners.description")}
-        meta={
-          canManagePartners ? (
+
+      {/* Hero */}
+      <div className="partners-hero">
+        <div className="partners-hero-inner">
+          <div className="partners-hero-badge">
+            <span className="material-icons-sharp">business</span>
+          </div>
+          <div className="partners-hero-text">
+            <h1 className="partners-hero-title">{t("partners.title")}</h1>
+            <p className="partners-hero-sub">{t("partners.description")}</p>
+          </div>
+          {canManagePartners && (
             <button
-              className="btn primary"
+              className="partners-hero-btn"
               type="button"
-              onClick={() => {
-                setEditingPartnerId(null);
-                setShowModal(true);
-              }}
+              onClick={() => { setEditingPartnerId(null); setShowModal(true); }}
             >
-              <span className="material-icons-sharp" aria-hidden="true">add</span>
+              <span className="material-icons-sharp">add</span>
               {t("partners.register")}
             </button>
-          ) : null
-        }
-      />
+          )}
+        </div>
+      </div>
 
-      <section className="partners-kpi-grid">
-        <article className="partners-kpi-card">
-          <span className="meta">{t("partners.metrics.total")}</span>
-          <strong>{metrics.total}</strong>
-        </article>
-        <article className="partners-kpi-card">
-          <span className="meta">{t("partners.metrics.slots")}</span>
-          <strong>{metrics.totalSlots}</strong>
-        </article>
-        <article className="partners-kpi-card">
-          <span className="meta">{t("partners.metrics.avgSla")}</span>
-          <strong>{metrics.avgSla}</strong>
-        </article>
-        <article className="partners-kpi-card">
-          <span className="meta">{t("partners.metrics.withPhoto")}</span>
-          <strong>{metrics.withPhoto}</strong>
-        </article>
-      </section>
+      {/* KPI strip */}
+      <div className="partners-kpi-strip">
+        <div className="partners-kpi-item">
+          <span className="material-icons-sharp">groups</span>
+          <div>
+            <strong>{metrics.total}</strong>
+            <span>{t("partners.metrics.total")}</span>
+          </div>
+        </div>
+        <div className="partners-kpi-item">
+          <span className="material-icons-sharp">work</span>
+          <div>
+            <strong>{metrics.totalSlots}</strong>
+            <span>{t("partners.metrics.slots")}</span>
+          </div>
+        </div>
+        <div className="partners-kpi-item">
+          <span className="material-icons-sharp">speed</span>
+          <div>
+            <strong>{metrics.avgSla}</strong>
+            <span>{t("partners.metrics.avgSla")}</span>
+          </div>
+        </div>
+        <div className="partners-kpi-item">
+          <span className="material-icons-sharp">verified</span>
+          <div>
+            <strong>{metrics.withPhoto}</strong>
+            <span>{t("partners.metrics.withPhoto")}</span>
+          </div>
+        </div>
+      </div>
 
-      <PanelSection title={t("partners.portfolio")}>
-        {loading ? <p className="meta loading-state">A carregar parceiros...</p> : <DataTable columns={columns} rows={filtered} />}
-      </PanelSection>
+      {/* Partners grid */}
+      <div className="partners-panel">
+        <div className="partners-panel-head">
+          <span className="material-icons-sharp">domain</span>
+          <h2>{t("partners.portfolio")}</h2>
+          <span className="partners-panel-badge">{filtered.length}</span>
+        </div>
+        {loading ? (
+          <div className="partners-loading">
+            <span className="material-icons-sharp spin">sync</span>
+            A carregar parceiros...
+          </div>
+        ) : filtered.length ? (
+          <div className="partners-grid">
+            {filtered.map((partner) => {
+              const appStatus = getApplicationStatusForPartner(partner.id);
+              const vacancyStats = openVacanciesByPartner.get(partner.id) ?? { openCount: 0, availableSlots: 0 };
+              const hasOpenVacancies = Number(vacancyStats.openCount ?? 0) > 0;
+              return (
+                <article className="partner-card" key={partner.id} data-testid={`row-${partner.id}`}>
+                  <div className="partner-card-header">
+                    {partner.photoPreview ? (
+                      <img src={partner.photoPreview} alt="" className="partner-card-logo" />
+                    ) : (
+                      <span className="partner-card-logo partner-card-logo--initials" aria-hidden="true">
+                        {partner.empresa.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                    <div className="partner-card-info">
+                      <h3 className="partner-card-name">{partner.empresa}</h3>
+                      <p className="partner-card-meta">
+                        {sectorLabel(partner.setor, t)}
+                        {partner.nif && ` · NIF: ${partner.nif}`}
+                      </p>
+                    </div>
+                    {appStatus && (
+                      <span className={`partner-app-status partner-app-status--${appStatus.toLowerCase()}`}>
+                        {t(`application.status.${appStatus.toLowerCase()}`) || appStatus}
+                      </span>
+                    )}
+                  </div>
 
-        {isCompanyManager && (
-          <PanelSection title={t("partners.myApplications") || "Minhas Candidaturas"}>
-            <div className="application-filters" style={{ marginBottom: "1.5rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <div className="partner-card-stats">
+                    <div className="partner-card-stat">
+                      <span className="material-icons-sharp">work_outline</span>
+                      <span><strong>{partner.vagas || "—"}</strong> vagas</span>
+                    </div>
+                    <div className="partner-card-stat">
+                      <span className="material-icons-sharp">speed</span>
+                      <span>SLA: <strong>{partner.sla || "—"}</strong></span>
+                    </div>
+                    {hasOpenVacancies && (
+                      <div className="partner-card-stat partner-card-stat--open">
+                        <span className="material-icons-sharp">bolt</span>
+                        <span><strong>{vacancyStats.openCount}</strong> vagas abertas</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {partner.areas?.length > 0 && (
+                    <div className="partner-card-areas">
+                      {partner.areas.slice(0, 3).map((area) => (
+                        <span key={area} className="partner-area-tag">{area}</span>
+                      ))}
+                      {partner.areas.length > 3 && (
+                        <span className="partner-area-tag partner-area-tag--more">+{partner.areas.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {partner.responsavel && (
+                    <div className="partner-card-contact">
+                      <span className="material-icons-sharp">person</span>
+                      {partner.responsavel}
+                      {partner.email && (
+                        <>
+                          <span className="material-icons-sharp" style={{ marginLeft: "auto" }}>mail</span>
+                          <a href={`mailto:${partner.email}`} className="partner-card-link">{partner.email}</a>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="partner-card-actions">
+                    {isStudent && (
+                      <button
+                        type="button"
+                        className={`partner-action-btn ${hasOpenVacancies ? (appStatus ? "partner-action-btn--primary secondary" : "partner-action-btn--primary") : "partner-action-btn--disabled"}`}
+                        onClick={() => {
+                          if (hasOpenVacancies) {
+                            setSelectedPartnerForApp(partner);
+                            setShowApplicationModal(true);
+                          }
+                        }}
+                        disabled={!hasOpenVacancies}
+                      >
+                        <span className="material-icons-sharp">{hasOpenVacancies ? "send" : "block"}</span>
+                        {hasOpenVacancies ? t("application.submit") : "Sem vagas"}
+                      </button>
+                    )}
+                    {canManagePartners && (
+                      <>
+                        <button
+                          type="button"
+                          className="partner-action-btn partner-action-btn--ghost"
+                          onClick={() => { setEditingPartnerId(partner.id); setShowModal(true); }}
+                        >
+                          <span className="material-icons-sharp">edit</span>
+                          {t("partners.edit")}
+                        </button>
+                        <button
+                          type="button"
+                          className="partner-action-btn partner-action-btn--danger"
+                          onClick={async () => {
+                            const message = t("partners.confirmDelete").replace("{name}", partner.empresa);
+                            if (!window.confirm(message)) return;
+                            if (!apiMode) { showToast("Operação indisponível sem ligação Supabase.", "error"); return; }
+                            try { await deletePartner(partner.id); } catch { showToast("Não foi possível remover o parceiro.", "error"); return; }
+                            setPartners((current) => current.filter((item) => item.id !== partner.id));
+                            showToast(t("partners.toast.deleted"));
+                          }}
+                        >
+                          <span className="material-icons-sharp">delete</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="partners-empty">
+            <span className="material-icons-sharp">business_center</span>
+            <p>Nenhum parceiro encontrado</p>
+          </div>
+        )}
+      </div>
+
+      {/* Company applications panel */}
+      {isCompanyManager && (
+        <div className="partners-panel">
+          <div className="partners-panel-head">
+            <span className="material-icons-sharp">assignment</span>
+            <h2>{t("partners.myApplications") || "Candidaturas"}</h2>
+            <div className="partners-app-filters">
               {["PENDING", "ACCEPTED", "REJECTED", "WITHDRAWN", "COMPLETED"].map((status) => (
                 <button
                   key={status}
+                  type="button"
+                  className={`partners-filter-btn ${applicationStatusFilter === status ? "partners-filter-btn--active" : ""}`}
                   onClick={() => setApplicationStatusFilter(status)}
-                  className={`btn ${applicationStatusFilter === status ? "primary" : "secondary"}`}
-                  style={{ position: "relative" }}
                 >
                   {t(`application.status.${status.toLowerCase()}`) || status}
-                  <span style={{ marginLeft: "0.5rem", display: "inline-block", minWidth: "1.5rem", textAlign: "center", fontWeight: "bold" }}>
-                    {applicationCounts[status]}
-                  </span>
+                  <span className="partners-filter-count">{applicationCounts[status]}</span>
                 </button>
               ))}
             </div>
-          
-            {filteredCompanyApplications.length === 0 ? (
-              <p className="meta" style={{ textAlign: "center", padding: "2rem" }}>Nenhuma candidatura encontrada para este filtro.</p>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
-                {filteredCompanyApplications.map((app) => (
-                  <div
-                    key={app.id}
-                    style={{
-                      border: "1px solid var(--color-border, #e0e0e0)",
-                      borderRadius: "0.5rem",
-                      padding: "1rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.75rem",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "0.5rem" }}>
-                      <div>
-                        <strong>{app.student?.full_name || "Estudante Desconhecido"}</strong>
-                        <div className="meta">{app.student?.email || "email@desconhecido"}</div>
-                      </div>
-                      <span className={`application-status-badge ${getApplicationStatusBadgeClass(app.status)}`} style={{ whiteSpace: "nowrap" }}>
-                        {t(`application.status.${app.status.toLowerCase()}`) || app.status}
-                      </span>
+          </div>
+          {filteredCompanyApplications.length === 0 ? (
+            <div className="partners-empty">
+              <span className="material-icons-sharp">inbox</span>
+              <p>Nenhuma candidatura encontrada para este filtro.</p>
+            </div>
+          ) : (
+            <div className="partners-apps-grid">
+              {filteredCompanyApplications.map((app) => (
+                <div className="partners-app-card" key={app.id}>
+                  <div className="partners-app-card-head">
+                    <div>
+                      <strong>{app.student?.full_name || "Estudante Desconhecido"}</strong>
+                      <p className="partners-app-email">{app.student?.email || "—"}</p>
                     </div>
-                    <div className="meta" style={{ fontSize: "0.85rem" }}>
-                      {new Date(app.applied_at).toLocaleDateString("pt-PT")}
-                    </div>
-                    {(app.cv_url || app.cover_letter_url || app.internship_letter_url) && (
-                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                        {app.cv_url && (
-                          <a className="btn ghost" href={app.cv_url} target="_blank" rel="noreferrer">CV</a>
-                        )}
-                        {app.cover_letter_url && (
-                          <a className="btn ghost" href={app.cover_letter_url} target="_blank" rel="noreferrer">Carta de Apresentação</a>
-                        )}
-                        {app.internship_letter_url && (
-                          <a className="btn ghost" href={app.internship_letter_url} target="_blank" rel="noreferrer">Carta Estágio</a>
-                        )}
-                      </div>
-                    )}
-                    {app.status === "PENDING" && (
-                      <button
-                        type="button"
-                        className="btn primary"
-                        onClick={() => {
-                          setSelectedApplicationForReview(app);
-                          setShowReviewModal(true);
-                        }}
-                        style={{ width: "100%" }}
-                      >
-                        Rever
-                      </button>
-                    )}
+                    <span className={`partner-app-status partner-app-status--${app.status.toLowerCase()}`}>
+                      {t(`application.status.${app.status.toLowerCase()}`) || app.status}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </PanelSection>
-        )}
+                  <p className="partners-app-date">{new Date(app.applied_at).toLocaleDateString("pt-PT")}</p>
+                  {(app.cv_url || app.cover_letter_url || app.internship_letter_url) && (
+                    <div className="partners-app-docs">
+                      {app.cv_url && <a className="partners-doc-link" href={app.cv_url} target="_blank" rel="noreferrer"><span className="material-icons-sharp">description</span>CV</a>}
+                      {app.cover_letter_url && <a className="partners-doc-link" href={app.cover_letter_url} target="_blank" rel="noreferrer"><span className="material-icons-sharp">article</span>Carta</a>}
+                      {app.internship_letter_url && <a className="partners-doc-link" href={app.internship_letter_url} target="_blank" rel="noreferrer"><span className="material-icons-sharp">file_present</span>Estágio</a>}
+                    </div>
+                  )}
+                  {app.status === "PENDING" && (
+                    <button
+                      type="button"
+                      className="partner-action-btn partner-action-btn--primary"
+                      onClick={() => { setSelectedApplicationForReview(app); setShowReviewModal(true); }}
+                    >
+                      <span className="material-icons-sharp">rate_review</span>
+                      Rever candidatura
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {showModal && (
         <PartnerRegisterModal
           onClose={() => {

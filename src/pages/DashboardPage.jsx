@@ -76,6 +76,42 @@ function fmtPercent(value, fallback = "-") {
   return `${value}%`;
 }
 
+function getTone(icon) {
+  if (["warning", "warning_amber", "error", "notifications_active"].includes(icon)) return "danger";
+  if (["trending_up", "task_alt", "sentiment_satisfied"].includes(icon)) return "success";
+  if (["domain", "business_center"].includes(icon)) return "info";
+  if (["person_off", "hourglass_empty"].includes(icon)) return "warning";
+  return "primary";
+}
+
+function relativeTime(dateStr) {
+  if (!dateStr) return "—";
+  const diff = Date.now() - Date.parse(dateStr);
+  if (!Number.isFinite(diff) || diff < 0) return "—";
+  const mins = Math.floor(diff / 60000);
+  if (mins < 2) return "Agora mesmo";
+  if (mins < 60) return `Há ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Há ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return days < 7 ? `Há ${days} dia${days > 1 ? "s" : ""}` : new Date(dateStr).toLocaleDateString("pt-PT");
+}
+
+function DistBar({ item, tone = "primary", compact = false }) {
+  return (
+    <div className={`dash-dist-row${compact ? " dash-dist-row--compact" : ""}`}>
+      <div className="dash-dist-label">{item.label}</div>
+      <div className="dash-dist-track">
+        <div className={`dash-dist-fill dash-dist-fill--${tone}`} style={{ width: `${item.percent}%` }} />
+      </div>
+      <div className="dash-dist-right">
+        <span className={`dash-dist-pct dash-dist-pct--${tone}`}>{item.percent}%</span>
+        {!compact && <span className="dash-dist-count">{item.count}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { query, currentDate, showToast, t } = useOutletContext();
   const { user } = useAuth();
@@ -613,365 +649,335 @@ export default function DashboardPage() {
 
   return (
     <main className="page page-dashboard">
-      <PageHeader
-        title={t("dashboard.title")}
-        description={t("dashboard.description")}
-        meta={
-          <>
+      {/* Hero */}
+      <div className="dash-hero">
+        <div className="dash-hero-inner">
+          <div className="dash-hero-badge">
+            <span className="material-icons-sharp">hub</span>
+          </div>
+          <div className="dash-hero-text">
+            <h1 className="dash-hero-title">{t("dashboard.title")}</h1>
+            <p className="dash-hero-sub">{t("dashboard.description")}</p>
+          </div>
+          <div className="dash-hero-meta">
             <span className="tag">
               <span className="material-icons-sharp">calendar_month</span>
               {currentDate}
             </span>
-            <span className="tag">
+            <span className="tag tag-live">
               <span className="material-icons-sharp">fact_check</span>
               {t("dashboard.auditedData")}
             </span>
-          </>
-        }
-      />
+          </div>
+        </div>
+      </div>
 
-      <section className="stats-grid dashboard-kpis">
+      {/* KPI strip */}
+      <section className="dash-kpi-grid">
         {kpis
           .filter((item) => matchesSearch(query, item.search))
-          .map((item) => (
-            <article className="stat-card" key={item.label}>
-              <div className="stat-head">
-                <span>{item.label}</span>
-                <span className="material-icons-sharp">{item.icon}</span>
-              </div>
-              <h3>{item.value}</h3>
-              <p>{item.meta}</p>
-              <div className="card-actions">
-                <Link className="btn ghost" to={item.to} aria-label={`${item.action}`}>
-                  {item.action}
-                </Link>
-              </div>
-            </article>
-          ))}
-      </section>
-
-      {!isStudentView && (
-      <>
-      <PanelSection
-        title={t("statistics.title")}
-        className="panel dashboard-panel"
-        actions={(
-          <span className="tag">
-            <span className="material-icons-sharp">
-              {loadingStatistics ? "sync" : statisticsMetrics ? "wifi" : "storage"}
-            </span>
-            {loadingStatistics ? t("statistics.loading") : statisticsMetrics ? t("statistics.liveData") : t("statistics.period")}
-          </span>
-        )}
-      >
-        <section className="stats-grid">
-          {filteredStatisticsCards.map((item) => (
-            <article className="stat-card" key={item.key}>
-              <div className="stat-head">
-                <span>{item.label}</span>
-                <span className="material-icons-sharp">{item.icon}</span>
-              </div>
-              <h3>{item.value}</h3>
-              {item.counts && <p className="meta" style={{ fontSize: "0.8rem", opacity: 0.65, marginTop: "0.25rem" }}>{item.counts}</p>}
-              <div className="card-actions">
-                <Link className="btn ghost" to={item.to} aria-label={`${t("common.open")} ${item.label}`}>
-                  {t("common.open")} {item.label}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        {statisticsBreakdown.length > 0 && (
-          <section className="panel-grid" style={{ marginTop: "1.5rem" }}>
-            <div className="panel" style={{ padding: "1.5rem" }}>
-              <h3 style={{ marginBottom: "1rem", fontSize: "1rem", fontWeight: 600 }}>
-                {t("statistics.internships")} - {t("statistics.liveData")}
-              </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem" }}>
-                {statisticsBreakdown.map((item) => (
-                  <div key={item.label} style={{ textAlign: "center", padding: "1rem", borderRadius: 8, background: "var(--surface-color, #f8fafc)" }}>
-                    <span className="material-icons" style={{ color: item.color, fontSize: "1.75rem", display: "block" }}>{item.icon}</span>
-                    <strong style={{ fontSize: "1.5rem", display: "block", lineHeight: 1.2 }}>{item.value}</strong>
-                    <span style={{ fontSize: "0.75rem", opacity: 0.65 }}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-      </PanelSection>
-
-      <section className="stats-grid dashboard-kpis dashboard-kpis-secondary">
-        <article className="stat-card">
-          <div className="stat-head">
-            <span>Alunos registados</span>
-            <span className="material-icons-sharp">groups</span>
-          </div>
-          <h3>{totalStudents}</h3>
-          <p>Base total para distribuição estatística.</p>
-        </article>
-        <article className="stat-card">
-          <div className="stat-head">
-            <span>Área com maior peso</span>
-            <span className="material-icons-sharp">donut_large</span>
-          </div>
-          <h3>{topArea}</h3>
-          <p>{areaDistribution[0]?.percent ?? 0}% da base de alunos.</p>
-        </article>
-        <article className="stat-card">
-          <div className="stat-head">
-            <span>Curso dominante</span>
-            <span className="material-icons-sharp">menu_book</span>
-          </div>
-          <h3>{topCourse}</h3>
-          <p>{courseDistribution[0]?.percent ?? 0}% da base de alunos.</p>
-        </article>
-        <article className="stat-card">
-          <div className="stat-head">
-            <span>Turma dominante</span>
-            <span className="material-icons-sharp">school</span>
-          </div>
-          <h3>{topClass}</h3>
-          <p>{classDistribution[0]?.percent ?? 0}% da base de alunos.</p>
-        </article>
-        {!isStudentView && (
-          <article className="stat-card">
-            <div className="stat-head">
-              <span>Taxa de ocupação das vagas</span>
-              <span className="material-icons-sharp">query_stats</span>
-            </div>
-            <h3>{vacancyOccupancy.occupancyPercent}%</h3>
-            <p>
-              {vacancyOccupancy.filledSlots}/{vacancyOccupancy.totalSlots} posições abertas preenchidas.
-            </p>
-          </article>
-        )}
-        {comparativeKpis.map((item) => (
-          <article className="stat-card" key={`cmp-${item.days}`}>
-            <div className="stat-head">
-              <span>Comparativo {item.days} dias</span>
-              <span className="material-icons-sharp">insights</span>
-            </div>
-            <h3>{item.current}</h3>
-            <p>
-              {item.delta >= 0 ? "+" : ""}{item.delta}% vs período anterior ({item.previous}).
-            </p>
-          </article>
-        ))}
-      </section>
-      </>
-      )}
-
-      {isStudentView && (
-        <section className="panel-grid dashboard-panels">
-          <PanelSection title="O teu progresso" className="panel dashboard-panel">
-            {studentPipeline.length ? (
-              <div className="list">
-                {studentPipeline.map((item) => (
-                  <div className="list-item" key={item.id}>
-                    <strong>{item.company} - {item.vacancy}</strong>
-                    <span className="meta">{item.status} · {item.appliedAt}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="meta">Sem candidaturas recentes. Atualiza o teu perfil e acompanha os teus estágios.</p>
-            )}
-          </PanelSection>
-
-          <PanelSection title={t("dashboard.recentActivity")} className="panel dashboard-panel">
-            <div className="list">
-              {recentActivity.length ? (
-                recentActivity.map((item) => (
-                  <div className="list-item" key={item.id}>
-                    <strong>{item.title}</strong>
-                    <span className="meta">{item.createdAt ? new Date(item.createdAt).toLocaleString("pt-PT") : "-"}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="meta">Sem atividade recente.</p>
-              )}
-            </div>
-          </PanelSection>
-        </section>
-      )}
-
-      {!isStudentView && (
-      <section className="panel-grid dashboard-panels">
-        {!isStudentView && (
-          <PanelSection title="Pulso operacional de candidaturas" className="panel dashboard-panel">
-            <div className="dashboard-distribution-grid">
-              <section className="dashboard-distribution-card">
-                <h3>Tendência de candidaturas (30 dias)</h3>
-                <p className="meta">Evolução semanal das submissões recentes</p>
-                <div className="bars">
-                  {applicationTrend30Days.map((item, index) => (
-                    <div className="bar" key={item.key}>
-                      <strong>{item.label}</strong>
-                      <div className={`line ${index % 2 === 1 ? "line-accent" : ""}`}>
-                        <span style={{ width: `${item.percent}%` }} />
-                      </div>
-                      <small className="meta">{item.count} candidatura(s)</small>
-                    </div>
-                  ))}
+          .map((item, index) => {
+            const tone = getTone(item.icon);
+            const cmp = index === 0 ? comparativeKpis[0] : null;
+            return (
+              <article className={`dash-kpi-card dash-kpi-card--${tone}`} key={item.label}>
+                <div className="dash-kpi-top">
+                  <span className={`dash-kpi-icon dash-kpi-icon--${tone}`}>
+                    <span className="material-icons-sharp">{item.icon}</span>
+                  </span>
+                  {cmp != null && (
+                    <span className={`dash-kpi-delta ${cmp.delta >= 0 ? "dash-kpi-delta--up" : "dash-kpi-delta--down"}`}>
+                      {cmp.delta >= 0 ? "▲" : "▼"} {Math.abs(cmp.delta)}%
+                    </span>
+                  )}
                 </div>
-              </section>
+                <div className="dash-kpi-value">{item.value}</div>
+                <div className="dash-kpi-label">{item.label}</div>
+                <p className="dash-kpi-meta">{item.meta}</p>
+                <Link className="dash-kpi-link" to={item.to}>{item.action}</Link>
+              </article>
+            );
+          })}
+      </section>
 
-              <section className="dashboard-distribution-card">
-                <h3>Pipeline de estado das candidaturas</h3>
-                <p className="meta">Distribuição global por estado atual</p>
-                <div className="bars">
-                  {applicationStatusStats.length ? (
-                    applicationStatusStats.map((item, index) => (
-                      <div className="bar" key={item.key}>
-                        <strong>{item.label}</strong>
-                        <div className={`line ${index % 2 === 1 ? "line-accent" : ""}`}>
-                          <span style={{ width: `${item.percent}%` }} />
+      {!isStudentView && (
+        <>
+          <div className="dash-body-grid">
+            {/* Distributions */}
+            <div className="dash-col-main">
+              <div className="dash-panel">
+                <div className="dash-panel-head">
+                  <span className="material-icons-sharp">bar_chart</span>
+                  <h2>{t("dashboard.distribution")}</h2>
+                  <span className="dash-panel-badge">{totalStudents} alunos</span>
+                </div>
+                <div className="dash-dist-columns">
+                  <div className="dash-dist-col">
+                    <div className="dash-dist-col-title">
+                      <span className="material-icons-sharp">category</span> Por Área
+                    </div>
+                    {areaDistribution.length ? (
+                      areaDistribution.slice(0, 7).map((item) => (
+                        <DistBar key={item.key} item={item} tone="primary" />
+                      ))
+                    ) : (
+                      <p className="meta">Sem dados de área.</p>
+                    )}
+                  </div>
+                  <div className="dash-dist-col">
+                    <div className="dash-dist-col-title">
+                      <span className="material-icons-sharp">menu_book</span> Por Curso
+                    </div>
+                    {courseDistribution.length ? (
+                      courseDistribution.slice(0, 7).map((item) => (
+                        <DistBar key={item.key} item={item} tone="info" />
+                      ))
+                    ) : (
+                      <p className="meta">Sem dados de curso.</p>
+                    )}
+                  </div>
+                  <div className="dash-dist-col">
+                    <div className="dash-dist-col-title">
+                      <span className="material-icons-sharp">school</span> Por Turma
+                    </div>
+                    {classDistribution.length ? (
+                      classDistribution.slice(0, 7).map((item) => (
+                        <DistBar key={item.key} item={item} tone="accent" />
+                      ))
+                    ) : (
+                      <p className="meta">Sem dados de turma.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar: activity + docflow */}
+            <div className="dash-col-side">
+              <div className="dash-panel dash-activity-panel">
+                <div className="dash-panel-head">
+                  <span className="material-icons-sharp">notifications</span>
+                  <h2>{t("dashboard.recentActivity")}</h2>
+                </div>
+                <div className="dash-activity-list">
+                  {recentActivity.length ? (
+                    recentActivity.map((item) => (
+                      <div className="dash-activity-item" key={item.id}>
+                        <div className="dash-activity-dot" />
+                        <div className="dash-activity-body">
+                          <div className="dash-activity-title">{item.title ?? item.mensagem ?? "Notificação"}</div>
+                          <div className="dash-activity-time">{relativeTime(item.createdAt ?? item.created_at)}</div>
                         </div>
-                        <small className="meta">{item.count} candidatura(s) · {item.percent}%</small>
                       </div>
                     ))
                   ) : (
-                    <p className="meta">Sem candidaturas para calcular o pipeline.</p>
+                    <p className="meta" style={{ padding: "0.75rem 0" }}>Sem atividade recente.</p>
                   )}
                 </div>
-              </section>
+                <Link to="/notificacoes" className="dash-panel-footer-link">
+                  <span className="material-icons-sharp">chevron_right</span> Ver todas as atividades
+                </Link>
+              </div>
 
-              <section className="dashboard-distribution-card">
-                <h3>Capacidade de vagas abertas</h3>
-                <p className="meta">Estado atual das vagas publicadas por empresas</p>
-                <div className="list">
-                  <div className="list-item">
-                    <strong>Vagas abertas</strong>
-                    <span className="meta">{vacancyOccupancy.totalOpen}</span>
-                  </div>
-                  <div className="list-item">
-                    <strong>Posições totais</strong>
-                    <span className="meta">{vacancyOccupancy.totalSlots}</span>
-                  </div>
-                  <div className="list-item">
-                    <strong>Preenchidas</strong>
-                    <span className="meta">{vacancyOccupancy.filledSlots}</span>
-                  </div>
-                  <div className="list-item">
-                    <strong>Disponíveis</strong>
-                    <span className="meta">{vacancyOccupancy.availableSlots}</span>
-                  </div>
+              <div className="dash-panel dash-docflow-panel">
+                <div className="dash-panel-head">
+                  <span className="material-icons-sharp">description</span>
+                  <h2>{t("dashboard.inProgressDocs")}</h2>
                 </div>
-              </section>
+                <div className="dash-docflow-hero">
+                  <div className="dash-docflow-count">{documentRows.length}</div>
+                  <div className="dash-docflow-label">Documentos acessíveis</div>
+                </div>
+                {documentFlowStats.slice(0, 4).map((item, index) => (
+                  <DistBar key={item.key} item={item} tone={index === 0 ? "warning" : "primary"} compact />
+                ))}
+                <button type="button" className="dash-panel-footer-link" onClick={() => setShowDocumentsModal(true)}>
+                  <span className="material-icons-sharp">folder_open</span> Abrir documentos
+                </button>
+              </div>
             </div>
-          </PanelSection>
-        )}
-
-        <PanelSection title={t("dashboard.distribution")} className="panel dashboard-panel">
-          <div className="dashboard-distribution-grid">
-            <section className="dashboard-distribution-card">
-              <h3>Distribuição por Área</h3>
-              <p className="meta">Percentagem global por área de formação</p>
-              <div className="bars">
-                {areaDistribution.length ? (
-                  areaDistribution.slice(0, 8).map((item, index) => (
-                    <div className="bar" key={item.key}>
-                      <strong>{item.label}</strong>
-                      <div className={`line ${index % 2 === 1 ? "line-accent" : ""}`}>
-                        <span style={{ width: `${item.percent}%` }} />
-                      </div>
-                      <small className="meta">{item.count} aluno(s) · {item.percent}%</small>
-                    </div>
-                  ))
-                ) : (
-                  <p className="meta">Sem dados de área ainda.</p>
-                )}
-              </div>
-            </section>
-
-            <section className="dashboard-distribution-card">
-              <h3>Distribuição por Curso</h3>
-              <p className="meta">Percentagem geral por curso</p>
-              <div className="bars">
-                {courseDistribution.length ? (
-                  courseDistribution.slice(0, 8).map((item, index) => (
-                    <div className="bar" key={item.key}>
-                      <strong>{item.label}</strong>
-                      <div className={`line ${index % 2 === 1 ? "line-accent" : ""}`}>
-                        <span style={{ width: `${item.percent}%` }} />
-                      </div>
-                      <small className="meta">{item.count} aluno(s) · {item.percent}%</small>
-                    </div>
-                  ))
-                ) : (
-                  <p className="meta">Sem dados de curso ainda.</p>
-                )}
-              </div>
-            </section>
-
-            <section className="dashboard-distribution-card">
-              <h3>Distribuição por Turma</h3>
-              <p className="meta">Percentagem geral por turma</p>
-              <div className="bars">
-                {classDistribution.length ? (
-                  classDistribution.slice(0, 8).map((item, index) => (
-                    <div className="bar" key={item.key}>
-                      <strong>{item.label}</strong>
-                      <div className={`line ${index % 2 === 1 ? "line-accent" : ""}`}>
-                        <span style={{ width: `${item.percent}%` }} />
-                      </div>
-                      <small className="meta">{item.count} aluno(s) · {item.percent}%</small>
-                    </div>
-                  ))
-                ) : (
-                  <p className="meta">Sem dados de turma ainda.</p>
-                )}
-              </div>
-            </section>
           </div>
-        </PanelSection>
 
-        <PanelSection title={t("dashboard.recentActivity")} className="panel dashboard-panel">
-          <div className="list">
-            {recentActivity.length ? (
-              recentActivity.map((item) => (
-                <div className="list-item" key={item.id}>
-                  <strong>{item.title}</strong>
-                  <span className="meta">{item.createdAt ? new Date(item.createdAt).toLocaleString("pt-PT") : "-"}</span>
+          {/* Operational pulse */}
+          <div className="dash-panel dash-pulse-panel">
+            <div className="dash-panel-head">
+              <span className="material-icons-sharp">insights</span>
+              <h2>Pulso operacional de candidaturas</h2>
+              <span className="dash-panel-badge">{allApplications.length} total</span>
+            </div>
+            <div className="dash-pulse-grid">
+              <div className="dash-pulse-card">
+                <div className="dash-pulse-card-title">Tendência de candidaturas</div>
+                <div className="dash-pulse-bars">
+                  {applicationTrend30Days.map((item, i) => (
+                    <div className="dash-pulse-bar" key={item.key}>
+                      <div className="dash-pulse-bar-track">
+                        <div
+                          className={`dash-pulse-bar-fill dash-pulse-bar-fill--${i % 2 === 0 ? "primary" : "accent"}`}
+                          style={{ height: `${Math.max(item.percent, 4)}%` }}
+                        />
+                      </div>
+                      <div className="dash-pulse-bar-label">{item.label.replace("Semana ", "S").replace("Últimos 2 dias", "Rec.")}</div>
+                      <div className="dash-pulse-bar-value">{item.count}</div>
+                    </div>
+                  ))}
                 </div>
-              ))
-            ) : (
-              <p className="meta">Sem atividade recente.</p>
-            )}
+              </div>
+
+              <div className="dash-pulse-card">
+                <div className="dash-pulse-card-title">Pipeline de candidaturas</div>
+                <div className="dash-pipeline-list">
+                  {applicationStatusStats.length ? (
+                    applicationStatusStats.map((item) => (
+                      <div className="dash-pipeline-row" key={item.key}>
+                        <span className={`dash-pipeline-dot dash-pipeline-dot--${item.key.toLowerCase()}`} />
+                        <span className="dash-pipeline-label">{item.label}</span>
+                        <div className="dash-pipeline-track">
+                          <div
+                            className={`dash-pipeline-fill dash-pipeline-fill--${item.key.toLowerCase()}`}
+                            style={{ width: `${item.percent}%` }}
+                          />
+                        </div>
+                        <span className="dash-pipeline-value">{item.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="meta">Sem candidaturas.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="dash-pulse-card">
+                <div className="dash-pulse-card-title">Capacidade de vagas</div>
+                <div className="dash-vacancy-stat">
+                  <div className="dash-vacancy-ring">
+                    <div className="dash-vacancy-ring-value">{vacancyOccupancy.occupancyPercent}%</div>
+                    <div className="dash-vacancy-ring-label">Ocupação</div>
+                  </div>
+                  <div className="dash-vacancy-details">
+                    <div className="dash-vacancy-row"><span>Vagas abertas</span><strong>{vacancyOccupancy.totalOpen}</strong></div>
+                    <div className="dash-vacancy-row"><span>Posições totais</span><strong>{vacancyOccupancy.totalSlots}</strong></div>
+                    <div className="dash-vacancy-row dash-vacancy-row--fill"><span>Preenchidas</span><strong>{vacancyOccupancy.filledSlots}</strong></div>
+                    <div className="dash-vacancy-row dash-vacancy-row--avail"><span>Disponíveis</span><strong>{vacancyOccupancy.availableSlots}</strong></div>
+                  </div>
+                </div>
+                <div className="dash-vacancy-track">
+                  <div className="dash-vacancy-fill" style={{ width: `${vacancyOccupancy.occupancyPercent}%` }} />
+                </div>
+              </div>
+
+              <div className="dash-pulse-card">
+                <div className="dash-pulse-card-title">Análise comparativa</div>
+                <div className="dash-cmp-list">
+                  {comparativeKpis.map((item) => (
+                    <div className="dash-cmp-row" key={item.days}>
+                      <div className="dash-cmp-period">Comparativo {item.days} dias</div>
+                      <div className="dash-cmp-curr">{item.current}</div>
+                      <div className={`dash-cmp-delta ${item.delta >= 0 ? "dash-cmp-delta--up" : "dash-cmp-delta--down"}`}>
+                        {item.delta >= 0 ? "▲" : "▼"} {Math.abs(item.delta)}%
+                      </div>
+                      <div className="dash-cmp-prev">vs {item.previous} ant.</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        </PanelSection>
-      </section>
+
+          {/* Inteligência operacional */}
+          {(filteredStatisticsCards.length > 0 || loadingStatistics) && (
+            <div className="dash-panel">
+              <div className="dash-panel-head">
+                <span className="material-icons-sharp">psychology</span>
+                <h2>Inteligência operacional</h2>
+                <span className="dash-panel-badge">
+                  <span className="material-icons-sharp" style={{ fontSize: "0.85rem", verticalAlign: "middle" }}>
+                    {loadingStatistics ? "sync" : statisticsMetrics ? "wifi" : "storage"}
+                  </span>{" "}
+                  {loadingStatistics ? t("statistics.loading") : statisticsMetrics ? t("statistics.liveData") : t("statistics.period")}
+                </span>
+              </div>
+              <div className="dash-intel-grid">
+                {filteredStatisticsCards.map((item) => (
+                  <article className="dash-intel-card" key={item.key}>
+                    <span className="material-icons-sharp dash-intel-icon">{item.icon}</span>
+                    <div className="dash-intel-value">{item.value}</div>
+                    <div className="dash-intel-label">{item.label}</div>
+                    {item.counts && <div className="dash-intel-counts">{item.counts}</div>}
+                    <Link className="dash-intel-link" to={item.to}>{t("common.open")} →</Link>
+                  </article>
+                ))}
+                {statisticsBreakdown.map((item) => (
+                  <article className="dash-intel-card" key={item.label}>
+                    <span className="material-icons dash-intel-icon" style={{ color: item.color }}>{item.icon}</span>
+                    <div className="dash-intel-value">{item.value}</div>
+                    <div className="dash-intel-label">{item.label}</div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      <PanelSection title={t("dashboard.inProgressDocs")} className="panel dashboard-documents">
-        <div className="dashboard-documents-summary">
-          <p className="meta">
-            Documentos acessíveis segundo as suas permissões: <strong>{documentRows.length}</strong>
-          </p>
-          <button type="button" className="btn primary" onClick={() => setShowDocumentsModal(true)}>
-            <span className="material-icons-sharp">folder_open</span>
-            Ver documentos
-          </button>
-        </div>
-        <div className="bars" style={{ marginTop: "0.8rem" }}>
-          {documentFlowStats.length ? (
-            documentFlowStats.map((item, index) => (
-              <div className="bar" key={item.key}>
-                <strong>{item.label}</strong>
-                <div className={`line ${index % 2 === 1 ? "line-accent" : ""}`}>
-                  <span style={{ width: `${item.percent}%` }} />
-                </div>
-                <small className="meta">{item.count} documento(s) · {item.percent}%</small>
+      {/* Student view */}
+      {isStudentView && (
+        <div className="dash-body-grid">
+          <div className="dash-col-main">
+            <div className="dash-panel">
+              <div className="dash-panel-head">
+                <span className="material-icons-sharp">route</span>
+                <h2>O teu progresso</h2>
               </div>
-            ))
-          ) : (
-            <p className="meta">Sem documentos para calcular fluxo.</p>
-          )}
+              {studentPipeline.length ? (
+                <div className="dash-student-pipeline">
+                  {studentPipeline.map((item) => (
+                    <div className="dash-student-row" key={item.id}>
+                      <span className={`dash-student-status dash-student-status--${item.status.toLowerCase()}`}>
+                        {item.status}
+                      </span>
+                      <div className="dash-student-info">
+                        <strong>{item.company}</strong>
+                        <span>{item.vacancy}</span>
+                      </div>
+                      <span className="dash-student-date">{item.appliedAt}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="meta" style={{ padding: "1rem 0" }}>
+                  Sem candidaturas recentes. Atualiza o teu perfil e acompanha os teus estágios.
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="dash-col-side">
+            <div className="dash-panel dash-activity-panel">
+              <div className="dash-panel-head">
+                <span className="material-icons-sharp">notifications</span>
+                <h2>{t("dashboard.recentActivity")}</h2>
+              </div>
+              <div className="dash-activity-list">
+                {recentActivity.length ? (
+                  recentActivity.map((item) => (
+                    <div className="dash-activity-item" key={item.id}>
+                      <div className="dash-activity-dot" />
+                      <div className="dash-activity-body">
+                        <div className="dash-activity-title">{item.title ?? item.mensagem ?? "Notificação"}</div>
+                        <div className="dash-activity-time">{relativeTime(item.createdAt ?? item.created_at)}</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="meta" style={{ padding: "0.75rem 0" }}>Sem atividade recente.</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </PanelSection>
+      )}
 
+      {/* Documents modal */}
       {showDocumentsModal && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Lista de documentos">
           <div className="modal-content dashboard-documents-modal">
@@ -981,7 +987,11 @@ export default function DashboardPage() {
                 Fechar
               </button>
             </div>
-            <DataTable columns={docColumns} rows={documentRows} emptyText="Nenhum documento encontrado para o seu escopo." />
+            <DataTable
+              columns={docColumns}
+              rows={documentRows}
+              emptyText="Nenhum documento encontrado para o seu escopo."
+            />
           </div>
         </div>
       )}

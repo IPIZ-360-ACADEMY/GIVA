@@ -207,99 +207,124 @@ export default function ClassesPage() {
 
   return (
     <main className="page page-classes">
-      <PageHeader
-        title={t("classes.title")}
-        description={t("classes.description")}
-        meta={
-          <button className="btn primary" type="button" onClick={() => setShowRegisterModal(true)}>
-            <span className="material-icons-sharp" aria-hidden="true">add</span>
+
+      {/* Hero header */}
+      <div className="classes-hero">
+        <div className="classes-hero-inner">
+          <div className="classes-hero-badge">
+            <span className="material-icons-sharp">school</span>
+          </div>
+          <div className="classes-hero-text">
+            <h1 className="classes-hero-title">{t("classes.title")}</h1>
+            <p className="classes-hero-sub">{t("classes.description")}</p>
+          </div>
+          <button className="classes-hero-btn" type="button" onClick={() => setShowRegisterModal(true)}>
+            <span className="material-icons-sharp">add</span>
             Registar turma/curso
           </button>
-        }
-      />
+        </div>
+      </div>
 
-      <PanelSection title={t("classes.section.title")} className="panel classes-main-panel">
-        {classGroups.length ? (
-          <div className="classes-year-list classes-year-list-responsive">
-            {classGroups.map((yearGroup) => (
-              <section key={yearGroup.anoLetivo} className="classes-year-block" aria-label={`${t("internships.schoolYear")}: ${yearGroup.anoLetivo}`}>
-                <header className="classes-year-header">
-                  <h3>{t("internships.schoolYear")}: {yearGroup.anoLetivo}</h3>
-                </header>
+      {/* Classes by year */}
+      {classGroups.length ? (
+        <div className="classes-years">
+          {classGroups.map((yearGroup) => (
+            <section key={yearGroup.anoLetivo} className="classes-year-section">
+              <div className="classes-year-header">
+                <span className="material-icons-sharp">event_note</span>
+                <h2>{t("internships.schoolYear")}: <strong>{yearGroup.anoLetivo}</strong></h2>
+                <span className="classes-year-total">
+                  {yearGroup.cursos.reduce((s, c) => s + c.turmas.length, 0)} turmas
+                </span>
+              </div>
 
-                {yearGroup.cursos.map((courseGroup) => (
-                  <section key={`${yearGroup.anoLetivo}-${courseGroup.curso}`} className="classes-course-block" aria-label={`${t("common.course")}: ${courseGroup.curso}`}>
-                    <div className="classes-course-head">
-                      <h4>{t("common.course")}: {courseGroup.curso}</h4>
-                      <span className="tag">{courseGroup.turmas.length} {t("classes.count")}</span>
-                    </div>
+              {yearGroup.cursos.map((courseGroup) => (
+                <div key={`${yearGroup.anoLetivo}-${courseGroup.curso}`} className="classes-course-section">
+                  <div className="classes-course-header">
+                    <span className="material-icons-sharp">book</span>
+                    <h3>{courseGroup.curso}</h3>
+                    <span className="classes-course-badge">{courseGroup.turmas.length} {t("classes.count")}</span>
+                  </div>
 
-                    <div className="class-grid">
-                      {courseGroup.turmas.map((turma) => {
-                        const riskRate = turma.total ? Math.round((turma.risco / turma.total) * 100) : 0;
-                        const detailUrl = `/turmas/detalhe?anoLetivo=${encodeURIComponent(turma.anoLetivo)}&curso=${encodeURIComponent(
-                          turma.curso
-                        )}&turma=${encodeURIComponent(turma.turma)}`;
-                        return (
-                          <article className="class-card classes-card-rich" key={turma.key}>
-                            <header className="class-card-head">
-                              <div>
-                                <h4>{turma.turma}</h4>
-                                <p>{t("internships.schoolYear")}: {turma.anoLetivo}</p>
-                                <p>{t("common.course")}: {turma.curso}</p>
-                              </div>
-                              <span className="tag">{turma.total} {t("internships.studentsCount")}</span>
-                            </header>
+                  <div className="classes-card-grid">
+                    {courseGroup.turmas.map((turma) => {
+                      const riskRate = turma.total ? Math.round((turma.risco / turma.total) * 100) : 0;
+                      const detailUrl = `/turmas/detalhe?anoLetivo=${encodeURIComponent(turma.anoLetivo)}&curso=${encodeURIComponent(turma.curso)}&turma=${encodeURIComponent(turma.turma)}`;
+                      const avgNum = Number(turma.mediaNota);
 
-                            <div className="classes-kpis" role="list" aria-label={t("classes.kpis")}>
-                              <div className="classes-kpi" role="listitem">
-                                <small>{t("classes.avgGrade")}</small>
-                                <strong>{turma.mediaNota}</strong>
-                              </div>
-                              <div className="classes-kpi" role="listitem">
-                                <small>{t("classes.riskRate")}</small>
-                                <strong>{riskRate}%</strong>
-                              </div>
+                      return (
+                        <article className="classes-card" key={turma.key}>
+                          <div className="classes-card-accent" />
+
+                          <header className="classes-card-header">
+                            <div>
+                              <h4 className="classes-card-title">{turma.turma}</h4>
+                              <p className="classes-card-meta">{turma.curso} · {turma.anoLetivo}</p>
                             </div>
+                            <span className="classes-card-count">{turma.total}</span>
+                          </header>
 
-                            <div className="classes-metrics">
-                              <span className="tag">{t("internships.active")}: {turma.ativos}</span>
-                              <span className="tag">{t("internships.monitoring")}: {turma.monitoramento}</span>
-                              <span className="tag">{t("internships.risk")}: {turma.risco}</span>
+                          <div className="classes-card-kpis">
+                            <div className="classes-card-kpi">
+                              <span className={`classes-card-kpi-value classes-card-kpi-value--${avgNum >= 14 ? "high" : avgNum >= 10 ? "mid" : "low"}`}>
+                                {turma.mediaNota}
+                              </span>
+                              <span className="classes-card-kpi-label">{t("classes.avgGrade")}</span>
                             </div>
-
-                            <div className="classes-resources" aria-label={t("classes.resources")}>
-                              <strong>{t("classes.resources")}</strong>
-                              <ul>
-                                {(COURSE_RESOURCES[turma.curso] ?? [t("classes.genericResource")]).map((resource) => (
-                                  <li key={resource}>{resource}</li>
-                                ))}
-                              </ul>
+                            <div className="classes-card-kpi">
+                              <span className={`classes-card-kpi-value classes-card-kpi-value--${riskRate > 20 ? "low" : riskRate > 10 ? "mid" : "high"}`}>
+                                {riskRate}%
+                              </span>
+                              <span className="classes-card-kpi-label">{t("classes.riskRate")}</span>
                             </div>
+                          </div>
 
-                            <footer className="class-card-foot">
-                              {t("internships.supervisor")}: {turma.supervisor}
-                              <span className="classes-open-hint">{t("classes.openClassHint")}</span>
-                            </footer>
+                          <div className="classes-card-status-row">
+                            <span className="classes-card-status classes-card-status--active">
+                              <span className="material-icons-sharp">check_circle</span> {turma.ativos}
+                            </span>
+                            <span className="classes-card-status classes-card-status--monitoring">
+                              <span className="material-icons-sharp">visibility</span> {turma.monitoramento}
+                            </span>
+                            <span className="classes-card-status classes-card-status--risk">
+                              <span className="material-icons-sharp">warning</span> {turma.risco}
+                            </span>
+                          </div>
 
-                            <div className="classes-card-actions">
-                              <Link className="btn primary" to={detailUrl} aria-label={`${t("classes.openClass")}: ${turma.turma}`}>
-                                {t("classes.openClass")}
-                              </Link>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </section>
-            ))}
-          </div>
-        ) : (
-          <p className="meta">{t("classes.empty")}</p>
-        )}
-      </PanelSection>
+                          <div className="classes-card-resources">
+                            <span className="classes-card-resources-title">{t("classes.resources")}</span>
+                            <ul>
+                              {(COURSE_RESOURCES[turma.curso] ?? [t("classes.genericResource")]).map((resource) => (
+                                <li key={resource}>{resource}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <footer className="classes-card-footer">
+                            <span className="classes-card-supervisor">
+                              <span className="material-icons-sharp">person</span>
+                              {turma.supervisor}
+                            </span>
+                            <Link className="classes-card-open-btn" to={detailUrl} aria-label={`${t("classes.openClass")}: ${turma.turma}`}>
+                              <span className="material-icons-sharp">open_in_new</span>
+                              {t("classes.openClass")}
+                            </Link>
+                          </footer>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="classes-empty">
+          <span className="material-icons-sharp">school</span>
+          <p>{t("classes.empty")}</p>
+        </div>
+      )}
 
       {showRegisterModal ? (
         <ClassRegisterModal
