@@ -12,6 +12,7 @@ import {
   listPartnerVacancies,
   updatePartnerVacancyStatus,
 } from "../services/vacanciesService.js";
+import { notifyEligibleStudentsForVacancyPublished } from "../services/notificationsService.js";
 import {
   insertCompanyBatchAuditRows,
   listCompanyBatchAuditRows,
@@ -150,6 +151,19 @@ export default function CompanyDashboardPage() {
     }
 
     showToast("Vaga publicada com sucesso.", "success");
+    const notifyResult = await notifyEligibleStudentsForVacancyPublished({
+      vacancyId: result.id,
+      actorId: user?.id ?? null,
+      partnerId: partner.id,
+      vacancyTitle: result.title,
+      partnerName: partner.empresa,
+      totalSlots: result.total_slots,
+    }).catch(() => null);
+
+    if (notifyResult?.sent > 0) {
+      showToast(`Notificação enviada para ${notifyResult.sent} aluno(s) elegível(is).`, "success");
+    }
+
     setPublishTitle("Estágio Profissional");
     setPublishDescription("");
     setPublishSlots("1");
@@ -208,6 +222,19 @@ export default function CompanyDashboardPage() {
     }
 
     showToast("Registo da empresa criado e vagas publicadas.", "success");
+    const notifyResult = await notifyEligibleStudentsForVacancyPublished({
+      vacancyId: firstVacancy.id,
+      actorId: user?.id ?? null,
+      partnerId: created.id,
+      vacancyTitle: firstVacancy.title,
+      partnerName: created.empresa,
+      totalSlots: firstVacancy.total_slots,
+    }).catch(() => null);
+
+    if (notifyResult?.sent > 0) {
+      showToast(`Notificação enviada para ${notifyResult.sent} aluno(s) elegível(is).`, "success");
+    }
+
     setPublishTitle("Estágio Profissional");
     setPublishDescription("");
     setPublishSlots("1");

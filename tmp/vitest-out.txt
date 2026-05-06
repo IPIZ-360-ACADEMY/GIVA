@@ -1,0 +1,62 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Projectos/ipiz/GIVA[39m
+
+
+node.exe : [31mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1m[7m Failed Suites 1 
+[27m[22mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[39m
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mÔÄ»ÔÄ»ÔÄ»Ô...»ÔÄ»ÔÄ»ÔÄ»[39m 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[31m[1m[7m FAIL [27m[22m[39m src/test/app.routes.test.jsx[2m [ 
+src/test/app.routes.test.jsx ][22m
+[31m[1mError[22m: Transform failed with 1 error:
+E:/Projectos/ipiz/GIVA/src/test/app.routes.test.jsx:78:7: ERROR: Unexpected 
+","[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mE:/Projectos/ipiz/GIVA/src/test/app.routes.test.jsx[39m:78:7
+[33m  
+  [33mUnexpected ","[33m
+  76 |      await waitFor(() => {
+  77 |        expect(screen.getByRole("heading", { name: 
+nameIncludes("distribuicao por curso") })).toBeInTheDocument();
+  78 |      });, async () => {
+     |         ^
+  79 |      renderWithRoute("/login", { language: "en", uiNotifications: true, 
+density: "comfortable" });
+  80 |  
+  [39m
+[90m [2mÔØ»[22m failureErrorWithLog 
+node_modules/esbuild/lib/main.js:[2m1472:15[22m[39m
+[90m [2mÔØ»[22m node_modules/esbuild/lib/main.js:[2m755:50[22m[39m
+[90m [2mÔØ»[22m responseCallbacks.<computed> 
+node_modules/esbuild/lib/main.js:[2m622:9[22m[39m
+[90m [2mÔØ»[22m handleIncomingPacket 
+node_modules/esbuild/lib/main.js:[2m677:12[22m[39m
+[90m [2mÔØ»[22m Socket.readFromStdout 
+node_modules/esbuild/lib/main.js:[2m600:7[22m[39m
+
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»Ô
+Ä»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[22m[39m
+[31m[1mSerialized Error:[22m[39m [90m{ __vitest_rollup_error__: { plugin: 
+'vite:esbuild', id: 'E:/Projectos/ipiz/GIVA/src/test/app.routes.test.jsx', 
+loc: { column: 7, file: 'E:/Projectos/ipiz/GIVA/src/test/app.routes.test.jsx', 
+length: 1, line: 78, lineText: '    });, async () => {', namespace: '', 
+suggestion: '' }, frame: '\n\u001b[33mUnexpected ","\u001b[39m\n76 |      
+await waitFor(() => {\n77 |        expect(screen.getByRole("heading", { name: 
+nameIncludes("distribuicao por curso") })).toBeInTheDocument();\n78 |      
+});, async () => {\n   |         ^\n79 |      renderWithRoute("/login", { 
+language: "en", uiNotifications: true, density: "comfortable" });\n80 |  \n' } 
+}[39m
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»Ô
+Ä»[1/1]ÔÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 15:47:43
+[2m   Duration [22m 7.87s[2m (transform 1.10s, setup 2.71s, collect 0ms, tests 0ms, environment 3.14s, prepare 398ms)[22m
+

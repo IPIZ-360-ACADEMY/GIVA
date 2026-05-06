@@ -24,10 +24,12 @@ import {
 
 // ── helpers ───────────────────────────────────────────────────
 const TYPE_LABELS = {
-  student: { label: "Aluno",         color: "#059669" },
-  company: { label: "Empresa",       color: "#7856ff" },
-  admin:   { label: "Administrador", color: "#dc2626" },
-  external:{ label: "Externo",       color: "#6b7280" },
+  student:     { label: "Aluno",         color: "#059669" },
+  company:     { label: "Empresa",       color: "#7856ff" },
+  admin:       { label: "Administrador", color: "#dc2626" },
+  coordinator: { label: "Coordenador",   color: "#0f766e" },
+  teacher:     { label: "Professor",     color: "#0369a1" },
+  external:    { label: "Externo",       color: "#6b7280" },
 };
 
 const ROLE_LABELS = {
@@ -35,7 +37,9 @@ const ROLE_LABELS = {
   ADMIN:         { label: "Admin",         color: "#b45309" },
   COORDINATOR:   { label: "Coordenador",   color: "#0f766e" },
   ADMIN_1:       { label: "Coordenador",   color: "#0f766e" },
+  TEACHER:       { label: "Professor",     color: "#0369a1" },
   COMPANY:       { label: "Empresa",       color: "#7856ff" },
+  STUDENT:       { label: "Aluno",         color: "#059669" },
   authenticated: { label: "Utilizador",   color: "#6b7280" },
 };
 
@@ -157,7 +161,9 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
       });
 
       if (isSuperAdmin && form.type !== user.type) {
-        await adminEnsureAccountTypeArtifacts(user.id, form.type, form.display_name.trim());
+        await adminEnsureAccountTypeArtifacts(user.id, form.type, form.display_name.trim(), {
+          email: user.email,
+        });
       }
 
       const currentRole = defaultRoleForAccountType(user.type ?? form.type, user.role);
@@ -223,6 +229,8 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
               <select value={form.type} onChange={(e) => set("type", e.target.value)}>
                 <option value="student">Aluno</option>
                 <option value="company">Empresa</option>
+                <option value="coordinator">Coordenador</option>
+                <option value="teacher">Professor</option>
                 <option value="external">Externo</option>
                 <option value="admin">Administrador</option>
               </select>
@@ -240,7 +248,9 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
                 <label>Nível de acesso (JWT role)</label>
                 <select value={form.role} onChange={(e) => set("role", e.target.value)}>
                   <option value="authenticated">Utilizador (padrão)</option>
+                  <option value="STUDENT">Aluno (STUDENT)</option>
                   <option value="COMPANY">Empresa (COMPANY)</option>
+                  <option value="TEACHER">Professor (TEACHER)</option>
                   <option value="COORDINATOR">Coordenador (COORDINATOR)</option>
                   <option value="ADMIN">Administrador (ADMIN)</option>
                   <option value="SUPER_ADMIN">Super Admin (SUPER_ADMIN)</option>
@@ -451,8 +461,10 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
                     <select value={form.type} onChange={(e) => handleTypeChange(e.target.value)}>
                       <option value="student">Aluno</option>
                       <option value="company">Empresa</option>
+                      <option value="coordinator">Coordenador</option>
+                      <option value="teacher">Professor</option>
                       <option value="external">Externo</option>
-                      <option value="admin">Administrador / Coordenador</option>
+                      <option value="admin">Administrador</option>
                     </select>
                   </div>
                 </div>
@@ -464,7 +476,9 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
                     <label>2) Nível de acesso</label>
                     <select value={form.role} onChange={(e) => set("role", e.target.value)}>
                       {roleOptions.includes("authenticated") && <option value="authenticated">Utilizador</option>}
+                      {roleOptions.includes("STUDENT") && <option value="STUDENT">Aluno</option>}
                       {roleOptions.includes("COMPANY") && <option value="COMPANY">Empresa</option>}
+                      {roleOptions.includes("TEACHER") && <option value="TEACHER">Professor</option>}
                       {roleOptions.includes("COORDINATOR") && <option value="COORDINATOR">Coordenador</option>}
                       {roleOptions.includes("ADMIN_1") && <option value="ADMIN_1">Coordenador legado (ADMIN_1)</option>}
                       {roleOptions.includes("ADMIN") && <option value="ADMIN">Administrador</option>}

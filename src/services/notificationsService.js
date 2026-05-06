@@ -11,6 +11,22 @@ export function canUseNotificationsApi() {
   return Boolean(supabase);
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value ?? "").trim()
+  );
+}
+
+function normalizeStringArray(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+}
+
 /** Batch-enriquecer notificações com perfis de actor */
 async function enrichWithActors(notifications) {
   if (!notifications?.length) return notifications ?? [];
@@ -134,6 +150,142 @@ export async function broadcastAnnouncement({ actorId, title, body, targetType =
     else sent += chunk.length;
   }
   return { sent, errors };
+}
+
+export async function notifyEligibleStudentsForVacancyPublished({
+  vacancyId,
+  actorId = null,
+  partnerId,
+  vacancyTitle,
+  partnerName,
+  totalSlots,
+}) {
+  if (!supabase || !partnerId) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const { data: partner, error: partnerError } = await supabase
+    .from("partners")
+    .select("id, empresa, area_id, areas")
+    .eq("id", partnerId)
+    .maybeSingle();
+
+  if (partnerError || !partner) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const trainingAreaIds = new Set();
+  if (isUuid(partner.area_id)) {
+    trainingAreaIds.add(partner.area_id);
+  }
+
+  const partnerAreaCodes = normalizeStringArray(partner.areas).map((code) => code.toUpperCase());
+  if (partnerAreaCodes.length > 0) {
+    const { data: areaRows, error: areaError } = await supabase
+      .from("training_area")
+      .select("id, code")
+      .in("code", partnerAreaCodes);
+
+    if (!areaError) {
+      for (const row of areaRows ?? []) {
+        if (isUuid(row?.id)) {
+          trainingAreaIds.add(row.id);
+        }
+      }
+    }
+  }
+
+  if (trainingAreaIds.size === 0) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const { data: courseRows, error: coursesError } = await supabase
+    .from("course")
+    .select("id")
+    .in("area_id", Array.from(trainingAreaIds));
+
+  const courseIds = new Set();
+  if (!coursesError) {
+    for (const row of courseRows ?? []) {
+      if (isUuid(row?.id)) {
+        courseIds.add(row.id);
+      }
+    }
+  }
+
+  const areaFilter = `training_area_id.in.(${Array.from(trainingAreaIds).join(",")})`;
+  const courseFilter = courseIds.size > 0
+    ? `course_id.in.(${Array.from(courseIds).join(",")})`
+    : null;
+  const eligibilityFilter = courseFilter ? `${areaFilter},${courseFilter}` : areaFilter;
+
+  const { data: students, error: studentsError } = await supabase
+    .from("students")
+    .select("id")
+    .eq("status", "ACTIVE")
+    .or(eligibilityFilter);
+
+  if (studentsError || !students?.length) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const studentEntityIds = students.map((student) => student.id).filter(Boolean);
+  if (studentEntityIds.length === 0) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const { data: studentAccounts, error: accountsError } = await supabase
+    .from("student_accounts")
+    .select("id")
+    .in("student_id", studentEntityIds);
+
+  if (accountsError || !studentAccounts?.length) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const userIds = studentAccounts.map((row) => row.id).filter((id) => isUuid(id));
+  if (userIds.length === 0) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const { data: activeProfiles, error: profilesError } = await supabase
+    .from("user_profiles")
+    .select("id")
+    .in("id", userIds)
+    .eq("type", "student")
+    .eq("moderation", "active");
+
+  if (profilesError || !activeProfiles?.length) {
+    return { sent: 0, errors: 0, matched: 0 };
+  }
+
+  const eligibleUserIds = activeProfiles.map((row) => row.id);
+  const safeTitle = String(vacancyTitle ?? "").trim() || "Nova vaga publicada";
+  const safePartnerName = String(partnerName ?? partner.empresa ?? "Empresa").trim() || "Empresa";
+  const safeSlots = Math.max(1, Number(totalSlots ?? 1) || 1);
+  const notificationRows = eligibleUserIds.map((userId) => ({
+    user_id: userId,
+    actor_id: actorId,
+    type: "internship_match",
+    object_type: "vacancy",
+    object_id: vacancyId,
+    title: `Nova vaga: ${safeTitle}`,
+    body: `${safePartnerName} publicou ${safeSlots} vaga(s) compatível(is) com o teu perfil.`,
+  }));
+
+  let sent = 0;
+  let errors = 0;
+  for (let i = 0; i < notificationRows.length; i += 100) {
+    const chunk = notificationRows.slice(i, i + 100);
+    const { error } = await supabase.from(TABLE).insert(chunk);
+    if (error) {
+      errors += chunk.length;
+    } else {
+      sent += chunk.length;
+    }
+  }
+
+  return { sent, errors, matched: eligibleUserIds.length };
 }
 
 /**

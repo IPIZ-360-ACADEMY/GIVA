@@ -1,0 +1,73 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Projectos/ipiz/GIVA[39m
+
+node.exe : [90mstderr[2m | src/test/require-auth.rbac.test.jsx[2m > 
+[22m[2mRequireAuth RBAC[2m > [22m[2mredireciona estudante de /parceiros 
+para dashboard
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m... para dashboard 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39mÔÜá´©Å React Router Future Flag Warning: React Router will begin 
+wrapping state updates in `React.startTransition` in v7. You can use the 
+`v7_startTransition` future flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+ÔÜá´©Å React Router Future Flag Warning: Relative route resolution within 
+Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future 
+flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32mÔ£ô[39m src/test/require-auth.rbac.test.jsx [2m([22m[2m15 tests[22m[2m)[22m[33m 775[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m RequireAuth RBAC[2m > [22mredireciona estudante de /parceiros para dashboard [33m378[2mms[22m[39m
+ [32mÔ£ô[39m src/test/partners.student-vacancies.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 721[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PartnersPage student vacancies visibility[2m > [22mmostra para aluno apenas parceiros com vagas abertas reais e permite abrir candidatura [33m597[2mms[22m[39m
+ [32mÔ£ô[39m src/test/home.multi-profile.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[33m 520[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m HomePage enterprise multi-profile[2m > [22mperfil externo fica em modo leitura e sem composer [33m378[2mms[22m[39m
+ [32mÔ£ô[39m src/test/internships.visibility.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 600[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InternshipsPage visibility by role[2m > [22mmostra a empresa apenas estagios da propria empresa [33m341[2mms[22m[39m
+ [32mÔ£ô[39m src/test/documents.integration.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1589[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Documents integration[2m > [22mabre preview e remove documento dentro da area [33m1443[2mms[22m[39m
+ [32mÔ£ô[39m src/test/vacancy-flow.integration.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 2128[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Vacancy Flow Integration[2m > [22mempresa publica vaga, estudante candidata e empresa fecha/reabre respeitando pendencias [33m2125[2mms[22m[39m
+[90mstderr[2m | src/test/postcard.readonly.test.jsx[2m > [22m[2mPostCard 
+readOnly[2m > [22m[2mbloqueia reacao e remove acoes de comentario/partilha 
+no modo completo
+[22m[39mÔÜá´©Å React Router Future Flag Warning: React Router will begin 
+wrapping state updates in `React.startTransition` in v7. You can use the 
+`v7_startTransition` future flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+ÔÜá´©Å React Router Future Flag Warning: Relative route resolution within 
+Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future 
+flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32mÔ£ô[39m src/test/postcard.readonly.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 424[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PostCard readOnly[2m > [22mbloqueia reacao e remove acoes de comentario/partilha no modo completo [33m354[2mms[22m[39m
+ [32mÔ£ô[39m src/test/company-dashboard.vacancies.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 998[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CompanyDashboardPage - Vacancies[2m > [22mabre modal de confirmacao ao tentar fechar vaga [33m681[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CompanyDashboardPage - Vacancies[2m > [22mbloqueia fechamento quando ha candidaturas pendentes [33m315[2mms[22m[39m
+ [32mÔ£ô[39m src/test/tools.superadmin-tabs.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 438[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m ToolsPage role tabs[2m > [22mmostra tabs extras para SUPER_ADMIN [33m360[2mms[22m[39m
+ [32mÔ£ô[39m src/test/app.routes.test.jsx [2m([22m[2m31 tests[22m[2m)[22m[33m 14455[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza dashboard na rota raiz [33m786[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza login em ingles quando idioma ativo e en [33m356[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mredireciona rota legada /docs para /documentos [33m1270[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mpermite login e navega para dashboard [33m2316[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza dashboard em ingles apos login [33m400[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza estagios na rota /estagios [33m973[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza turmas na rota /turmas [33m2158[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza detalhe da turma na rota de detalhe [33m365[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza parceiros na rota /parceiros [33m587[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza avaliacoes na rota /avaliacoes [33m514[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza painel empresa na rota /empresa [33m1166[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza configuracoes perfil na rota /config/perfil [33m495[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza configuracoes seguranca na rota /config/seguranca [33m1010[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m      Tests [22m [1m[32m62 passed[39m[22m[90m (62)[39m
+[2m   Start at [22m 15:54:30
+[2m   Duration [22m 30.83s[2m (transform 19.62s, setup 28.87s, collect 42.18s, tests 22.65s, environment 53.61s, prepare 4.96s)[22m
+

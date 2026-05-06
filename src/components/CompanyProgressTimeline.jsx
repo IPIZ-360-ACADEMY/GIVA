@@ -21,14 +21,14 @@ export default function CompanyProgressTimeline({
   partnerId,
   t,
   isCompanyView = false,
+  onUpdate,
 }) {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activePhase, setActivePhase] = useState(null);
-  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    loadProgress();
+    void loadProgress();
   }, [studentId, partnerId]);
 
   async function loadProgress() {
@@ -99,12 +99,24 @@ export default function CompanyProgressTimeline({
       )}
 
       {activePhase === "INTERNSHIP" && (
-        <InternshipPhasePanel
-          progress={progress}
-          onUpdate={loadProgress}
-          t={t}
-          isCompanyView={isCompanyView}
-        />
+        <>
+          <InternshipPhasePanel
+            progress={progress}
+            onUpdate={loadProgress}
+            onAfterUpdate={onUpdate}
+            t={t}
+            isCompanyView={isCompanyView}
+          />
+          {isCompanyView && (
+            <ContractPhasePanel
+              progress={progress}
+              onUpdate={loadProgress}
+              onAfterUpdate={onUpdate}
+              t={t}
+              isCompanyView={isCompanyView}
+            />
+          )}
+        </>
       )}
 
       {(activePhase === "FIXED_TERM_CONTRACT" ||
@@ -112,6 +124,7 @@ export default function CompanyProgressTimeline({
         <ContractPhasePanel
           progress={progress}
           onUpdate={loadProgress}
+          onAfterUpdate={onUpdate}
           t={t}
           isCompanyView={isCompanyView}
         />
@@ -125,12 +138,25 @@ export default function CompanyProgressTimeline({
           </p>
         </div>
       )}
+
+      {activePhase === "TERMINATED" && (
+        <div className="phase-completion">
+          <p className="tools-error">
+            Processo encerrado em {new Date(progress.updated_at).toLocaleDateString("pt-PT")}
+          </p>
+          {progress.company_assessment_text ? (
+            <p>
+              <strong>Motivo:</strong> {progress.company_assessment_text}
+            </p>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
 
 // Interview Phase Component
-function InterviewPhasePanel({ progress, onUpdate, t, isCompanyView }) {
+function InterviewPhasePanel({ progress, onUpdate, onAfterUpdate, t, isCompanyView }) {
   const [formData, setFormData] = useState({
     date: progress.interview_date || "",
     result: progress.interview_result || "",
@@ -150,7 +176,12 @@ function InterviewPhasePanel({ progress, onUpdate, t, isCompanyView }) {
     setLoading(true);
     const result = await updateInterviewPhase(progress.id, formData);
     setLoading(false);
-    if (result) onUpdate();
+    if (result) {
+      await onUpdate();
+      if (typeof onAfterUpdate === "function") {
+        await onAfterUpdate();
+      }
+    }
   }
 
   return (
@@ -228,7 +259,7 @@ function InterviewPhasePanel({ progress, onUpdate, t, isCompanyView }) {
 }
 
 // Internship Phase Component
-function InternshipPhasePanel({ progress, onUpdate, t, isCompanyView }) {
+function InternshipPhasePanel({ progress, onUpdate, onAfterUpdate, t, isCompanyView }) {
   const [formData, setFormData] = useState({
     startDate: progress.internship_start_date || "",
     endDate: progress.internship_end_date || "",
@@ -260,7 +291,12 @@ function InternshipPhasePanel({ progress, onUpdate, t, isCompanyView }) {
     setLoading(true);
     const result = await updateInternshipPhase(progress.id, formData);
     setLoading(false);
-    if (result) onUpdate();
+    if (result) {
+      await onUpdate();
+      if (typeof onAfterUpdate === "function") {
+        await onAfterUpdate();
+      }
+    }
   }
 
   return (
@@ -377,7 +413,7 @@ function InternshipPhasePanel({ progress, onUpdate, t, isCompanyView }) {
 }
 
 // Contract Phase Component
-function ContractPhasePanel({ progress, onUpdate, t, isCompanyView }) {
+function ContractPhasePanel({ progress, onUpdate, onAfterUpdate, t, isCompanyView }) {
   const [formData, setFormData] = useState({
     contractType: progress.contract_type || "",
     startDate: progress.contract_start_date || "",
@@ -410,14 +446,24 @@ function ContractPhasePanel({ progress, onUpdate, t, isCompanyView }) {
     setLoading(true);
     const result = await updateContractPhase(progress.id, formData);
     setLoading(false);
-    if (result) onUpdate();
+    if (result) {
+      await onUpdate();
+      if (typeof onAfterUpdate === "function") {
+        await onAfterUpdate();
+      }
+    }
   }
 
   async function handleCompleteFlow() {
     setFinalizing(true);
     const result = await completeProgress(progress.id);
     setFinalizing(false);
-    if (result) onUpdate();
+    if (result) {
+      await onUpdate();
+      if (typeof onAfterUpdate === "function") {
+        await onAfterUpdate();
+      }
+    }
   }
 
   async function handleTerminateFlow() {
@@ -426,7 +472,12 @@ function ContractPhasePanel({ progress, onUpdate, t, isCompanyView }) {
     setTerminating(true);
     const result = await terminateProgress(progress.id, reason || "Processo encerrado pela empresa");
     setTerminating(false);
-    if (result) onUpdate();
+    if (result) {
+      await onUpdate();
+      if (typeof onAfterUpdate === "function") {
+        await onAfterUpdate();
+      }
+    }
   }
 
   return (

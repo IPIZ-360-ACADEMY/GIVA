@@ -5,6 +5,12 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { getOrCreateConversation } from "../services/chatService.js";
 import { getFeedPosts, toggleReaction } from "../services/postsService.js";
 import { followUser, getProfile, isFollowing, unfollowUser } from "../services/profilesService.js";
+import {
+  getPublicRatingSummary,
+  getPublicRankingPosition,
+  listTopRatedCompanies,
+  listTopRatedStudents,
+} from "../services/publicRatingsService.js";
 import { sanitizeAssetUrl } from "../utils/urlSafety.js";
 
 function Avatar({ url, name, size = 80 }) {
@@ -24,6 +30,13 @@ function TypeBadge({ type }) {
   return <span className={`profile-type-badge badge-${type}`}>{labels[type] ?? type}</span>;
 }
 
+function RatingStars({ value }) {
+  const safeValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const filled = Math.max(0, Math.min(5, Math.round(safeValue)));
+  const stars = Array.from({ length: 5 }, (_, index) => (index < filled ? "★" : "☆")).join("");
+  return <span aria-label={`Classificação ${safeValue} de 5`}>{stars}</span>;
+}
+
 export default function PublicProfilePage() {
   const { userId } = useParams();
   const { user } = useAuth();
@@ -33,6 +46,9 @@ export default function PublicProfilePage() {
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState("");
+  const [ratingSummary, setRatingSummary] = useState({ average: null, count: 0, comments: [] });
+  const [ranking, setRanking] = useState([]);
+  const [rankingPosition, setRankingPosition] = useState(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -47,11 +63,25 @@ export default function PublicProfilePage() {
         setProfile(p);
         setFollowing(followed);
 
+        const [summary, rankingRows] = await Promise.all([
+          getPublicRatingSummary({ userId, profileType: p?.type }),
+          p?.type === "student" ? listTopRatedStudents(5) : p?.type === "company" ? listTopRatedCompanies(5) : Promise.resolve([]),
+        ]);
+
+        const position = await getPublicRankingPosition({ userId, profileType: p?.type });
+
+        setRatingSummary(summary ?? { average: null, count: 0, comments: [] });
+        setRanking(rankingRows ?? []);
+        setRankingPosition(position ?? null);
+
         // Carregar posts do utilizador (filtra do feed pelo author_id)
         const allPosts = await getFeedPosts(null, 50);
         setPosts(allPosts.filter((post) => post.author?.id === userId));
       } catch {
         setProfile(null);
+        setRatingSummary({ average: null, count: 0, comments: [] });
+        setRanking([]);
+        setRankingPosition(null);
       } finally {
         setLoading(false);
       }
@@ -125,6 +155,11 @@ export default function PublicProfilePage() {
   }
 
   const isOwnProfile = user?.id === userId;
+  const rankingTitle = profile.type === "student" ? "Top estudantes" : "Top empresas";
+  const ratingAverage = ratingSummary?.average;
+  const hasRatings = Number.isFinite(Number(ratingAverage)) && Number(ratingSummary?.count) > 0;
+  const rankingHasCurrentProfile = ranking.some((row) => row.userId === userId);
+  const showRankingSection = profile.type === "student" || profile.type === "company";
 
   return (
     <div className="public-profile-page">
@@ -140,6 +175,24 @@ export default function PublicProfilePage() {
             <p className="public-profile-meta">{profile.company_accounts.empresa} · {profile.company_accounts.cidade}</p>
           )}
           {profile.bio && <p className="public-profile-bio">{profile.bio}</p>}
+
+          <div className="public-profile-rating" style={{ marginTop: "0.65rem", display: "grid", gap: "0.3rem" }}>
+            <strong style={{ fontSize: "0.85rem" }}>Classificação pública</strong>
+            {hasRatings ? (
+              <>
+                <p className="public-profile-meta" style={{ margin: 0 }}>
+                  <RatingStars value={ratingAverage} /> {ratingAverage}/5 · {ratingSummary.count} avaliação(ões)
+                </p>
+                {Array.isArray(ratingSummary.comments) && ratingSummary.comments.length > 0 ? (
+                  <p className="public-profile-bio" style={{ marginTop: "0.1rem" }}>
+                    “{ratingSummary.comments[0]}”
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="public-profile-meta" style={{ margin: 0 }}>Ainda sem avaliações públicas.</p>
+            )}
+          </div>
         </div>
         {!isOwnProfile && user && (
           <div className="public-profile-actions">
@@ -162,6 +215,37 @@ export default function PublicProfilePage() {
           </div>
         )}
       </div>
+
+      {showRankingSection && (ranking.length > 0 || rankingPosition?.total > 0) ? (
+        <div className="public-profile-posts" style={{ marginBottom: "1rem" }}>
+          <h2 className="public-profile-posts-title">{rankingTitle}</h2>
+          {rankingPosition?.total > 0 ? (
+            <p className="public-profile-meta" style={{ marginBottom: "0.55rem" }}>
+              {rankingPosition?.position
+                ? `Posição global: #${rankingPosition.position} de ${rankingPosition.total}`
+                : `Sem posição no top atual (total classificado: ${rankingPosition.total})`}
+            </p>
+          ) : null}
+          <div style={{ display: "grid", gap: "0.45rem" }}>
+            {ranking.map((row, index) => (
+              <div key={`${row.entityId}-${index}`} className="panel-card" style={{ padding: "0.65rem 0.8rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+                <div style={{ minWidth: 0 }}>
+                  <strong style={{ fontSize: "0.85rem" }}>#{index + 1} {row.displayName}</strong>
+                  <p className="public-profile-meta" style={{ margin: 0 }}>
+                    <RatingStars value={row.average} /> {row.average}/5 · {row.count} avaliação(ões)
+                  </p>
+                </div>
+                {row.userId ? (
+                  <Link className="btn ghost sm" to={`/perfil-publico/${row.userId}`}>Ver perfil</Link>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          {rankingHasCurrentProfile ? (
+            <p className="public-profile-meta" style={{ marginTop: "0.45rem" }}>Este perfil está no top atual.</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="public-profile-posts">
         <h2 className="public-profile-posts-title">Publicações</h2>

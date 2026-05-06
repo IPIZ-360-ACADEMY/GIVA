@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase.js";
-import { createNotification } from "./notificationsService.js";
+import { sendNotification } from "./notificationsService.js";
 import { createCompanyProgress } from "./companyProgressService.js";
 
 export function canUseJobApplicationApi() {
@@ -125,6 +125,46 @@ async function resolveStudentEntityId(userId) {
   }
 
   return isUuid(data?.student_id) ? data.student_id : normalizedUserId;
+}
+
+async function resolveStudentUserIdFromEntity(studentEntityId) {
+  const normalizedId = String(studentEntityId ?? "").trim();
+  if (!isUuid(normalizedId)) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("student_accounts")
+    .select("id")
+    .eq("student_id", normalizedId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[jobApplicationService] resolveStudentUserIdFromEntity error:", error);
+    return null;
+  }
+
+  return isUuid(data?.id) ? data.id : null;
+}
+
+async function resolvePartnerManagerUserId(partnerId) {
+  const normalizedId = String(partnerId ?? "").trim();
+  if (!isUuid(normalizedId)) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("partners")
+    .select("created_by")
+    .eq("id", normalizedId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[jobApplicationService] resolvePartnerManagerUserId error:", error);
+    return null;
+  }
+
+  return isUuid(data?.created_by) ? data.created_by : null;
 }
 
 function isMissingRpc(error) {
@@ -320,10 +360,18 @@ export async function submitJobApplication(studentId, partnerId, vacancyId) {
   }
 
   try {
-    await createNotification({
-      title: "Nova candidatura submetida para vaga de parceiro.",
-      prioridade: "medium",
-    });
+    const managerUserId = await resolvePartnerManagerUserId(partnerId);
+    if (managerUserId) {
+      await sendNotification({
+        userId: managerUserId,
+        actorId: isUuid(studentId) ? studentId : null,
+        type: "internship_match",
+        objectType: "vacancy",
+        objectId: vacancyId,
+        title: "Nova candidatura recebida",
+        body: "Uma nova candidatura foi submetida para uma das suas vagas.",
+      });
+    }
   } catch (notifyError) {
     console.warn("[jobApplicationService] submit notification failed:", notifyError);
   }
@@ -388,10 +436,22 @@ export async function acceptJobApplication(applicationId, notes = "") {
   }
 
   try {
-    await createNotification({
-      title: "Candidatura aceite por parceiro.",
-      prioridade: "high",
-    });
+    const [studentUserId, partnerManagerUserId] = await Promise.all([
+      resolveStudentUserIdFromEntity(application.student_id),
+      resolvePartnerManagerUserId(application.partner_id),
+    ]);
+
+    if (studentUserId) {
+      await sendNotification({
+        userId: studentUserId,
+        actorId: partnerManagerUserId,
+        type: "internship_match",
+        objectType: "vacancy",
+        objectId: application.vacancy_id,
+        title: "Candidatura aceite",
+        body: "A sua candidatura foi aceite. Consulte o progresso para os próximos passos.",
+      });
+    }
   } catch (notifyError) {
     console.warn("[jobApplicationService] accept notification failed:", notifyError);
   }
@@ -422,10 +482,30 @@ export async function rejectJobApplication(applicationId, reason = "") {
   }
 
   try {
-    await createNotification({
-      title: "Candidatura rejeitada por parceiro.",
-      prioridade: "medium",
-    });
+    const { data: application } = await supabase
+      .from("job_applications")
+      .select("student_id, partner_id, vacancy_id")
+      .eq("id", applicationId)
+      .maybeSingle();
+
+    if (application) {
+      const [studentUserId, partnerManagerUserId] = await Promise.all([
+        resolveStudentUserIdFromEntity(application.student_id),
+        resolvePartnerManagerUserId(application.partner_id),
+      ]);
+
+      if (studentUserId) {
+        await sendNotification({
+          userId: studentUserId,
+          actorId: partnerManagerUserId,
+          type: "internship_match",
+          objectType: "vacancy",
+          objectId: application.vacancy_id,
+          title: "Candidatura rejeitada",
+          body: reason ? `Motivo: ${reason}` : "A sua candidatura não foi aprovada nesta etapa.",
+        });
+      }
+    }
   } catch (notifyError) {
     console.warn("[jobApplicationService] reject notification failed:", notifyError);
   }

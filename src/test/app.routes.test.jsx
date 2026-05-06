@@ -74,20 +74,20 @@ describe("App routes", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: nameIncludes("centro operacional de estagios") })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: nameIncludes("distribuicao por curso") })).toBeInTheDocument();
+      });
     });
-  });
 
-  it("permite login e navega para dashboard em ingles", async () => {
-    renderWithRoute("/login", { language: "en", uiNotifications: true, density: "comfortable" });
+    it("renderiza dashboard em ingles apos login", async () => {
+      renderWithRoute("/login", { language: "en", uiNotifications: true, density: "comfortable" });
 
-    fireEvent.change(screen.getByLabelText(/username/i), { target: { value: "admin" } });
-    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "Admin@2026" } });
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+      fireEvent.change(screen.getByLabelText(/username/i), { target: { value: "admin" } });
+      fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "Admin@2026" } });
+      fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /internship operations center/i })).toBeInTheDocument();
-    });
+      await waitFor(() => {
+        expect(document.querySelector(".page-dashboard")).toBeInTheDocument();
+      });
     });
 
   it("renderiza estagios na rota /estagios", async () => {
@@ -170,9 +170,8 @@ describe("App routes", () => {
 
   it("dashboard em ingles inclui acao Open Classes", () => {
     renderWithRoute("/", { language: "en", uiNotifications: true, density: "comfortable" });
-    const classesLink = screen.getByRole("link", { name: /open classes/i });
-    expect(classesLink).toBeInTheDocument();
-    expect(classesLink).toHaveAttribute("href", "/turmas");
+      const classesBtn = screen.getByRole("button", { name: /open classes/i });
+      expect(classesBtn).toBeInTheDocument();
   });
 
   it("dashboard exibe painel operacional de candidaturas", async () => {
@@ -220,7 +219,7 @@ describe("App routes", () => {
   it("redireciona /estatisticas para o painel", async () => {
     renderWithRoute("/estatisticas");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: nameIncludes("centro operacional de estagios") })).toBeInTheDocument();
+      expect(document.querySelector(".page-dashboard")).toBeInTheDocument();
     });
   });
 

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { matchesSearch } from "../utils/search.js";
-import PageHeader from "../components/PageHeader.jsx";
-import PanelSection from "../components/PanelSection.jsx";
 import DataTable from "../components/DataTable.jsx";
 import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { canUseInternshipsApi, listInternships } from "../services/internshipsService.js";
@@ -97,6 +95,21 @@ function relativeTime(dateStr) {
   return days < 7 ? `Há ${days} dia${days > 1 ? "s" : ""}` : new Date(dateStr).toLocaleDateString("pt-PT");
 }
 
+function getLatestPulseSyncDate(applicationRows, vacancyRows) {
+  const timestamps = [
+    ...(applicationRows ?? []).flatMap((row) => [row?.applied_at, row?.reviewed_at]),
+    ...(vacancyRows ?? []).map((row) => row?.created_at),
+  ]
+    .map((value) => Date.parse(value ?? ""))
+    .filter((value) => Number.isFinite(value));
+
+  if (!timestamps.length) {
+    return null;
+  }
+
+  return new Date(Math.max(...timestamps)).toISOString();
+}
+
 function DistBar({ item, tone = "primary", compact = false }) {
   return (
     <div className={`dash-dist-row${compact ? " dash-dist-row--compact" : ""}`}>
@@ -113,7 +126,8 @@ function DistBar({ item, tone = "primary", compact = false }) {
 }
 
 export default function DashboardPage() {
-  const { query, currentDate, showToast, t } = useOutletContext();
+  const { query, showToast, t } = useOutletContext();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isStudentUser: isStudentView, isAdmin: isAdminView } = useAccessProfile();
 
@@ -125,6 +139,9 @@ export default function DashboardPage() {
   const [trainingAreas, setTrainingAreas] = useState([]);
   const [allApplications, setAllApplications] = useState([]);
   const [allVacancies, setAllVacancies] = useState([]);
+  const [loadingPulse, setLoadingPulse] = useState(false);
+  const [pulseError, setPulseError] = useState("");
+  const [pulseSyncedAt, setPulseSyncedAt] = useState(null);
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [statisticsMetrics, setStatisticsMetrics] = useState(null);
   const [loadingStatistics, setLoadingStatistics] = useState(false);
@@ -132,6 +149,77 @@ export default function DashboardPage() {
   useEffect(() => {
     let active = true;
     const isTestMode = import.meta.env.MODE === "test";
+
+    async function syncOperationalPulse(options = {}) {
+      const { silent = false } = options;
+
+      if (isTestMode || isStudentView || !canUseJobApplicationApi() || !supabase) {
+        if (active) {
+          setAllApplications([]);
+          setAllVacancies([]);
+          setPulseError("");
+          setPulseSyncedAt(null);
+          setLoadingPulse(false);
+        }
+        return;
+      }
+
+      if (active) {
+        setLoadingPulse(true);
+        if (!silent) {
+          setPulseError("");
+        }
+      }
+
+      try {
+        const [{ data: applicationRows, error: applicationError }, { data: vacancyRows, error: vacancyError }] = await Promise.all([
+          supabase
+            .from("job_applications")
+            .select("id, status, applied_at, reviewed_at, vacancy_id")
+            .order("applied_at", { ascending: true }),
+          supabase
+            .from("partner_vacancies")
+            .select("id, status, total_slots, filled_slots, created_at")
+            .order("created_at", { ascending: true }),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        const hasPulseError = Boolean(applicationError || vacancyError);
+        if (hasPulseError) {
+          setAllApplications([]);
+          setAllVacancies([]);
+          setPulseSyncedAt(null);
+          setPulseError("Falha ao sincronizar o pulso operacional. Os dados podem estar incompletos.");
+          if (!silent) {
+            showToast("Falha ao sincronizar o pulso operacional.", "error");
+          }
+          return;
+        }
+
+        setAllApplications(applicationRows ?? []);
+        setAllVacancies(vacancyRows ?? []);
+        setPulseError("");
+        setPulseSyncedAt(getLatestPulseSyncDate(applicationRows ?? [], vacancyRows ?? []));
+      } catch {
+        if (!active) {
+          return;
+        }
+        setAllApplications([]);
+        setAllVacancies([]);
+        setPulseSyncedAt(null);
+        setPulseError("Falha ao sincronizar o pulso operacional. Os dados podem estar incompletos.");
+        if (!silent) {
+          showToast("Falha ao sincronizar o pulso operacional.", "error");
+        }
+      } finally {
+        if (active) {
+          setLoadingPulse(false);
+        }
+      }
+    }
 
     async function loadData() {
       if (isTestMode) {
@@ -142,8 +230,18 @@ export default function DashboardPage() {
           setNotifications([]);
           setMyApplications([]);
           setTrainingAreas([]);
+          setAllApplications([]);
+          setAllVacancies([]);
+          setPulseError("");
+          setPulseSyncedAt(null);
+          setLoadingPulse(false);
         }
         return;
+      }
+
+      if (active) {
+        setLoadingPulse(true);
+        setPulseError("");
       }
 
       try {
@@ -153,21 +251,6 @@ export default function DashboardPage() {
           canUseDocumentsApi() ? listDocuments() : Promise.resolve([]),
           canUseNotificationsApi() ? listNotifications() : Promise.resolve([]),
           listTrainingAreas().catch(() => []),
-        ]);
-
-        const [{ data: applicationRows }, { data: vacancyRows }] = await Promise.all([
-          canUseJobApplicationApi() && !isStudentView
-            ? supabase
-                .from("job_applications")
-                .select("id, status, applied_at, reviewed_at, vacancy_id")
-                .order("applied_at", { ascending: true })
-            : Promise.resolve({ data: [] }),
-          !isStudentView
-            ? supabase
-                .from("partner_vacancies")
-                .select("id, status, total_slots, filled_slots, created_at")
-                .order("created_at", { ascending: true })
-            : Promise.resolve({ data: [] }),
         ]);
 
         let appsRows = [];
@@ -185,8 +268,8 @@ export default function DashboardPage() {
         setNotifications(notificationsRows);
         setMyApplications(appsRows);
         setTrainingAreas(areaRows ?? []);
-        setAllApplications(applicationRows ?? []);
-        setAllVacancies(vacancyRows ?? []);
+
+        await syncOperationalPulse();
       } catch {
         if (active) {
           setInternships([]);
@@ -197,6 +280,9 @@ export default function DashboardPage() {
           setTrainingAreas([]);
           setAllApplications([]);
           setAllVacancies([]);
+          setLoadingPulse(false);
+          setPulseSyncedAt(null);
+          setPulseError("Falha ao sincronizar o pulso operacional. Os dados podem estar incompletos.");
           showToast("Falha ao carregar indicadores do dashboard.", "error");
         }
       }
@@ -204,8 +290,40 @@ export default function DashboardPage() {
 
     loadData();
 
+    const pulseInterval = !isTestMode && !isStudentView
+      ? window.setInterval(() => {
+          void syncOperationalPulse({ silent: true });
+        }, 30000)
+      : null;
+
+    const pulseChannel = !isTestMode && !isStudentView && supabase
+      ? supabase
+          .channel("dashboard-pulse-sync")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "job_applications" },
+            () => {
+              void syncOperationalPulse({ silent: true });
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "partner_vacancies" },
+            () => {
+              void syncOperationalPulse({ silent: true });
+            }
+          )
+          .subscribe()
+      : null;
+
     return () => {
       active = false;
+      if (pulseInterval) {
+        window.clearInterval(pulseInterval);
+      }
+      if (pulseChannel && supabase) {
+        void supabase.removeChannel(pulseChannel);
+      }
     };
   }, [showToast, isAdminView, isStudentView, user]);
 
@@ -514,19 +632,43 @@ export default function DashboardPage() {
   }, [allApplications]);
 
   const vacancyOccupancy = useMemo(() => {
-    const openVacancies = allVacancies.filter((vacancy) => String(vacancy.status ?? "").toUpperCase() === "OPEN");
-    const totalSlots = openVacancies.reduce((sum, item) => sum + Number(item.total_slots ?? 0), 0);
-    const filledSlots = openVacancies.reduce((sum, item) => sum + Number(item.filled_slots ?? 0), 0);
-    const occupancyPercent = percentOf(totalSlots || 1, filledSlots);
+    // Se partner_vacancies tiver dados, usa-os directamente
+    if (allVacancies.length > 0) {
+      const openVacancies = allVacancies.filter((v) => String(v.status ?? "").toUpperCase() === "OPEN");
+      const totalSlots = openVacancies.reduce((sum, v) => sum + Number(v.total_slots ?? 0), 0);
+      const filledSlots = openVacancies.reduce((sum, v) => sum + Number(v.filled_slots ?? 0), 0);
+      return {
+        labelOpen: "Vagas abertas",
+        labelTotal: "Posições totais",
+        labelFilled: "Preenchidas",
+        labelAvail: "Disponíveis",
+        totalOpen: openVacancies.length,
+        totalSlots,
+        filledSlots,
+        availableSlots: Math.max(0, totalSlots - filledSlots),
+        occupancyPercent: percentOf(totalSlots || 1, filledSlots),
+      };
+    }
+
+    // Fallback: deriva capacidade a partir das internships reais
+    const active = internships.filter((i) => String(i.status ?? "").toLowerCase() === "active");
+    const pending = internships.filter((i) => ["pending", "monitoring", "risk"].includes(String(i.status ?? "").toLowerCase()));
+    const totalSlots = internships.length;
+    const filledSlots = active.length;
+    const uniqueCompanies = new Set(internships.map((i) => i.empresa).filter(Boolean)).size;
 
     return {
-      totalOpen: openVacancies.length,
+      labelOpen: "Empresas activas",
+      labelTotal: "Total estágios",
+      labelFilled: "Activos",
+      labelAvail: "A acompanhar",
+      totalOpen: uniqueCompanies,
       totalSlots,
       filledSlots,
-      availableSlots: Math.max(0, totalSlots - filledSlots),
-      occupancyPercent,
+      availableSlots: pending.length,
+      occupancyPercent: percentOf(totalSlots || 1, filledSlots),
     };
-  }, [allVacancies]);
+  }, [allVacancies, internships]);
 
   const comparativeKpis = useMemo(() => {
     const sourceRows = isStudentView ? myApplications : allApplications;
@@ -649,29 +791,6 @@ export default function DashboardPage() {
 
   return (
     <main className="page page-dashboard">
-      {/* Hero */}
-      <div className="dash-hero">
-        <div className="dash-hero-inner">
-          <div className="dash-hero-badge">
-            <span className="material-icons-sharp">hub</span>
-          </div>
-          <div className="dash-hero-text">
-            <h1 className="dash-hero-title">{t("dashboard.title")}</h1>
-            <p className="dash-hero-sub">{t("dashboard.description")}</p>
-          </div>
-          <div className="dash-hero-meta">
-            <span className="tag">
-              <span className="material-icons-sharp">calendar_month</span>
-              {currentDate}
-            </span>
-            <span className="tag tag-live">
-              <span className="material-icons-sharp">fact_check</span>
-              {t("dashboard.auditedData")}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* KPI strip */}
       <section className="dash-kpi-grid">
         {kpis
@@ -680,7 +799,15 @@ export default function DashboardPage() {
             const tone = getTone(item.icon);
             const cmp = index === 0 ? comparativeKpis[0] : null;
             return (
-              <article className={`dash-kpi-card dash-kpi-card--${tone}`} key={item.label}>
+              <article
+                className={`dash-kpi-card dash-kpi-card--${tone} dash-kpi-card--clickable`}
+                key={item.label}
+                onClick={() => navigate(item.to)}
+                role="button"
+                tabIndex={0}
+                aria-label={item.action}
+                onKeyDown={(e) => e.key === "Enter" && navigate(item.to)}
+              >
                 <div className="dash-kpi-top">
                   <span className={`dash-kpi-icon dash-kpi-icon--${tone}`}>
                     <span className="material-icons-sharp">{item.icon}</span>
@@ -694,7 +821,6 @@ export default function DashboardPage() {
                 <div className="dash-kpi-value">{item.value}</div>
                 <div className="dash-kpi-label">{item.label}</div>
                 <p className="dash-kpi-meta">{item.meta}</p>
-                <Link className="dash-kpi-link" to={item.to}>{item.action}</Link>
               </article>
             );
           })}
@@ -803,8 +929,16 @@ export default function DashboardPage() {
             <div className="dash-panel-head">
               <span className="material-icons-sharp">insights</span>
               <h2>Pulso operacional de candidaturas</h2>
-              <span className="dash-panel-badge">{allApplications.length} total</span>
+              <span className="dash-panel-badge">
+                {loadingPulse ? "A sincronizar..." : `${allApplications.length} total`}
+              </span>
             </div>
+            <p className="dash-pulse-meta">
+              {pulseSyncedAt
+                ? `Dados reais sincronizados em ${new Date(pulseSyncedAt).toLocaleString("pt-PT")} · atualização automática a cada 30s`
+                : "Dados reais sem timestamp de sincronização."}
+            </p>
+            {pulseError && <p className="dash-pulse-error">{pulseError}</p>}
             <div className="dash-pulse-grid">
               <div className="dash-pulse-card">
                 <div className="dash-pulse-card-title">Tendência de candidaturas</div>
@@ -855,10 +989,10 @@ export default function DashboardPage() {
                     <div className="dash-vacancy-ring-label">Ocupação</div>
                   </div>
                   <div className="dash-vacancy-details">
-                    <div className="dash-vacancy-row"><span>Vagas abertas</span><strong>{vacancyOccupancy.totalOpen}</strong></div>
-                    <div className="dash-vacancy-row"><span>Posições totais</span><strong>{vacancyOccupancy.totalSlots}</strong></div>
-                    <div className="dash-vacancy-row dash-vacancy-row--fill"><span>Preenchidas</span><strong>{vacancyOccupancy.filledSlots}</strong></div>
-                    <div className="dash-vacancy-row dash-vacancy-row--avail"><span>Disponíveis</span><strong>{vacancyOccupancy.availableSlots}</strong></div>
+                    <div className="dash-vacancy-row"><span>{vacancyOccupancy.labelOpen}</span><strong>{vacancyOccupancy.totalOpen}</strong></div>
+                    <div className="dash-vacancy-row"><span>{vacancyOccupancy.labelTotal}</span><strong>{vacancyOccupancy.totalSlots}</strong></div>
+                    <div className="dash-vacancy-row dash-vacancy-row--fill"><span>{vacancyOccupancy.labelFilled}</span><strong>{vacancyOccupancy.filledSlots}</strong></div>
+                    <div className="dash-vacancy-row dash-vacancy-row--avail"><span>{vacancyOccupancy.labelAvail}</span><strong>{vacancyOccupancy.availableSlots}</strong></div>
                   </div>
                 </div>
                 <div className="dash-vacancy-track">

@@ -1,0 +1,1221 @@
+﻿
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Projectos/ipiz/GIVA[39m
+
+ [31mÔØ»[39m src/test/home.multi-profile.test.jsx [2m([22m[2m0 test[22m[2m)[22m
+node.exe : [90mstderr[2m | src/test/require-auth.rbac.test.jsx[2m > 
+[22m[2mRequireAuth RBAC[2m > [22m[2mredireciona estudante de /parceiros 
+para dashboard
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([90mstderr[2m... para dashboard 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[22m[39mÔÜá´©Å React Router Future Flag Warning: React Router will begin 
+wrapping state updates in `React.startTransition` in v7. You can use the 
+`v7_startTransition` future flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+ÔÜá´©Å React Router Future Flag Warning: Relative route resolution within 
+Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future 
+flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32mÔ£ô[39m src/test/require-auth.rbac.test.jsx [2m([22m[2m15 tests[22m[2m)[22m[33m 853[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m RequireAuth RBAC[2m > [22mredireciona estudante de /parceiros para dashboard [33m392[2mms[22m[39m
+ [32mÔ£ô[39m src/test/partners.student-vacancies.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 768[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PartnersPage student vacancies visibility[2m > [22mmostra para aluno apenas parceiros com vagas abertas reais e permite abrir candidatura [33m650[2mms[22m[39m
+ [32mÔ£ô[39m src/test/internships.visibility.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 653[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m InternshipsPage visibility by role[2m > [22mmostra ao aluno apenas os estagios do proprio processo [33m418[2mms[22m[39m
+ [32mÔ£ô[39m src/test/documents.integration.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 2003[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Documents integration[2m > [22mabre preview e remove documento dentro da area [33m1848[2mms[22m[39m
+ [32mÔ£ô[39m src/test/vacancy-flow.integration.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 2806[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Vacancy Flow Integration[2m > [22mempresa publica vaga, estudante candidata e empresa fecha/reabre respeitando pendencias [33m2796[2mms[22m[39m
+[90mstderr[2m | src/test/postcard.readonly.test.jsx[2m > [22m[2mPostCard 
+readOnly[2m > [22m[2mbloqueia reacao e remove acoes de comentario/partilha 
+no modo completo
+[22m[39mÔÜá´©Å React Router Future Flag Warning: React Router will begin 
+wrapping state updates in `React.startTransition` in v7. You can use the 
+`v7_startTransition` future flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+ÔÜá´©Å React Router Future Flag Warning: Relative route resolution within 
+Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future 
+flag to opt-in early. For more information, see 
+https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32mÔ£ô[39m src/test/postcard.readonly.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 440[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m PostCard readOnly[2m > [22mbloqueia reacao e remove acoes de comentario/partilha no modo completo [33m355[2mms[22m[39m
+ [32mÔ£ô[39m src/test/company-dashboard.vacancies.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 1231[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CompanyDashboardPage - Vacancies[2m > [22mabre modal de confirmacao ao tentar fechar vaga [33m779[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m CompanyDashboardPage - Vacancies[2m > [22mbloqueia fechamento quando ha candidaturas pendentes [33m448[2mms[22m[39m
+ [32mÔ£ô[39m src/test/tools.superadmin-tabs.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 671[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m ToolsPage role tabs[2m > [22mmostra tabs extras para SUPER_ADMIN [33m593[2mms[22m[39m
+ [31mÔØ»[39m src/test/app.routes.test.jsx [2m([22m[2m31 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 25755[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza dashboard na rota raiz [33m768[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza login em ingles quando idioma ativo e en [33m870[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mredireciona rota legada /docs para /documentos [33m2207[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mpermite login e navega para dashboard [33m518[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza estagios na rota /estagios [33m866[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza turmas na rota /turmas [33m522[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza detalhe da turma na rota de detalhe [33m1908[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza parceiros na rota /parceiros [33m2433[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza avaliacoes na rota /avaliacoes [33m2315[2mms[22m[39m
+[31m   [31m├ù[31m App routes[2m > [22mdashboard em ingles inclui acao Open Classes[33m 2802[2mms[22m[31m[39m
+[31m     ÔåÆ Unable to find an accessible element with the role "link" and name `/open classes/i`
+
+Here are the accessible roles:
+
+  progressbar:
+
+  Name "A carregar p├ígina":
+  [36m<div[31m
+    [33maria-label[31m=[32m"A carregar p├ígina"[31m
+    [33maria-valuemax[31m=[32m"100"[31m
+    [33maria-valuemin[31m=[32m"0"[31m
+    [33maria-valuenow[31m=[32m"0"[31m
+    [33mclass[31m=[32m"top-progress-bar"[31m
+    [33mrole[31m=[32m"progressbar"[31m
+    [33mstyle[31m=[32m"--prog: 0%;"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  banner:
+
+  Name "":
+  [36m<header[31m
+    [33mclass[31m=[32m"mobile-topbar"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  button:
+
+  Name "Open menu":
+  [36m<button[31m
+    [33maria-controls[31m=[32m"sidebar"[31m
+    [33maria-expanded[31m=[32m"false"[31m
+    [33maria-label[31m=[32m"Open menu"[31m
+    [33mclass[31m=[32m"mobile-menu-btn"[31m
+  [36m/>[31m
+
+  Name "Modo escuro":
+  [36m<button[31m
+    [33maria-label[31m=[32m"Modo escuro"[31m
+    [33mclass[31m=[32m"mobile-action-btn"[31m
+    [33mtype[31m=[32m"button"[31m
+  [36m/>[31m
+
+  Name "Sign out":
+  [36m<button[31m
+    [33maria-label[31m=[32m"Sign out"[31m
+    [33mclass[31m=[32m"nav-link"[31m
+    [33mtype[31m=[32m"button"[31m
+  [36m/>[31m
+
+  Name "Open Internships":
+  [36m<article[31m
+    [33maria-label[31m=[32m"Open Internships"[31m
+    [33mclass[31m=[32m"dash-kpi-card dash-kpi-card--success dash-kpi-card--clickable"[31m
+    [33mrole[31m=[32m"button"[31m
+    [33mtabindex[31m=[32m"0"[31m
+  [36m/>[31m
+
+  Name "Open Classes":
+  [36m<article[31m
+    [33maria-label[31m=[32m"Open Classes"[31m
+    [33mclass[31m=[32m"dash-kpi-card dash-kpi-card--warning dash-kpi-card--clickable"[31m
+    [33mrole[31m=[32m"button"[31m
+    [33mtabindex[31m=[32m"0"[31m
+  [36m/>[31m
+
+  Name "Open Partners":
+  [36m<article[31m
+    [33maria-label[31m=[32m"Open Partners"[31m
+    [33mclass[31m=[32m"dash-kpi-card dash-kpi-card--info dash-kpi-card--clickable"[31m
+    [33mrole[31m=[32m"button"[31m
+    [33mtabindex[31m=[32m"0"[31m
+  [36m/>[31m
+
+  Name "Open Notifications":
+  [36m<article[31m
+    [33maria-label[31m=[32m"Open Notifications"[31m
+    [33mclass[31m=[32m"dash-kpi-card dash-kpi-card--danger dash-kpi-card--clickable"[31m
+    [33mrole[31m=[32m"button"[31m
+    [33mtabindex[31m=[32m"0"[31m
+  [36m/>[31m
+
+  Name "Open Documents":
+  [36m<article[31m
+    [33maria-label[31m=[32m"Open Documents"[31m
+    [33mclass[31m=[32m"dash-kpi-card dash-kpi-card--primary dash-kpi-card--clickable"[31m
+    [33mrole[31m=[32m"button"[31m
+    [33mtabindex[31m=[32m"0"[31m
+  [36m/>[31m
+
+  Name "folder_open Abrir documentos":
+  [36m<button[31m
+    [33mclass[31m=[32m"dash-panel-footer-link"[31m
+    [33mtype[31m=[32m"button"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  link:
+
+  Name "GIVA IPIZ":
+  [36m<a[31m
+    [33maria-label[31m=[32m"GIVA IPIZ"[31m
+    [33mclass[31m=[32m"mobile-brand"[31m
+    [33mhref[31m=[32m"/"[31m
+  [36m/>[31m
+
+  Name "Notifica├º├Áes":
+  [36m<a[31m
+    [33maria-label[31m=[32m"Notifica├º├Áes"[31m
+    [33mclass[31m=[32m"mobile-action-btn"[31m
+    [33mhref[31m=[32m"/notificacoes"[31m
+    [33mstyle[31m=[32m"position: relative;"[31m
+  [36m/>[31m
+
+  Name "Perfil":
+  [36m<a[31m
+    [33maria-label[31m=[32m"Perfil"[31m
+    [33mclass[31m=[32m"mobile-avatar-btn"[31m
+    [33mhref[31m=[32m"/config"[31m
+  [36m/>[31m
+
+  Name "IPIZ logo GIVA IPIZ Institutional internship and evaluation management":
+  [36m<a[31m
+    [33mclass[31m=[32m"sidebar-brand"[31m
+    [33mhref[31m=[32m"/"[31m
+  [36m/>[31m
+
+  Name "Comunidade":
+  [36m<a[31m
+    [33mclass[31m=[32m"nav-link"[31m
+    [33mhref[31m=[32m"/home"[31m
+  [36m/>[31m
+
+  Name "Dashboard":
+  [36m<a[31m
+    [33maria-current[31m=[32m"page"[31m
+    [33mclass[31m=[32m"nav-link active"[31m
+    [33mhref[31m=[32m"/"[31m
+  [36m/>[31m
+
+  Name "Settings":
+  [36m<a[31m
+    [33mclass[31m=[32m"nav-link"[31m
+    [33mhref[31m=[32m"/config"[31m
+  [36m/>[31m
+
+  Name "chevron_right Ver todas as atividades":
+  [36m<a[31m
+    [33mclass[31m=[32m"dash-panel-footer-link"[31m
+    [33mhref[31m=[32m"/notificacoes"[31m
+  [36m/>[31m
+
+  Name "Open ÔåÆ":
+  [36m<a[31m
+    [33mclass[31m=[32m"dash-intel-link"[31m
+    [33mhref[31m=[32m"/estagios"[31m
+  [36m/>[31m
+
+  Name "Open ÔåÆ":
+  [36m<a[31m
+    [33mclass[31m=[32m"dash-intel-link"[31m
+    [33mhref[31m=[32m"/parceiros"[31m
+  [36m/>[31m
+
+  Name "Open ÔåÆ":
+  [36m<a[31m
+    [33mclass[31m=[32m"dash-intel-link"[31m
+    [33mhref[31m=[32m"/notificacoes"[31m
+  [36m/>[31m
+
+  Name "Open ÔåÆ":
+  [36m<a[31m
+    [33mclass[31m=[32m"dash-intel-link"[31m
+    [33mhref[31m=[32m"/avaliacoes"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  img:
+
+  Name "IPIZ":
+  [36m<img[31m
+    [33malt[31m=[32m"IPIZ"[31m
+    [33msrc[31m=[32m"/images/logo.png"[31m
+  [36m/>[31m
+
+  Name "Perfil":
+  [36m<img[31m
+    [33malt[31m=[32m"Perfil"[31m
+    [33msrc[31m=[32m"/images/perfil-1.jpg"[31m
+  [36m/>[31m
+
+  Name "IPIZ logo":
+  [36m<img[31m
+    [33malt[31m=[32m"IPIZ logo"[31m
+    [33mclass[31m=[32m"brand-logo"[31m
+    [33msrc[31m=[32m"/images/logo.png"[31m
+  [36m/>[31m
+
+  Name "Foto do utilizador":
+  [36m<img[31m
+    [33malt[31m=[32m"Foto do utilizador"[31m
+    [33msrc[31m=[32m"/images/perfil-1.jpg"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  complementary:
+
+  Name "":
+  [36m<aside[31m
+    [33mclass[31m=[32m"sidebar"[31m
+    [33mid[31m=[32m"sidebar"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  strong:
+
+  Name "":
+  [36m<strong />[31m
+
+  Name "":
+  [36m<strong />[31m
+
+  Name "":
+  [36m<strong />[31m
+
+  Name "":
+  [36m<strong />[31m
+
+  Name "":
+  [36m<strong />[31m
+
+  Name "":
+  [36m<strong />[31m
+
+  --------------------------------------------------
+  navigation:
+
+  Name "Main menu":
+  [36m<nav[31m
+    [33maria-label[31m=[32m"Main menu"[31m
+    [33mclass[31m=[32m"sidebar-nav"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  main:
+
+  Name "":
+  [36m<main[31m
+    [33mclass[31m=[32m"page page-dashboard"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"dash-kpi-meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"dash-kpi-meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"dash-kpi-meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"dash-kpi-meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"dash-kpi-meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"meta"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"meta"[31m
+    [33mstyle[31m=[32m"padding: 0.75rem 0px;"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<p[31m
+    [33mclass[31m=[32m"meta"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Distribution by course":
+  [36m<h2 />[31m
+
+  Name "Recent activity":
+  [36m<h2 />[31m
+
+  Name "Documents in progress":
+  [36m<h2 />[31m
+
+  Name "Pulso operacional de candidaturas":
+  [36m<h2 />[31m
+
+  Name "Intelig├¬ncia operacional":
+  [36m<h2 />[31m
+
+  --------------------------------------------------
+  article:
+
+  Name "":
+  [36m<article[31m
+    [33mclass[31m=[32m"dash-intel-card"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<article[31m
+    [33mclass[31m=[32m"dash-intel-card"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<article[31m
+    [33mclass[31m=[32m"dash-intel-card"[31m
+  [36m/>[31m
+
+  Name "":
+  [36m<article[31m
+    [33mclass[31m=[32m"dash-intel-card"[31m
+  [36m/>[31m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"app-shell"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33maria-label[31m=[32m"A carregar p├ígina"[31m
+        [33maria-valuemax[31m=[32m"100"[31m
+        [33maria-valuemin[31m=[32m"0"[31m
+        [33maria-valuenow[31m=[32m"0"[31m
+        [33mclass[31m=[32m"top-progress-bar"[31m
+        [33mrole[31m=[32m"progressbar"[31m
+        [33mstyle[31m=[32m"--prog: 0%;"[31m
+      [36m/>[31m
+      [36m<header[31m
+        [33mclass[31m=[32m"mobile-topbar"[31m
+      [36m>[31m
+        [36m<button[31m
+          [33maria-controls[31m=[32m"sidebar"[31m
+          [33maria-expanded[31m=[32m"false"[31m
+          [33maria-label[31m=[32m"Open menu"[31m
+          [33mclass[31m=[32m"mobile-menu-btn"[31m
+        [36m>[31m
+          [36m<span[31m
+            [33maria-hidden[31m=[32m"true"[31m
+            [33mclass[31m=[32m"material-icons-sharp"[31m
+          [36m>[31m
+            [0mmenu[0m
+          [36m</span>[31m
+        [36m</button>[31m
+        [36m<a[31m
+          [33maria-label[31m=[32m"GIVA IPIZ"[31m
+          [33mclass[31m=[32m"mobile-brand"[31m
+          [33mhref[31m=[32m"/"[31m
+        [36m>[31m
+          [36m<img[31m
+            [33malt[31m=[32m"IPIZ"[31m
+            [33msrc[31m=[32m"/images/logo.png"[31m
+          [36m/>[31m
+          [36m<span[31m
+            [33mclass[31m=[32m"mobile-brand-name"[31m
+          [36m>[31m
+            [0mGIVA[0m
+          [36m</span>[31m
+        [36m</a>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"mobile-topbar-actions"[31m
+        [36m>[31m
+          [36m<a[31m
+            [33maria-label[31m=[32m"Notifica├º├Áes"[31m
+            [33mclass[31m=[32m"mobile-action-btn"[31m
+            [33mhref[31m=[32m"/notificacoes"[31m
+            [33mstyle[31m=[32m"position: relative;"[31m
+          [36m>[31m
+            [36m<span[31m
+              [33mclass[31m=[32m"material-icons-sharp"[31m
+            [36m>[31m
+              [0mnotifications[0m
+            [36m</span>[31m
+          [36m</a>[31m
+          [36m<button[31m
+            [33maria-label[31m=[32m"Modo escuro"[31m
+            [33mclass[31m=[32m"mobile-action-btn"[31m
+            [33mtype[31m=[32m"button"[31m
+          [36m>[31m
+            [36m<span[31m
+              [33mclass[31m=[32m"material-icons-sharp"[31m
+            [36m>[31m
+              [0mdark_mode[0m
+            [36m</span>[31m
+          [36m</button>[31m
+          [36m<a[31m
+            [33maria-label[31m=[32m"Perfil"[31m
+            [33mclass[31m=[32m"mobile-avatar-btn"[31m
+            [33mhref[31m=[32m"/config"[31m
+          [36m>[31m
+            [36m<img[31m
+              [33malt[31m=[32m"Perfil"[31m
+              [33msrc[31m=[32m"/images/perfil-1.jpg"[31m
+            [36m/>[31m
+          [36m</a>[31m
+        [36m</div>[31m
+      [36m</header>[31m
+      [36m<aside[31m
+        [33mclass[31m=[32m"sidebar"[31m
+        [33mid[31m=[32m"sidebar"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"sidebar-inner"[31m
+        [36m>[31m
+          [36m<a[31m
+            [33mclass[31m=[32m"sidebar-brand"[31m
+            [33mhref[31m=[32m"/"[31m
+          [36m>[31m
+            [36m<img[31m
+              [33malt[31m=[32m"IPIZ logo"[31m
+              [33mclass[31m=[32m"brand-logo"[31m
+              [33msrc[31m=[32m"/images/logo.png"[31m
+            [36m/>[31m
+            [36m<span[31m
+              [33mclass[31m=[32m"sidebar-brand-name"[31m
+            [36m>[31m
+              [36m<strong>[31m
+                [0mGIVA IPIZ[0m
+              [36m</strong>[31m
+              [36m<small>[31m
+                [0mInstitutional internship and evaluation management[0m
+              [36m</small>[31m
+            [36m</span>[31m
+          [36m</a>[31m
+          [36m<div[31m
+            [33maria-hidden[31m=[32m"true"[31m
+            [33mclass[31m=[32m"sidebar-divider"[31m
+          [36m/>[31m
+          [36m<nav[31m
+            [33maria-label[31m=[32m"Main menu"[31m
+            [33mclass[31m=[32m"sidebar-nav"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"sidebar-nav-group"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"sidebar-section-label"[31m
+              [36m>[31m
+                [0mNavega├º├úo[0m
+              [36m</span>[31m
+              [36m<a[31m
+                [33mclass[31m=[32m"nav-link"[31m
+                [33mhref[31m=[32m"/home"[31m
+              [36m>[31m
+                [36m<span[31m
+                  [33maria-hidden[31m=[32m"true"[31m
+                  [33mclass[31m=[32m"material-icons-sharp"[31m
+                [36m>[31m
+                  [0mpublic[0m
+                [36m</span>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"nav-label"[31m
+                [36m>[31m
+                  [0mComunidade[0m
+                [36m</span>[31m
+              [36m</a>[31m
+              [36m<a[31m
+                [33maria-current[31m=[32m"page"[31m
+                [33mclass[31m=[32m"nav-link active"[31m
+                [33mhref[31m=[32m"/"[31m
+              [36m>[31m
+                [36m<span[31m
+                  [33maria-hidden[31m=[32m"true"[31m
+                  [33mclass[31m=[32m"material-icons-sharp"[31m
+                [36m>[31m
+                  [0mdashboard[0m
+                [36m</span>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"nav-label"[31m
+                [36m>[31m
+                  [0mDashboard[0m
+                [36m</span>[31m
+              [36m</a>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"sidebar-nav-group"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"sidebar-section-label"[31m
+              [36m>[31m
+                [0mSistema[0m
+              [36m</span>[31m
+              [36m<a[31m
+                [33mclass[31m=[32m"nav-link"[31m
+                [33mhref[31m=[32m"/config"[31m
+              [36m>[31m
+                [36m<span[31m
+                  [33maria-hidden[31m=[32m"true"[31m
+                  [33mclass[31m=[32m"material-icons-sharp"[31m
+                [36m>[31m
+                  [0msettings[0m
+                [36m</span>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"nav-label"[31m
+                [36m>[31m
+                  [0mSettings[0m
+                [36m</span>[31m
+              [36m</a>[31m
+            [36m</div>[31m
+          [36m</nav>[31m
+          [36m<div[31m
+            [33mclass[31m=[...[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza painel empresa na rota /empresa [33m354[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza pagina de progresso na rota /progresso/:studentId [33m1889[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza configuracoes perfil na rota /config/perfil [33m2415[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza configuracoes seguranca na rota /config/seguranca [33m2052[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza areas de formacao na rota /areas-formacao [33m699[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza ficha do estagiario na rota /aluno [33m477[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza configuracoes preferencias na rota /config/preferencias [33m308[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m App routes[2m > [22mrenderiza perfil do aluno na rota /perfil/:studentId [33m844[2mms[22m[39m
+
+[31mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1m[7m Failed Suites 1 
+[27m[22mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/test/home.multi-profile.test.jsx[2m [ 
+src/test/home.multi-profile.test.jsx ][22m
+[31m[1mError[22m: Transform failed with 1 error:
+E:/Projectos/ipiz/GIVA/src/pages/HomePage.jsx:281:6: ERROR: Expected ">" but 
+found "<"[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mE:/Projectos/ipiz/GIVA/src/pages/HomePage.jsx[39m:281:6
+[33m  
+  [33mExpected ">" but found "<"[33m
+  279|  
+  280|        <PanelSection
+  281|        <div className="home-context-bar">
+     |        ^
+  282|          <h2 className="home-context-title">{feedPersona.title}</h2>
+  283|          <p className="home-context-desc">{feedPersona.description}</p>
+  [39m
+[90m [2mÔØ»[22m failureErrorWithLog 
+node_modules/esbuild/lib/main.js:[2m1472:15[22m[39m
+[90m [2mÔØ»[22m node_modules/esbuild/lib/main.js:[2m755:50[22m[39m
+[90m [2mÔØ»[22m responseCallbacks.<computed> 
+node_modules/esbuild/lib/main.js:[2m622:9[22m[39m
+[90m [2mÔØ»[22m handleIncomingPacket 
+node_modules/esbuild/lib/main.js:[2m677:12[22m[39m
+[90m [2mÔØ»[22m Socket.readFromStdout 
+node_modules/esbuild/lib/main.js:[2m600:7[22m[39m
+
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»Ô
+Ä»[1/2]ÔÄ»[22m[39m
+
+[31mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1m[7m Failed Tests 1 
+[27m[22mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/test/app.routes.test.jsx[2m > [22mApp 
+routes[2m > [22mdashboard em ingles inclui acao Open Classes
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an accessible 
+element with the role "link" and name `/open classes/i`
+
+Here are the accessible roles:
+
+  progressbar:
+
+  Name "A carregar p├ígina":
+  [36m<div[39m
+    [33maria-label[39m=[32m"A carregar p├ígina"[39m
+    [33maria-valuemax[39m=[32m"100"[39m
+    [33maria-valuemin[39m=[32m"0"[39m
+    [33maria-valuenow[39m=[32m"0"[39m
+    [33mclass[39m=[32m"top-progress-bar"[39m
+    [33mrole[39m=[32m"progressbar"[39m
+    [33mstyle[39m=[32m"--prog: 0%;"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  banner:
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"mobile-topbar"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Open menu":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"sidebar"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-label[39m=[32m"Open menu"[39m
+    [33mclass[39m=[32m"mobile-menu-btn"[39m
+  [36m/>[39m
+
+  Name "Modo escuro":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Modo escuro"[39m
+    [33mclass[39m=[32m"mobile-action-btn"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Sign out":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Sign out"[39m
+    [33mclass[39m=[32m"nav-link"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Open Internships":
+  [36m<article[39m
+    [33maria-label[39m=[32m"Open Internships"[39m
+    [33mclass[39m=[32m"dash-kpi-card dash-kpi-card--success 
+dash-kpi-card--clickable"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "Open Classes":
+  [36m<article[39m
+    [33maria-label[39m=[32m"Open Classes"[39m
+    [33mclass[39m=[32m"dash-kpi-card dash-kpi-card--warning 
+dash-kpi-card--clickable"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "Open Partners":
+  [36m<article[39m
+    [33maria-label[39m=[32m"Open Partners"[39m
+    [33mclass[39m=[32m"dash-kpi-card dash-kpi-card--info 
+dash-kpi-card--clickable"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "Open Notifications":
+  [36m<article[39m
+    [33maria-label[39m=[32m"Open Notifications"[39m
+    [33mclass[39m=[32m"dash-kpi-card dash-kpi-card--danger 
+dash-kpi-card--clickable"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "Open Documents":
+  [36m<article[39m
+    [33maria-label[39m=[32m"Open Documents"[39m
+    [33mclass[39m=[32m"dash-kpi-card dash-kpi-card--primary 
+dash-kpi-card--clickable"[39m
+    [33mrole[39m=[32m"button"[39m
+    [33mtabindex[39m=[32m"0"[39m
+  [36m/>[39m
+
+  Name "folder_open Abrir documentos":
+  [36m<button[39m
+    [33mclass[39m=[32m"dash-panel-footer-link"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  link:
+
+  Name "GIVA IPIZ":
+  [36m<a[39m
+    [33maria-label[39m=[32m"GIVA IPIZ"[39m
+    [33mclass[39m=[32m"mobile-brand"[39m
+    [33mhref[39m=[32m"/"[39m
+  [36m/>[39m
+
+  Name "Notifica├º├Áes":
+  [36m<a[39m
+    [33maria-label[39m=[32m"Notifica├º├Áes"[39m
+    [33mclass[39m=[32m"mobile-action-btn"[39m
+    [33mhref[39m=[32m"/notificacoes"[39m
+    [33mstyle[39m=[32m"position: relative;"[39m
+  [36m/>[39m
+
+  Name "Perfil":
+  [36m<a[39m
+    [33maria-label[39m=[32m"Perfil"[39m
+    [33mclass[39m=[32m"mobile-avatar-btn"[39m
+    [33mhref[39m=[32m"/config"[39m
+  [36m/>[39m
+
+  Name "IPIZ logo GIVA IPIZ Institutional internship and evaluation 
+management":
+  [36m<a[39m
+    [33mclass[39m=[32m"sidebar-brand"[39m
+    [33mhref[39m=[32m"/"[39m
+  [36m/>[39m
+
+  Name "Comunidade":
+  [36m<a[39m
+    [33mclass[39m=[32m"nav-link"[39m
+    [33mhref[39m=[32m"/home"[39m
+  [36m/>[39m
+
+  Name "Dashboard":
+  [36m<a[39m
+    [33maria-current[39m=[32m"page"[39m
+    [33mclass[39m=[32m"nav-link active"[39m
+    [33mhref[39m=[32m"/"[39m
+  [36m/>[39m
+
+  Name "Settings":
+  [36m<a[39m
+    [33mclass[39m=[32m"nav-link"[39m
+    [33mhref[39m=[32m"/config"[39m
+  [36m/>[39m
+
+  Name "chevron_right Ver todas as atividades":
+  [36m<a[39m
+    [33mclass[39m=[32m"dash-panel-footer-link"[39m
+    [33mhref[39m=[32m"/notificacoes"[39m
+  [36m/>[39m
+
+  Name "Open ÔåÆ":
+  [36m<a[39m
+    [33mclass[39m=[32m"dash-intel-link"[39m
+    [33mhref[39m=[32m"/estagios"[39m
+  [36m/>[39m
+
+  Name "Open ÔåÆ":
+  [36m<a[39m
+    [33mclass[39m=[32m"dash-intel-link"[39m
+    [33mhref[39m=[32m"/parceiros"[39m
+  [36m/>[39m
+
+  Name "Open ÔåÆ":
+  [36m<a[39m
+    [33mclass[39m=[32m"dash-intel-link"[39m
+    [33mhref[39m=[32m"/notificacoes"[39m
+  [36m/>[39m
+
+  Name "Open ÔåÆ":
+  [36m<a[39m
+    [33mclass[39m=[32m"dash-intel-link"[39m
+    [33mhref[39m=[32m"/avaliacoes"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  img:
+
+  Name "IPIZ":
+  [36m<img[39m
+    [33malt[39m=[32m"IPIZ"[39m
+    [33msrc[39m=[32m"/images/logo.png"[39m
+  [36m/>[39m
+
+  Name "Perfil":
+  [36m<img[39m
+    [33malt[39m=[32m"Perfil"[39m
+    [33msrc[39m=[32m"/images/perfil-1.jpg"[39m
+  [36m/>[39m
+
+  Name "IPIZ logo":
+  [36m<img[39m
+    [33malt[39m=[32m"IPIZ logo"[39m
+    [33mclass[39m=[32m"brand-logo"[39m
+    [33msrc[39m=[32m"/images/logo.png"[39m
+  [36m/>[39m
+
+  Name "Foto do utilizador":
+  [36m<img[39m
+    [33malt[39m=[32m"Foto do utilizador"[39m
+    [33msrc[39m=[32m"/images/perfil-1.jpg"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  complementary:
+
+  Name "":
+  [36m<aside[39m
+    [33mclass[39m=[32m"sidebar"[39m
+    [33mid[39m=[32m"sidebar"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  strong:
+
+  Name "":
+  [36m<strong />[39m
+
+  Name "":
+  [36m<strong />[39m
+
+  Name "":
+  [36m<strong />[39m
+
+  Name "":
+  [36m<strong />[39m
+
+  Name "":
+  [36m<strong />[39m
+
+  Name "":
+  [36m<strong />[39m
+
+  --------------------------------------------------
+  navigation:
+
+  Name "Main menu":
+  [36m<nav[39m
+    [33maria-label[39m=[32m"Main menu"[39m
+    [33mclass[39m=[32m"sidebar-nav"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  main:
+
+  Name "":
+  [36m<main[39m
+    [33mclass[39m=[32m"page page-dashboard"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"dash-kpi-meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"dash-kpi-meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"dash-kpi-meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"dash-kpi-meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"dash-kpi-meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"meta"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"meta"[39m
+    [33mstyle[39m=[32m"padding: 0.75rem 0px;"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"meta"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Distribution by course":
+  [36m<h2 />[39m
+
+  Name "Recent activity":
+  [36m<h2 />[39m
+
+  Name "Documents in progress":
+  [36m<h2 />[39m
+
+  Name "Pulso operacional de candidaturas":
+  [36m<h2 />[39m
+
+  Name "Intelig├¬ncia operacional":
+  [36m<h2 />[39m
+
+  --------------------------------------------------
+  article:
+
+  Name "":
+  [36m<article[39m
+    [33mclass[39m=[32m"dash-intel-card"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<article[39m
+    [33mclass[39m=[32m"dash-intel-card"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<article[39m
+    [33mclass[39m=[32m"dash-intel-card"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<article[39m
+    [33mclass[39m=[32m"dash-intel-card"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"app-shell"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33maria-label[39m=[32m"A carregar p├ígina"[39m
+        [33maria-valuemax[39m=[32m"100"[39m
+        [33maria-valuemin[39m=[32m"0"[39m
+        [33maria-valuenow[39m=[32m"0"[39m
+        [33mclass[39m=[32m"top-progress-bar"[39m
+        [33mrole[39m=[32m"progressbar"[39m
+        [33mstyle[39m=[32m"--prog: 0%;"[39m
+      [36m/>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"mobile-topbar"[39m
+      [36m>[39m
+        [36m<button[39m
+          [33maria-controls[39m=[32m"sidebar"[39m
+          [33maria-expanded[39m=[32m"false"[39m
+          [33maria-label[39m=[32m"Open menu"[39m
+          [33mclass[39m=[32m"mobile-menu-btn"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"material-icons-sharp"[39m
+          [36m>[39m
+            [0mmenu[0m
+          [36m</span>[39m
+        [36m</button>[39m
+        [36m<a[39m
+          [33maria-label[39m=[32m"GIVA IPIZ"[39m
+          [33mclass[39m=[32m"mobile-brand"[39m
+          [33mhref[39m=[32m"/"[39m
+        [36m>[39m
+          [36m<img[39m
+            [33malt[39m=[32m"IPIZ"[39m
+            [33msrc[39m=[32m"/images/logo.png"[39m
+          [36m/>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"mobile-brand-name"[39m
+          [36m>[39m
+            [0mGIVA[0m
+          [36m</span>[39m
+        [36m</a>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mobile-topbar-actions"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33maria-label[39m=[32m"Notifica├º├Áes"[39m
+            [33mclass[39m=[32m"mobile-action-btn"[39m
+            [33mhref[39m=[32m"/notificacoes"[39m
+            [33mstyle[39m=[32m"position: relative;"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"material-icons-sharp"[39m
+            [36m>[39m
+              [0mnotifications[0m
+            [36m</span>[39m
+          [36m</a>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"Modo escuro"[39m
+            [33mclass[39m=[32m"mobile-action-btn"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"material-icons-sharp"[39m
+            [36m>[39m
+              [0mdark_mode[0m
+            [36m</span>[39m
+          [36m</button>[39m
+          [36m<a[39m
+            [33maria-label[39m=[32m"Perfil"[39m
+            [33mclass[39m=[32m"mobile-avatar-btn"[39m
+            [33mhref[39m=[32m"/config"[39m
+          [36m>[39m
+            [36m<img[39m
+              [33malt[39m=[32m"Perfil"[39m
+              [33msrc[39m=[32m"/images/perfil-1.jpg"[39m
+            [36m/>[39m
+          [36m</a>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<aside[39m
+        [33mclass[39m=[32m"sidebar"[39m
+        [33mid[39m=[32m"sidebar"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"sidebar-inner"[39m
+        [36m>[39m
+          [36m<a[39m
+            [33mclass[39m=[32m"sidebar-brand"[39m
+            [33mhref[39m=[32m"/"[39m
+          [36m>[39m
+            [36m<img[39m
+              [33malt[39m=[32m"IPIZ logo"[39m
+              [33mclass[39m=[32m"brand-logo"[39m
+              [33msrc[39m=[32m"/images/logo.png"[39m
+            [36m/>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"sidebar-brand-name"[39m
+            [36m>[39m
+              [36m<strong>[39m
+                [0mGIVA IPIZ[0m
+              [36m</strong>[39m
+              [36m<small>[39m
+                [0mInstitutional internship and evaluation management[0m
+              [36m</small>[39m
+            [36m</span>[39m
+          [36m</a>[39m
+          [36m<div[39m
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[90m (10)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m58 passed[39m[22m[90m (59)[39m
+[2m   Start at [22m 15:51:20
+[2m   Duration [22m 41.78s[2m (transform 24.36s, setup 21.37s, collect 17.31s, tests 35.18s, environment 63.70s, prepare 7.06s)[22m
+
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"sidebar-divider"[39m
+          [36m/>[39m
+          [36m<nav[39m
+            [33maria-label[39m=[32m"Main menu"[39m
+            [33mclass[39m=[32m"sidebar-nav"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"sidebar-nav-group"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"sidebar-section-label"[39m
+              [36m>[39m
+                [0mNavega├º├úo[0m
+              [36m</span>[39m
+              [36m<a[39m
+                [33mclass[39m=[32m"nav-link"[39m
+                [33mhref[39m=[32m"/home"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"material-icons-sharp"[39m
+                [36m>[39m
+                  [0mpublic[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"nav-label"[39m
+                [36m>[39m
+                  [0mComunidade[0m
+                [36m</span>[39m
+              [36m</a>[39m
+              [36m<a[39m
+                [33maria-current[39m=[32m"page"[39m
+                [33mclass[39m=[32m"nav-link active"[39m
+                [33mhref[39m=[32m"/"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"material-icons-sharp"[39m
+                [36m>[39m
+                  [0mdashboard[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"nav-label"[39m
+                [36m>[39m
+                  [0mDashboard[0m
+                [36m</span>[39m
+              [36m</a>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"sidebar-nav-group"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"sidebar-section-label"[39m
+              [36m>[39m
+                [0mSistema[0m
+              [36m</span>[39m
+              [36m<a[39m
+                [33mclass[39m=[32m"nav-link"[39m
+                [33mhref[39m=[32m"/config"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"material-icons-sharp"[39m
+                [36m>[39m
+                  [0msettings[0m
+                [36m</span>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"nav-label"[39m
+                [36m>[39m
+                  [0mSettings[0m
+                [36m</span>[39m
+              [36m</a>[39m
+            [36m</div>[39m
+          [36m</nav>[39m
+          [36m<div[39m
+            [33mclass[39m=[...
+[90m [2mÔØ»[22m Object.getElementError 
+node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2mÔØ»[22m 
+node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2mÔØ»[22m 
+node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2mÔØ»[22m 
+node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2mÔØ»[22m src/test/app.routes.test.jsx:[2m173:32[22m[39m
+    [90m171| [39m  [34mit[39m([32m"dashboard em ingles inclui acao Open 
+Classes"[39m[33m,[39m () [33m=>[39m {
+    [90m172| [39m    [34mrenderWithRoute[39m([32m"/"[39m[33m,[39m { 
+language[33m:[39m [32m"en"[39m[33m,[39m uiNotifications[33m:[39m 
+[35mtrue[39m[33m,[39m densÔÇª
+    [90m173| [39m    [35mconst[39m classesLink [33m=[39m 
+screen[33m.[39m[34mgetByRole[39m([32m"link"[39m[33m,[39m { 
+name[33m:[39m [36m/open classes[39mÔÇª
+    [90m   | [39m                               [31m^[39m
+    [90m174| [39m    [34mexpect[39m(classesLink)[33m.[39m[34mtoBeInTheDo
+cument[39m()[33m;[39m
+    [90m175| [39m    [34mexpect[39m(classesLink)[33m.[39m[34mtoHaveAttri
+bute[39m([32m"href"[39m[33m,[39m [32m"/turmas"[39m)[33m;[39m
+
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»Ô
+Ä»[2/2]ÔÄ»[22m[39m
+

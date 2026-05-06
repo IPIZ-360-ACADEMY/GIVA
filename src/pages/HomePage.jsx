@@ -270,37 +270,17 @@ export default function HomePage() {
 
   return (
     <main className="page page-home">
-      <PageHeader
-        title={feedPersona.title}
-        description={feedPersona.description}
-      />
-
-      <section className="community-summary" aria-label="Resumo público da comunidade">
-        {feedPersona.summary.map((item) => (
-          <span key={item} className="community-summary-item">{item}</span>
-        ))}
-      </section>
-
-      {feedPersona.spotlight.length > 0 && (
-        <section className="stats-grid dashboard-kpis dashboard-kpis-secondary" aria-label="Resumo de perfil do feed">
-          {feedPersona.spotlight.map((item) => (
-            <article className="stat-card" key={item.label}>
-              <div className="stat-head">
-                <span>{item.label}</span>
-                <span className="material-icons-sharp">insights</span>
-              </div>
-              <h3>{item.value}</h3>
-              <p>{item.hint}</p>
-            </article>
-          ))}
-        </section>
-      )}
 
       {user && !isExternal ? (
         <section className="panel-card" style={{ marginBottom: "1rem" }}>
           <CreatePostCard onCreated={handleCreated} />
         </section>
       ) : null}
+
+      <div className="home-context-bar">
+        <h2 className="home-context-title">{feedPersona.title}</h2>
+        <p className="home-context-desc">{feedPersona.description}</p>
+      </div>
 
       <PanelSection
         title="Feed"

@@ -109,6 +109,10 @@ export async function adminEnsureAccountTypeArtifacts(uid, type, displayName = "
   if (!uid || !type) return { ensured: false, reason: "invalid-input" };
 
   const normalizedType = normalizeAccountType(type);
+  if (!["student", "company", "external", "admin"].includes(normalizedType)) {
+    return { ensured: false, skipped: true, reason: "no-artifacts-required", account_type: normalizedType };
+  }
+
   const processNumber = normalizedType === "student"
     ? normalizeStudentProcessNumber(options.processNumber ?? getStudentProcessNumberFromIdentifier(options.email)) || null
     : null;

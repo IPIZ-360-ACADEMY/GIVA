@@ -11,7 +11,7 @@ import {
 import { supabase } from "../lib/supabase.js";
 import { getUnreadNotifCount, subscribeToNotifications } from "../services/notificationsService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
-import { resolveAccessProfile } from "../utils/accessControl.js";
+import { resolveAccessProfile, typeFromRole } from "../utils/accessControl.js";
 
 const AuthContext = createContext(null);
 
@@ -89,7 +89,14 @@ export function AuthProvider({ children }) {
         .select("id, type, display_name, avatar_url, bio, moderation")
         .eq("id", userId)
         .maybeSingle();
-      setUserProfile(data ?? null);
+      if (data) {
+        setUserProfile(data);
+      } else {
+        // user_profiles row missing — derive type from JWT role so access control works
+        const ap = await getAuthProfile();
+        const derivedType = typeFromRole(ap?.role);
+        setUserProfile({ id: userId, type: derivedType, display_name: null, avatar_url: null, bio: null, moderation: null });
+      }
     } catch {
       setUserProfile(null);
     }

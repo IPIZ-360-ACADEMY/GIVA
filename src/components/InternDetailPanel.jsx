@@ -655,6 +655,58 @@ const INTERN_TABS = [
   { key: "evaluations", label: "Avaliações", icon: "star_rate" },
 ];
 
+function getStageLabel(stage) {
+  const normalized = String(stage ?? "").toUpperCase();
+  if (normalized === "INTERVIEW") return "Entrevista";
+  if (normalized === "INTERNSHIP") return "Estágio";
+  if (normalized === "FIXED_TERM_CONTRACT") return "Contrato a termo";
+  if (normalized === "PERMANENT_CONTRACT") return "Contrato permanente";
+  if (normalized === "COMPLETED") return "Concluído";
+  if (normalized === "TERMINATED") return "Encerrado";
+  return "Sem etapa";
+}
+
+function getStatusLabel(status) {
+  const normalized = String(status ?? "").toUpperCase();
+  if (normalized === "IN_PROGRESS") return "Em progresso";
+  if (normalized === "COMPLETED") return "Concluído";
+  if (normalized === "FAILED") return "Falhado";
+  if (normalized === "SUSPENDED") return "Suspenso";
+  return "Indefinido";
+}
+
+function getNextActionHint(progress) {
+  const stage = String(progress?.progression_stage ?? "").toUpperCase();
+
+  if (stage === "INTERVIEW") {
+    return "Registar data da entrevista, resultado e notas para decidir o avanço do processo.";
+  }
+
+  if (stage === "INTERNSHIP") {
+    const hasDates = Boolean(progress?.internship_start_date) && Boolean(progress?.internship_end_date);
+    return hasDates
+      ? "Com estágio definido, avance para proposta contratual ou encerre o processo." :
+        "Definir datas e condições do estágio para desbloquear a etapa contratual.";
+  }
+
+  if (stage === "FIXED_TERM_CONTRACT" || stage === "PERMANENT_CONTRACT") {
+    const hasContractData = Boolean(progress?.contract_type) && Boolean(progress?.contract_start_date);
+    return hasContractData
+      ? "Finalize o processo como concluído ou encerre com motivo." :
+        "Preencher tipo de contrato, data de início e salário para consolidar a proposta.";
+  }
+
+  if (stage === "COMPLETED") {
+    return "Processo concluído. Revise presenças, objectivos e registe avaliação final.";
+  }
+
+  if (stage === "TERMINATED") {
+    return "Processo encerrado. Confirme o motivo e mantenha o histórico auditável.";
+  }
+
+  return "Acompanhe o progresso e atualize a etapa conforme a evolução da candidatura.";
+}
+
 export default function InternDetailPanel({ app, partnerId, isCompanyView = true, t }) {
   const [activeTab, setActiveTab] = useState("timeline");
   const [progress, setProgress] = useState(null);
@@ -697,6 +749,41 @@ export default function InternDetailPanel({ app, partnerId, isCompanyView = true
           </div>
         )}
       </div>
+
+      {!loadingProgress && progress ? (
+        <div className="panel-card" style={{ padding: "0.8rem 1rem", marginBottom: "1rem" }}>
+          <div style={{ display: "grid", gap: "0.45rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+              <strong style={{ fontSize: "0.9rem" }}>Resumo do percurso</strong>
+              <span style={{ fontSize: "0.76rem", padding: "0.15rem 0.5rem", borderRadius: 999, background: "#eef2ff", color: "#3730a3" }}>
+                Etapa: {getStageLabel(progress.progression_stage)}
+              </span>
+              <span style={{ fontSize: "0.76rem", padding: "0.15rem 0.5rem", borderRadius: 999, background: "#ecfeff", color: "#155e75" }}>
+                Estado: {getStatusLabel(progress.progress_status)}
+              </span>
+            </div>
+
+            <p style={{ margin: 0, fontSize: "0.84rem", opacity: 0.85 }}>
+              {getNextActionHint(progress)}
+            </p>
+
+            <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap", alignItems: "center" }}>
+              <button type="button" className="btn ghost sm" onClick={() => setActiveTab("timeline")}>Abrir progresso</button>
+              {(progress.progression_stage === "INTERNSHIP" || progress.progression_stage === "FIXED_TERM_CONTRACT" || progress.progression_stage === "PERMANENT_CONTRACT" || progress.progression_stage === "COMPLETED") && (
+                <button type="button" className="btn ghost sm" onClick={() => setActiveTab("attendance")}>Abrir presenças</button>
+              )}
+              {(progress.progression_stage === "COMPLETED" || progress.progression_stage === "TERMINATED") && (
+                <button type="button" className="btn ghost sm" onClick={() => setActiveTab("evaluations")}>Abrir avaliações</button>
+              )}
+              {progress.updated_at ? (
+                <span style={{ marginLeft: "auto", fontSize: "0.75rem", opacity: 0.65 }}>
+                  Atualizado em {new Date(progress.updated_at).toLocaleString("pt-PT")}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Tabs internas */}
       <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border-color, #e2e8f0)", marginBottom: "1rem" }}>

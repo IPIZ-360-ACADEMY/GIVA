@@ -58,6 +58,7 @@ function NotifItem({ notif, onRead, onDelete }) {
     if (notif.object_type === "post" && notif.object_id) return `/home#post-${notif.object_id}`;
     if (notif.object_type === "profile" && notif.object_id) return `/perfil-publico/${notif.object_id}`;
     if (notif.object_type === "message") return "/chat";
+    if (notif.object_type === "vacancy") return "/estagios";
     return null;
   }
 

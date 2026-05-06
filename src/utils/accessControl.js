@@ -51,6 +51,22 @@ export function isCoordinatorRole(role) {
   return normalized === "COORDINATOR";
 }
 
+/**
+ * Deriva o account type a partir de um JWT role quando não existe user_profiles.
+ * Usado como fallback em resolveAccessProfile e no bootstrap do AuthContext.
+ */
+export function typeFromRole(role) {
+  const normalized = normalizePlatformRole(role ?? "");
+  const canonical = normalized === "ADMIN_1" ? "COORDINATOR" : normalized;
+  if (canonical === "SUPER_ADMIN" || canonical === "ADMIN") return "admin";
+  if (canonical === "COORDINATOR") return "coordinator";
+  if (canonical === "TEACHER") return "teacher";
+  if (canonical === "COMPANY") return "company";
+  if (canonical === "STUDENT") return "student";
+  if (canonical === "EXTERNAL") return "external";
+  return "external";
+}
+
 export function defaultRoleForAccountType(type, fallback = "authenticated") {
   const allowedRoles = getAllowedRolesForType(type);
   // Normalizar ADMIN_1 legado para COORDINATOR
@@ -77,7 +93,14 @@ export function resolveAccessProfile({ role, type }) {
       isExternalUser: false,
     };
   }
-  const normalizedType = normalizeAccountType(type);
+
+  // Quando não existe linha em user_profiles, derivar o tipo a partir do JWT role
+  // para que utilizadores provisionados por admin tenham os acessos corretos.
+  const effectiveType = (type != null && String(type).trim() !== "")
+    ? type
+    : typeFromRole(role);
+
+  const normalizedType = normalizeAccountType(effectiveType);
   const normalizedRole = defaultRoleForAccountType(normalizedType, role);
   const isSuperAdmin = normalizedRole === "SUPER_ADMIN";
   const isAdminCore = normalizedRole === "ADMIN";

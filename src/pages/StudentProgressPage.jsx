@@ -1,7 +1,7 @@
 import { Navigate, useParams, useOutletContext } from "react-router-dom";
 import { useEffect, useState } from "react";
 import CompanyProgressTimeline from "../components/CompanyProgressTimeline.jsx";
-import { listStudentApplications } from "../services/jobApplicationService.js";
+import { listStudentProgressByPartner } from "../services/companyProgressService.js";
 import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 
 export default function StudentProgressPage() {
@@ -9,26 +9,25 @@ export default function StudentProgressPage() {
   const { studentId } = useParams();
   const { user } = useAuth();
   const { isAdmin, isCompanyUser } = useAccessProfile();
-  const [applications, setApplications] = useState([]);
+  const [progressRows, setProgressRows] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [loading, setLoading] = useState(true);
   const targetStudentId = studentId || user?.id;
 
   useEffect(() => {
-    loadApplications();
+    void loadProgressEntries();
   }, [targetStudentId]);
 
-  async function loadApplications() {
+  async function loadProgressEntries() {
     if (!targetStudentId) {
       setLoading(false);
       return;
     }
 
-    const apps = await listStudentApplications(targetStudentId);
-    const accepted = apps?.filter((app) => app.status === "ACCEPTED") || [];
-    setApplications(accepted);
-    if (accepted.length > 0) {
-      setSelectedPartner(accepted[0].partner_id);
+    const rows = await listStudentProgressByPartner(targetStudentId);
+    setProgressRows(rows ?? []);
+    if (rows?.length > 0) {
+      setSelectedPartner(rows[0].partner?.id ?? null);
     }
     setLoading(false);
   }
@@ -44,7 +43,7 @@ export default function StudentProgressPage() {
 
   if (loading) return <div className="loading">A carregar...</div>;
 
-  if (applications.length === 0) {
+  if (progressRows.length === 0) {
     return (
       <div className="progress-page">
         <h1>{t("progressCompany.title")}</h1>
@@ -63,9 +62,9 @@ export default function StudentProgressPage() {
           value={selectedPartner || ""}
           onChange={(e) => setSelectedPartner(e.target.value)}
         >
-          {applications.map((app) => (
-            <option key={app.partner_id} value={app.partner_id}>
-              {app.partner?.empresa ?? app.partner_id}
+          {progressRows.map((row) => (
+            <option key={row.partner?.id ?? row.id} value={row.partner?.id ?? ""}>
+              {row.partner?.empresa ?? row.partner?.id ?? row.id}
             </option>
           ))}
         </select>
