@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import InternDetailPanel from "../components/InternDetailPanel.jsx";
 
@@ -55,6 +55,14 @@ describe("InternDetailPanel", () => {
       expect(screen.getByText("Etapa: Estágio")).toBeInTheDocument();
       expect(screen.getByText("Estado: Em progresso")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /abrir presenças/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /abrir avaliações/i })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /abrir avaliações/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /nova avaliação intercalar/i })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /nova avaliação final/i })).toBeDisabled();
     });
   });
 });

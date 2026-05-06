@@ -19,6 +19,7 @@ import {
   adminUpdateUserProfile,
   adminCreatePlatformUser,
   adminDeleteUser,
+  adminSendPasswordReset,
   getStudentProcessNumberFromIdentifier,
 } from "../services/usersAdminService.js";
 
@@ -605,6 +606,7 @@ export default function UsersManagementPage({ embedded = false }) {
   const [filterType, setFilterType] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [areas, setAreas] = useState([]);
+  const [resettingEmail, setResettingEmail] = useState(null);
 
   const isSuperAdmin = String(authProfile?.role ?? "").toUpperCase() === "SUPER_ADMIN";
 
@@ -648,6 +650,19 @@ export default function UsersManagementPage({ embedded = false }) {
       toast("Utilizador eliminado.");
     } catch (err) {
       toast("Erro ao eliminar: " + err.message, "error");
+    }
+  }
+
+  async function handleSendReset(email) {
+    if (resettingEmail) return;
+    setResettingEmail(email);
+    try {
+      await adminSendPasswordReset(email);
+      toast(`Email de reset enviado para ${email}.`);
+    } catch (err) {
+      toast("Erro ao enviar reset: " + err.message, "error");
+    } finally {
+      setResettingEmail(null);
     }
   }
 
@@ -908,6 +923,19 @@ export default function UsersManagementPage({ embedded = false }) {
                           {isSuperAdmin && (
                             <button type="button" className="btn danger sm" onClick={() => setDeletingUser(u)} title="Eliminar conta">
                               <span className="material-icons-sharp" style={{ fontSize: "0.85rem" }}>delete</span>
+                            </button>
+                          )}
+                          {isSuperAdmin && u.email && (
+                            <button
+                              type="button"
+                              className="btn ghost sm"
+                              onClick={() => handleSendReset(u.email)}
+                              disabled={resettingEmail === u.email}
+                              title="Reenviar email de reset de password"
+                            >
+                              <span className="material-icons-sharp" style={{ fontSize: "0.85rem" }}>
+                                {resettingEmail === u.email ? "hourglass_top" : "key"}
+                              </span>
                             </button>
                           )}
                         </div>

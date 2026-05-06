@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
+import { sendAccountActivationEmail } from "./authService.js";
 import {
   defaultModerationForAccountType,
   defaultRoleForAccountType,
@@ -32,13 +33,15 @@ function normalizeUserPayload(payload = {}) {
     ? normalizeStudentProcessNumber(payload.processNumber ?? getStudentProcessNumberFromIdentifier(payload.email)) || null
     : null;
   const areaId = role === "COORDINATOR" ? String(payload.areaId ?? "").trim() || null : null;
+  // ADMIN_1 é o alias legado de COORDINATOR — normalizar para o valor canónico
+  const normalizedRole = role === "ADMIN_1" ? "COORDINATOR" : role;
 
   return {
     email: String(payload.email ?? "").trim().toLowerCase(),
     password: payload.password,
     display_name: String(payload.display_name ?? "").trim(),
     type,
-    role,
+    role: normalizedRole,
     moderation,
     processNumber,
     areaId,
@@ -83,6 +86,17 @@ export async function adminUpdateUserProfile(uid, updates) {
 /** Elimina utilizador da auth + perfil. Requer SUPER_ADMIN. */
 export async function adminDeleteUser(uid) {
   const { error } = await supabase.rpc("admin_delete_user", { p_uid: uid });
+  if (error) throw error;
+}
+
+/**
+ * Envia email de reset de password para uma conta criada pelo admin.
+ * Útil para reenviar credenciais quando o utilizador não recebeu o email inicial.
+ */
+export async function adminSendPasswordReset(email) {
+  const normalized = String(email ?? "").trim().toLowerCase();
+  if (!normalized) throw new Error("Email é obrigatório");
+  const { error } = await sendAccountActivationEmail(normalized);
   if (error) throw error;
 }
 

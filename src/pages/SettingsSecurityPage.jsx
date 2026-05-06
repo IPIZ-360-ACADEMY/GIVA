@@ -47,7 +47,7 @@ function readStoredSecurity() {
 
 export default function SettingsSecurityPage() {
   const { showToast, t } = useOutletContext();
-  const { user } = useAuth();
+  const { user, authProfile } = useAuth();
   const [security, setSecurity] = useState(readStoredSecurity);
   const [passwords, setPasswords] = useState({ newPassword: "", confirmPassword: "" });
   const [submittingSecurity, setSubmittingSecurity] = useState(false);
@@ -92,6 +92,30 @@ export default function SettingsSecurityPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {authProfile?.mustChangePassword && (
+        <div
+          className="panel-notice warning"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "0.75rem",
+            background: "var(--color-warning-bg, #fffbeb)",
+            border: "1px solid var(--color-warning, #f59e0b)",
+            borderRadius: "0.5rem",
+            padding: "0.85rem 1rem",
+            color: "var(--color-warning-text, #92400e)",
+            fontSize: "0.9rem",
+          }}
+        >
+          <span className="material-icons-sharp" style={{ color: "var(--color-warning, #f59e0b)", flexShrink: 0 }}>
+            warning
+          </span>
+          <p style={{ margin: 0 }}>
+            <strong>Acção necessária:</strong> A sua conta requer uma nova password antes de poder aceder ao sistema.
+            Por favor defina uma nova password no formulário abaixo.
+          </p>
+        </div>
+      )}
       <section className="form-card">
         <h3>{t("settings.security.title")}</h3>
         <form onSubmit={submitSecurity}>

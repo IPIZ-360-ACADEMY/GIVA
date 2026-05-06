@@ -178,6 +178,44 @@ export async function listEvaluations(companyProgressId) {
 
 export async function upsertEvaluation(payload) {
   if (!canUse()) return null;
+
+  const evalType = String(payload?.eval_type ?? "").toUpperCase();
+  if (evalType !== "MIDTERM" && evalType !== "FINAL") {
+    return {
+      __error: true,
+      message: "Tipo de avaliação inválido. Use MIDTERM ou FINAL.",
+    };
+  }
+
+  const { data: progress, error: progressError } = await supabase
+    .from("company_progress")
+    .select("progression_stage")
+    .eq("id", payload.company_progress_id)
+    .maybeSingle();
+
+  if (progressError) {
+    console.error("[internFollowupService] upsertEvaluation stage lookup:", progressError);
+    return null;
+  }
+
+  const stage = String(progress?.progression_stage ?? "").toUpperCase();
+  const isMidtermAllowed = stage === "INTERNSHIP" || stage === "FIXED_TERM_CONTRACT" || stage === "PERMANENT_CONTRACT";
+  const isFinalAllowed = stage === "COMPLETED" || stage === "TERMINATED";
+
+  if (evalType === "MIDTERM" && !isMidtermAllowed) {
+    return {
+      __error: true,
+      message: "Avaliação intercalar permitida apenas durante estágio/contrato e antes do encerramento.",
+    };
+  }
+
+  if (evalType === "FINAL" && !isFinalAllowed) {
+    return {
+      __error: true,
+      message: "Avaliação final permitida apenas quando o processo estiver concluído ou encerrado.",
+    };
+  }
+
   // Se existir avaliação do mesmo tipo, faz update; senão insert
   const { data: existing } = await supabase
     .from("intern_evaluations")
@@ -195,6 +233,10 @@ export async function upsertEvaluation(payload) {
       .single();
     if (error) {
       console.error("[internFollowupService] upsertEvaluation update:", error);
+      // Surfaçar mensagem do trigger de validação de fase (errcode P0002/P0003)
+      if (error.message) {
+        return { __error: true, message: error.message };
+      }
       return null;
     }
     return data;
@@ -207,6 +249,10 @@ export async function upsertEvaluation(payload) {
     .single();
   if (error) {
     console.error("[internFollowupService] upsertEvaluation insert:", error);
+    // Surfaçar mensagem do trigger de validação de fase (errcode P0002/P0003)
+    if (error.message) {
+      return { __error: true, message: error.message };
+    }
     return null;
   }
   return data;

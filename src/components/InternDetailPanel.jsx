@@ -451,7 +451,7 @@ function ObjectivesPanel({ progressId, partnerId, studentId, disabled }) {
 // Sub-painel: Avaliações formais
 // ---------------------------------------------------------------------------
 
-function EvaluationsPanel({ progressId, partnerId, studentId, disabled }) {
+function EvaluationsPanel({ progressId, partnerId, studentId, disabled, canEdit = true, lockReason = "", progressionStage = "" }) {
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(BLANK_EVAL);
@@ -468,9 +468,37 @@ function EvaluationsPanel({ progressId, partnerId, studentId, disabled }) {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const normalizedStage = String(progressionStage ?? "").toUpperCase();
+  const canEditMidterm = normalizedStage === "INTERNSHIP"
+    || normalizedStage === "FIXED_TERM_CONTRACT"
+    || normalizedStage === "PERMANENT_CONTRACT";
+  const canEditFinal = normalizedStage === "COMPLETED" || normalizedStage === "TERMINATED";
+
+  function canEditType(evalType) {
+    if (!canEdit) return false;
+    if (evalType === "MIDTERM") return canEditMidterm;
+    if (evalType === "FINAL") return canEditFinal;
+    return false;
+  }
+
+  function lockReasonForType(evalType) {
+    if (evalType === "MIDTERM") {
+      return "Avaliação intercalar disponível apenas entre estágio e proposta contratual.";
+    }
+    if (evalType === "FINAL") {
+      return "Avaliação final disponível apenas quando o processo estiver concluído ou encerrado.";
+    }
+    return lockReason || "Avaliação indisponível nesta etapa.";
+  }
+
   function setField(k, v) { setForm((f) => ({ ...f, [k]: v })); }
 
   function startForm(type) {
+    if (disabled || !canEditType(type)) {
+      setError(lockReasonForType(type));
+      return;
+    }
+
     const existing = evaluations.find((e) => e.eval_type === type);
     if (existing) {
       setForm({
@@ -494,6 +522,11 @@ function EvaluationsPanel({ progressId, partnerId, studentId, disabled }) {
   }
 
   async function handleSave() {
+    if (disabled || !canEditType(form.eval_type)) {
+      setError(lockReasonForType(form.eval_type));
+      return;
+    }
+
     setSaving(true);
     setError("");
     const ratingField = (v) => (v !== "" ? Number(v) : null);
@@ -515,6 +548,7 @@ function EvaluationsPanel({ progressId, partnerId, studentId, disabled }) {
     };
     const result = await upsertEvaluation(payload);
     setSaving(false);
+    if (result?.__error) { setError(result.message || "Não foi possível guardar a avaliação."); return; }
     if (!result) { setError("Não foi possível guardar a avaliação."); return; }
     setShowForm(false);
     reload();
@@ -532,13 +566,19 @@ function EvaluationsPanel({ progressId, partnerId, studentId, disabled }) {
     <div>
       {!disabled && !showForm && (
         <div style={{ display: "flex", gap: "0.65rem", marginBottom: "1rem" }}>
-          <button className="btn primary" onClick={() => startForm("MIDTERM")}>
+          <button className="btn primary" onClick={() => startForm("MIDTERM")} disabled={!canEditType("MIDTERM")} title={!canEditType("MIDTERM") ? lockReasonForType("MIDTERM") : undefined}>
             {evaluations.find((e) => e.eval_type === "MIDTERM") ? "Editar avaliação intercalar" : "Nova avaliação intercalar"}
           </button>
-          <button className="btn ghost" onClick={() => startForm("FINAL")}>
+          <button className="btn ghost" onClick={() => startForm("FINAL")} disabled={!canEditType("FINAL")} title={!canEditType("FINAL") ? lockReasonForType("FINAL") : undefined}>
             {evaluations.find((e) => e.eval_type === "FINAL") ? "Editar avaliação final" : "Nova avaliação final"}
           </button>
         </div>
+      )}
+
+      {!disabled && !canEditType("MIDTERM") && !canEditType("FINAL") && !showForm && (
+        <p style={{ opacity: 0.7, marginBottom: "0.75rem" }}>
+          {lockReason || "As avaliações só ficam disponíveis quando o processo estiver concluído ou encerrado."}
+        </p>
       )}
 
       {showForm && (
@@ -612,7 +652,7 @@ function EvaluationsPanel({ progressId, partnerId, studentId, disabled }) {
                     </span>
                   )}
                   {!disabled && (
-                    <button className="btn ghost btn-sm" onClick={() => startForm(ev.eval_type)}>Editar</button>
+                    <button className="btn ghost btn-sm" onClick={() => startForm(ev.eval_type)} disabled={!canEditType(ev.eval_type)} title={!canEditType(ev.eval_type) ? lockReasonForType(ev.eval_type) : undefined}>Editar</button>
                   )}
                 </div>
               </div>
@@ -654,6 +694,24 @@ const INTERN_TABS = [
   { key: "objectives", label: "Objectivos", icon: "flag" },
   { key: "evaluations", label: "Avaliações", icon: "star_rate" },
 ];
+
+function canUseEvaluationsByStage(stage) {
+  const normalized = String(stage ?? "").toUpperCase();
+  return normalized === "INTERNSHIP"
+    || normalized === "FIXED_TERM_CONTRACT"
+    || normalized === "PERMANENT_CONTRACT"
+    || normalized === "COMPLETED"
+    || normalized === "TERMINATED";
+}
+
+function canUseOperationalTabsByStage(stage) {
+  const normalized = String(stage ?? "").toUpperCase();
+  return normalized === "INTERNSHIP"
+    || normalized === "FIXED_TERM_CONTRACT"
+    || normalized === "PERMANENT_CONTRACT"
+    || normalized === "COMPLETED"
+    || normalized === "TERMINATED";
+}
 
 function getStageLabel(stage) {
   const normalized = String(stage ?? "").toUpperCase();
@@ -713,6 +771,9 @@ export default function InternDetailPanel({ app, partnerId, isCompanyView = true
   const [loadingProgress, setLoadingProgress] = useState(true);
 
   const studentId = app?.student?.id;
+  const stage = String(progress?.progression_stage ?? "").toUpperCase();
+  const allowOperationalTabs = canUseOperationalTabsByStage(stage);
+  const allowEvaluations = canUseEvaluationsByStage(stage);
 
   const reloadProgress = useCallback(async () => {
     if (!studentId || !partnerId) return;
@@ -772,7 +833,7 @@ export default function InternDetailPanel({ app, partnerId, isCompanyView = true
               {(progress.progression_stage === "INTERNSHIP" || progress.progression_stage === "FIXED_TERM_CONTRACT" || progress.progression_stage === "PERMANENT_CONTRACT" || progress.progression_stage === "COMPLETED") && (
                 <button type="button" className="btn ghost sm" onClick={() => setActiveTab("attendance")}>Abrir presenças</button>
               )}
-              {(progress.progression_stage === "COMPLETED" || progress.progression_stage === "TERMINATED") && (
+              {canUseEvaluationsByStage(progress.progression_stage) && (
                 <button type="button" className="btn ghost sm" onClick={() => setActiveTab("evaluations")}>Abrir avaliações</button>
               )}
               {progress.updated_at ? (
@@ -787,25 +848,37 @@ export default function InternDetailPanel({ app, partnerId, isCompanyView = true
 
       {/* Tabs internas */}
       <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border-color, #e2e8f0)", marginBottom: "1rem" }}>
-        {INTERN_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              display: "flex", alignItems: "center", gap: "0.3rem",
-              padding: "0.4rem 0.85rem",
-              background: "none", border: "none", cursor: "pointer",
-              borderBottom: activeTab === tab.key ? "2px solid var(--accent-color, #3b82f6)" : "2px solid transparent",
-              fontWeight: activeTab === tab.key ? 600 : 400,
-              color: activeTab === tab.key ? "var(--accent-color, #3b82f6)" : "inherit",
-              fontSize: "0.875rem", marginBottom: "-1px",
-            }}
-          >
-            <span className="material-icons-sharp" style={{ fontSize: "1rem" }} aria-hidden="true">{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
+        {INTERN_TABS.map((tab) => {
+          const isAttendanceOrObjectives = tab.key === "attendance" || tab.key === "objectives";
+          const isEvaluations = tab.key === "evaluations";
+          const isLocked = (isAttendanceOrObjectives && !allowOperationalTabs) || (isEvaluations && !allowEvaluations);
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                if (isLocked) return;
+                setActiveTab(tab.key);
+              }}
+              disabled={isLocked}
+              title={isLocked ? "Disponível em etapas posteriores do processo" : undefined}
+              style={{
+                display: "flex", alignItems: "center", gap: "0.3rem",
+                padding: "0.4rem 0.85rem",
+                background: "none", border: "none", cursor: isLocked ? "not-allowed" : "pointer",
+                borderBottom: activeTab === tab.key ? "2px solid var(--accent-color, #3b82f6)" : "2px solid transparent",
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                color: isLocked ? "#9ca3af" : activeTab === tab.key ? "var(--accent-color, #3b82f6)" : "inherit",
+                fontSize: "0.875rem", marginBottom: "-1px",
+                opacity: isLocked ? 0.75 : 1,
+              }}
+            >
+              <span className="material-icons-sharp" style={{ fontSize: "1rem" }} aria-hidden="true">{tab.icon}</span>
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Conteúdo */}
@@ -849,6 +922,9 @@ export default function InternDetailPanel({ app, partnerId, isCompanyView = true
           partnerId={partnerId}
           studentId={studentId}
           disabled={!isCompanyView}
+          canEdit={allowEvaluations}
+          lockReason="As avaliações formais só podem ser registadas quando o processo estiver concluído ou encerrado."
+          progressionStage={progress.progression_stage}
         />
       )}
       {activeTab === "evaluations" && !loadingProgress && !progress && (

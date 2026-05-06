@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.vite/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test and coverage outputs
+coverage/
+.nyc_output/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# Python local environment (used by helper scripts)
+.venv/
+__pycache__/
+*.pyc
+
+# Temporary files and local artifacts
+tmp/testout.txt
+tmp/vitest-out.txt
+tmp/vitest-final.txt
+tmp/vitest-final2.txt
+.tmp-vitest-routes.json
+
+# Office temporary files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# Local accidental files
+e --host to expose
+claudiomhenriques@gmail.com
