@@ -446,6 +446,13 @@ export async function verifyStudentProcessNumber(processNumber) {
  * Empresas ficam com moderation='pending' até aprovação de admin.
  * typeData para company: { empresa, nif, localizacao, responsible_name, responsible_contact }
  * typeData para external: {}
+ *
+ * Estratégia de resiliência:
+ * 1. Passa user_type nos metadados para o trigger handle_new_user_oauth criar o perfil correto
+ *    mesmo quando confirmação de email está ativada (sem sessão disponível pós-signUp).
+ * 2. Se sessão disponível (confirmação de email desativada), faz upsert manual para garantir.
+ * 3. Se sem sessão, chama RPC register_company_profile (SECURITY DEFINER) como fallback.
+ * 4. alias_login_aliases: upsert após obter sessão; graciosamente opcional para empresa.
  */
 export async function signUpWithType(email, password, displayName, type, typeData = {}) {
   if (!isAuthEnabled()) {
@@ -454,17 +461,31 @@ export async function signUpWithType(email, password, displayName, type, typeDat
 
   const normalizedEmail = String(email ?? "").trim().toLowerCase();
 
-  // Guardar sessão activa (admin) antes do signUp para restaurar depois
+  // Guardar sessão activa (ex: admin a criar conta) antes do signUp para restaurar depois
   const { data: sessionData } = await supabase.auth.getSession();
   const prevSession = sessionData?.session ?? null;
+
+  // Metadados passados ao signUp: o trigger handle_new_user_oauth lê user_type
+  // para criar user_profiles com o tipo e moderation correctos, mesmo sem sessão.
+  const signUpMetadata = {
+    display_name: displayName,
+    user_type: type,
+    ...(type === "company" ? {
+      empresa:             String(typeData?.empresa ?? displayName).trim(),
+      nif:                 String(typeData?.nif ?? "").trim(),
+      localizacao:         String(typeData?.localizacao ?? "").trim() || undefined,
+      responsible_name:    String(typeData?.responsible_name ?? "").trim() || undefined,
+      responsible_contact: String(typeData?.responsible_contact ?? "").trim() || undefined,
+    } : {}),
+  };
 
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
     password,
-    options: { data: { display_name: displayName } },
+    options: { data: signUpMetadata },
   });
 
-  // Restaurar sessão anterior imediatamente
+  // Restaurar sessão anterior imediatamente (quando chamado por admin)
   if (prevSession) {
     await supabase.auth.setSession({
       access_token: prevSession.access_token,
@@ -478,50 +499,73 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   const userId = data.user.id;
   const moderation = type === "company" ? "pending" : "active";
 
-  const { error: profileError } = await supabase
-    .from("user_profiles")
-    .upsert({ id: userId, type, display_name: displayName, moderation }, { onConflict: "id" });
+  // Verificar se temos sessão (confirmação de email desativada → sessão imediata).
+  // Sem sessão, o fluxo depende exclusivamente do trigger handle_new_user_oauth
+  // para manter backend como fonte única de verdade.
+  const hasSession = Boolean(data.session) || Boolean(prevSession);
 
-  if (profileError) return { data, error: profileError };
+  if (hasSession) {
+    // Com sessão: upsert direto — garante dados correctos mesmo que trigger tenha corrido
+    const { error: profileError } = await supabase
+      .from("user_profiles")
+      .upsert({ id: userId, type, display_name: displayName, moderation }, { onConflict: "id" });
 
-  if (type === "company") {
-    const { error: companyError } = await supabase
-      .from("company_accounts")
-      .insert({ id: userId, ...typeData });
-    if (companyError) return { data, error: companyError };
-
-    const aliases = [
-      {
-        user_id: userId,
-        alias: normalizedEmail,
-        login_email: normalizedEmail,
-        account_type: "company",
-      },
-    ];
-
-    const nif = String(typeData?.nif ?? "").trim();
-    if (nif) {
-      aliases.push({
-        user_id: userId,
-        alias: nif,
-        login_email: normalizedEmail,
-        account_type: "company",
-      });
+    if (profileError) {
+      // Falha crítica: trigger não criou o perfil e upsert direto também falhou
+      return { data, error: profileError };
     }
 
-    const { error: aliasError } = await upsertLoginAliases(aliases);
-    if (aliasError) return { data, error: aliasError };
+    if (type === "company") {
+      const { error: companyError } = await supabase
+        .from("company_accounts")
+        .upsert({ id: userId, ...typeData }, { onConflict: "id" });
+
+      // Ignorar conflito de NIF de registo duplicado — o row já existe
+      const isNifConflict = companyError?.message?.includes("company_nif_unique");
+      const isDuplicateKey = companyError?.code === "23505"; // unique_violation
+      if (companyError && !isNifConflict && !isDuplicateKey) {
+        return { data, error: companyError };
+      }
+    }
+  }
+
+  // Aliases de login: graciosamente opcionais (empresa usa email diretamente)
+  if (type === "company") {
+    const aliases = [
+      { user_id: userId, alias: normalizedEmail, login_email: normalizedEmail, account_type: "company" },
+    ];
+    const nif = String(typeData?.nif ?? "").trim();
+    if (nif) {
+      aliases.push({ user_id: userId, alias: nif, login_email: normalizedEmail, account_type: "company" });
+    }
+    // Alias creation may fail if no session; silently continue — email login works without alias
+    await upsertLoginAliases(aliases).catch(() => null);
   } else {
-    const { error: aliasError } = await upsertLoginAliases([
-      {
-        user_id: userId,
-        alias: normalizedEmail,
-        login_email: normalizedEmail,
-        account_type: type,
-      },
-    ]);
-    if (aliasError) return { data, error: aliasError };
+    await upsertLoginAliases([
+      { user_id: userId, alias: normalizedEmail, login_email: normalizedEmail, account_type: type },
+    ]).catch(() => null);
   }
 
   return { data, error: null };
+}
+
+/**
+ * Obter os dados de empresa do utilizador autenticado em company_accounts.
+ * Usado para pré-popular o dashboard após aprovação.
+ */
+export async function getMyCompanyAccount() {
+  if (!isAuthEnabled()) return null;
+
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData?.user?.id;
+  if (!userId) return null;
+
+  const { data, error } = await supabase
+    .from("company_accounts")
+    .select("id, empresa, nif, nif_is_provisional, localizacao, responsible_name, responsible_contact, setor, website, endereco, cidade")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
 }

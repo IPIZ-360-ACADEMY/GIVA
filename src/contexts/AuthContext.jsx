@@ -135,16 +135,22 @@ export function AuthProvider({ children }) {
         return;
       }
       setSession(nextSession);
-      setLoading(false);
       if (nextSession?.user?.id) {
+        // Carregar perfil ANTES de desligar o loading para evitar race condition:
+        // sem isto, RequireAuth renderiza com userProfile=null e deriva type='external',
+        // causando redirect errado para utilizadores company/student.
         (async () => {
           await finalizePendingStudentOAuth(nextSession.user);
           if (active) {
             await fetchUserProfile(nextSession.user.id);
           }
+          if (active) {
+            setLoading(false);
+          }
         })();
       } else {
         setUserProfile(null);
+        setLoading(false);
       }
     });
 

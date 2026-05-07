@@ -2,8 +2,21 @@ import { Navigate, Outlet, matchPath, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { signOut } from "../services/authService.js";
 import { resolveAccessProfile } from "../utils/accessControl.js";
+import { useState } from "react";
 
 function PendingApprovalScreen() {
+  const { refreshProfile } = useAuth();
+  const [checking, setChecking] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  async function handleCheckApproval() {
+    setChecking(true);
+    setChecked(false);
+    await refreshProfile();
+    setChecking(false);
+    setChecked(true);
+  }
+
   return (
     <main className="login-shell">
       <div className="login-box" style={{ textAlign: "center", padding: "2.5rem 2rem" }}>
@@ -15,12 +28,28 @@ function PendingApprovalScreen() {
           O teu registo de empresa está a aguardar aprovação por um administrador IPIZ.
           Receberás uma notificação por e-mail assim que for aprovado.
         </p>
-        <button
-          className="btn ghost"
-          onClick={() => signOut()}
-        >
-          Terminar sessão
-        </button>
+        {checked && (
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+            O estado foi verificado. Ainda não foi aprovado — tenta novamente mais tarde.
+          </p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <button
+            className="btn primary"
+            onClick={handleCheckApproval}
+            disabled={checking}
+          >
+            {checking
+              ? <><span className="material-icons-sharp spinning" style={{ fontSize: "1rem", verticalAlign: "middle", marginRight: "0.4rem" }}>sync</span>A verificar...</>
+              : <><span className="material-icons-sharp" style={{ fontSize: "1rem", verticalAlign: "middle", marginRight: "0.4rem" }}>refresh</span>Verificar aprovação</>}
+          </button>
+          <button
+            className="btn ghost"
+            onClick={() => signOut()}
+          >
+            Terminar sessão
+          </button>
+        </div>
       </div>
     </main>
   );

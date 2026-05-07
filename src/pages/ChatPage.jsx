@@ -14,11 +14,22 @@ import {
 } from "../services/chatService.js";
 import { searchProfiles } from "../services/profilesService.js";
 
-function Avatar({ name, size = 36 }) {
+function Avatar({ name, src, size = 36 }) {
   const initials = (name ?? "?").slice(0, 1).toUpperCase();
   return (
-    <div className="post-avatar post-avatar-fallback" style={{ width: size, height: size, fontSize: size * 0.45, borderRadius: "50%", flexShrink: 0 }}>
-      {initials}
+    <div className="post-avatar post-avatar-fallback" style={{ width: size, height: size, fontSize: size * 0.45, borderRadius: "50%", flexShrink: 0, overflow: "hidden" }}>
+      {src ? (
+        <img
+          src={src}
+          alt={name ?? "Avatar"}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            const fallback = e.currentTarget.parentElement;
+            if (fallback) fallback.textContent = initials;
+          }}
+        />
+      ) : initials}
     </div>
   );
 }                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
@@ -39,18 +50,25 @@ function ConversationItem({ conv, active, onClick, currentUserId }) {
     (p) => p.profile && p.user_id !== currentUserId
   );
   const other = others[0]?.profile;
-  const name = other?.display_name ?? "Conversa";
-  const updatedAt = conv.conversation?.updated_at;
+  const name = other?.display_name ?? "Utilizador";
+  const updatedAt = conv.last_message_at ?? conv.conversation?.updated_at;
+  const preview = conv.last_message_preview?.trim()
+    ? conv.last_message_preview
+    : "Sem mensagens ainda";
+  const unreadCount = Number(conv.unread_count ?? 0);
 
   return (
     <button type="button" className={`conv-item${active ? " active" : ""}`} onClick={onClick}>
-      <Avatar name={name} size={44} />
+      <Avatar name={name} src={other?.avatar_url} size={44} />
       <div className="conv-item-info">
         <div className="conv-item-row">
           <strong>{name}</strong>
-          <span className="conv-item-time">{timeAgo(updatedAt)}</span>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
+            <span className="conv-item-time">{timeAgo(updatedAt)}</span>
+            {unreadCount > 0 && <span className="chat-unread-pill">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+          </div>
         </div>
-        <span className="conv-item-preview">{other?.type ?? ""}</span>
+        <span className="conv-item-preview">{preview}</span>
       </div>
     </button>
   );
@@ -150,7 +168,7 @@ function ChatWindow({ conversationId, currentUserId, otherProfile, onBackToList,
         <button type="button" className="chat-back-btn" onClick={onBackToList} aria-label="Voltar a lista">
           <span className="material-icons-sharp">arrow_back</span>
         </button>
-        <Avatar name={contactName} size={36} />
+        <Avatar name={contactName} src={otherProfile?.avatar_url} size={36} />
         <div className="chat-window-header-info">
           <strong>{contactName}</strong>
           {otherProfile?.type && <small className={`chat-type-badge badge-${otherProfile.type}`}>{otherProfile.type}</small>}
@@ -210,7 +228,7 @@ function ChatWindow({ conversationId, currentUserId, otherProfile, onBackToList,
 
           return (
             <div key={m.id} className={`chat-bubble${isOwn ? " own" : ""}`}>
-              {!isOwn && <Avatar name={m.sender?.display_name} size={28} />}
+              {!isOwn && <Avatar name={m.sender?.display_name} src={m.sender?.avatar_url} size={28} />}
               <div className="chat-bubble-content">
                 <p>{m.content}</p>
                 <div className="chat-bubble-meta">
@@ -366,7 +384,7 @@ export default function ChatPage() {
               <div className="chat-search-results">
                 {searchResults.map((r) => (
                   <button key={r.id} type="button" className="chat-search-result-item" onClick={() => handleStartChat(r)} disabled={startingChat}>
-                    <Avatar name={r.display_name} size={32} />
+                    <Avatar name={r.display_name} src={r.avatar_url} size={32} />
                     <div>
                       <strong>{r.display_name}</strong>
                       <small className={`chat-type-badge badge-${r.type}`}>{r.type}</small>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { getMyCompanyAccount } from "../services/authService.js";
 import { createPartner, getMyPartner } from "../services/partnersService.js";
 import {
   listPartnerApplications,
@@ -48,6 +49,7 @@ export default function CompanyDashboardPage() {
   const { authProfile, user } = useAuth();
 
   const [partner, setPartner] = useState(null);
+  const [companyAccount, setCompanyAccount] = useState(null);
   const [vacancies, setVacancies] = useState([]);
   const [applications, setApplications] = useState([]);
   const [activeTab, setActiveTab] = useState("pending");
@@ -98,10 +100,18 @@ export default function CompanyDashboardPage() {
 
   async function load() {
     setLoading(true);
+
+    // Carregar dados de company_accounts para pré-popular o bootstrap
+    const myAccount = await getMyCompanyAccount();
+    setCompanyAccount(myAccount);
+
     const p = await getMyPartner();
     setPartner(p);
-    if (!p && authProfile?.displayName) {
-      setBootstrapCompanyName(authProfile.displayName);
+
+    if (!p) {
+      // Pré-popular nome com: company_accounts.empresa → authProfile.displayName
+      const fallbackName = myAccount?.empresa || authProfile?.displayName || "";
+      setBootstrapCompanyName(fallbackName);
     }
     if (p?.id) {
       const apps = await listPartnerApplications(p.id);
@@ -188,16 +198,16 @@ export default function CompanyDashboardPage() {
     setPublishing(true);
     const created = await createPartner({
       empresa,
-      nif: "",
-      setor: "tech",
-      areas: [],
-      vagas: 0,
-      sla: "",
-      responsavel: authProfile?.displayName || empresa,
-      telefone: "",
-      email: authProfile?.email || "",
-      website: "",
-      endereco: "",
+      nif:         companyAccount?.nif || "",
+      setor:       companyAccount?.setor || "tech",
+      areas:       [],
+      vagas:       0,
+      sla:         "",
+      responsavel: companyAccount?.responsible_name || authProfile?.displayName || empresa,
+      telefone:    companyAccount?.responsible_contact || "",
+      email:       authProfile?.email || "",
+      website:     companyAccount?.website || "",
+      endereco:    companyAccount?.localizacao || companyAccount?.endereco || "",
       photoPreview: null,
     }).catch(() => null);
 
@@ -663,6 +673,9 @@ export default function CompanyDashboardPage() {
     }
     return parseSafeDate(b.applied_at) - parseSafeDate(a.applied_at);
   });
+  const hasPlaceholderNif = Boolean(companyAccount?.nif_is_provisional)
+    || String(companyAccount?.nif ?? "").startsWith("MIG-")
+    || String(companyAccount?.nif ?? "").startsWith("AUTO-");
 
   if (loading) {
     return (
@@ -683,6 +696,12 @@ export default function CompanyDashboardPage() {
           <p>{t("companyDashboard.noPartner")}</p>
           <div className="panel-card" style={{ width: "100%", padding: "1rem", marginTop: "1rem", textAlign: "left" }}>
             <h3 style={{ marginTop: 0, marginBottom: "0.75rem" }}>Ativar conta empresarial</h3>
+            {hasPlaceholderNif && (
+              <div style={{ marginBottom: "0.85rem", borderRadius: 10, background: "#fef3c7", color: "#7c2d12", padding: "0.65rem 0.8rem", fontSize: "0.85rem" }}>
+                Dados empresariais incompletos: o NIF atual foi gerado automaticamente pelo sistema.
+                Atualiza os dados da empresa nas configurações para cumprir os requisitos administrativos.
+              </div>
+            )}
             <label style={{ display: "block", marginBottom: "0.75rem" }}>
               <span style={{ display: "block", fontSize: "0.85rem", opacity: 0.75, marginBottom: "0.35rem" }}>Nome da empresa</span>
               <input
@@ -736,6 +755,18 @@ export default function CompanyDashboardPage() {
         title={partner.empresa ?? t("companyDashboard.title")}
         description={t("companyDashboard.description")}
       />
+
+      {hasPlaceholderNif && (
+        <div className="panel-card" style={{ marginBottom: "1rem", borderLeft: "4px solid #f59e0b", background: "#fffbeb" }}>
+          <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
+            <span className="material-icons" style={{ color: "#b45309", fontSize: "1.15rem" }}>warning_amber</span>
+            <p style={{ margin: 0, color: "#7c2d12" }}>
+              O cadastro empresarial foi regularizado automaticamente, mas o NIF ainda está em modo provisório.
+              Atualiza os dados institucionais para garantir conformidade e relatórios corretos.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="panel-card" style={{ padding: "1rem", marginBottom: "1.25rem" }}>
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>

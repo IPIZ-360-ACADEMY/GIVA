@@ -1,0 +1,180 @@
+/* ============================================================
+   DARK MODE OVERRIDES — Comprehensive theme refinements
+   ============================================================ */
+
+[data-theme="dark"] {
+  /* Background color variables for status states */
+  --color-danger-bg: rgba(248, 81, 73, 0.1);
+  --color-warning-bg: rgba(210, 153, 34, 0.1);
+  --color-success-bg: rgba(63, 185, 80, 0.1);
+  --color-info-bg: rgba(88, 166, 255, 0.1);
+}
+
+/* ── Buttons ── */
+[data-theme="dark"] .btn {
+  transition: all 0.15s var(--ease-out);
+}
+
+[data-theme="dark"] .btn:not(.btn-ghost) {
+  background: var(--bg-soft);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .btn-primary {
+  background: var(--primary);
+  color: var(--text-inverted);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: var(--secondary);
+  color: var(--text-inverted);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background: color-mix(in srgb, var(--secondary) 85%, #000);
+}
+
+/* ── Form Elements ── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* ── Cards and Panels ── */
+[data-theme="dark"] .card,
+[data-theme="dark"] [class*="-card"],
+[data-theme="dark"] .panel,
+[data-theme="dark"] .form-card {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+}
+
+/* ── Status Badges ── */
+[data-theme="dark"] .badge-success {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+[data-theme="dark"] .badge-warning {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+[data-theme="dark"] .badge-danger {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+[data-theme="dark"] .badge-info {
+  background: var(--info-light);
+  color: var(--info);
+}
+
+/* ── Table Elements ── */
+[data-theme="dark"] table tbody tr {
+  border-color: var(--border);
+}
+
+[data-theme="dark"] table tbody tr:hover {
+  background: var(--bg-soft);
+}
+
+[data-theme="dark"] table thead {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+[data-theme="dark"] table th,
+[data-theme="dark"] table td {
+  border-color: var(--border);
+}
+
+/* ── Modals and Dropdowns ── */
+[data-theme="dark"] .modal-overlay {
+  background: var(--bg-overlay);
+}
+
+[data-theme="dark"] .modal,
+[data-theme="dark"] .dropdown,
+[data-theme="dark"] .popover {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Links and Anchors ── */
+[data-theme="dark"] a {
+  color: var(--primary);
+}
+
+[data-theme="dark"] a:hover {
+  color: var(--primary-strong);
+  text-decoration: underline;
+}
+
+/* ── Code and Pre ── */
+[data-theme="dark"] code,
+[data-theme="dark"] pre {
+  background: var(--bg-soft);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+/* ── Scrollbar ── */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-elevated);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-subtle);
+}
+
+/* ── Selection ── */
+[data-theme="dark"] ::selection {
+  background: var(--primary);
+  color: var(--text-inverted);
+}
+
+/* ── Icons ── */
+[data-theme="dark"] .material-icons-sharp {
+  color: inherit;
+}
+
+/* ── Separators ── */
+[data-theme="dark"] hr,
+[data-theme="dark"] .divider {
+  border-color: var(--border);
+}

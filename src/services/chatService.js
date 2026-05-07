@@ -41,33 +41,105 @@ export async function getConversations() {
 
   if (e2) throw e2;
 
-  // 3. Outros participantes com o seu perfil
+  // 3. Outros participantes
   const { data: otherParts, error: e3 } = await supabase
     .from("conversation_participants")
-    .select("conversation_id, user_id, profile:user_profiles!user_id (id, display_name, avatar_url, type)")
+    .select("conversation_id, user_id")
     .in("conversation_id", convIds)
     .neq("user_id", user.id);
 
   if (e3) throw e3;
+
+  // 4. Perfis reais dos outros participantes
+  const otherUserIds = [...new Set((otherParts ?? []).map((p) => p.user_id).filter(Boolean))];
+  let profileRows = [];
+
+  if (otherUserIds.length > 0) {
+    // Tenta usar view com fallback de email para nome, se disponível no schema
+    const { data: viewProfiles, error: viewError } = await supabase
+      .from("user_profiles_with_email")
+      .select("id, display_name, avatar_url, type, email")
+      .in("id", otherUserIds);
+
+    if (!viewError && Array.isArray(viewProfiles)) {
+      profileRows = viewProfiles;
+    } else {
+      const { data: directProfiles, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("id, display_name, avatar_url, type")
+        .in("id", otherUserIds);
+      if (profileError) throw profileError;
+      profileRows = directProfiles ?? [];
+    }
+  }
+
+  const profileMap = new Map(
+    (profileRows ?? []).map((row) => {
+      const display = String(row.display_name ?? "").trim();
+      const emailLocal = String(row.email ?? "").trim().split("@")[0];
+      return [row.id, {
+        id: row.id,
+        display_name: display || emailLocal || "Utilizador",
+        avatar_url: row.avatar_url ?? null,
+        type: row.type ?? "external",
+      }];
+    })
+  );
+
+  // 5. Últimas mensagens para preview e não lidas
+  const { data: messageRows, error: msgError } = await supabase
+    .from("messages")
+    .select("conversation_id, sender_id, content, created_at")
+    .in("conversation_id", convIds)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  if (msgError) throw msgError;
+
+  const latestMessageMap = new Map();
+  const unreadCountMap = new Map();
+  const readMap = new Map((myParts ?? []).map((p) => [p.conversation_id, p.last_read_at]));
+
+  for (const msg of messageRows ?? []) {
+    if (!latestMessageMap.has(msg.conversation_id)) {
+      latestMessageMap.set(msg.conversation_id, msg);
+    }
+
+    const lastReadAt = readMap.get(msg.conversation_id);
+    const isUnread = msg.sender_id !== user.id && (!lastReadAt || new Date(msg.created_at) > new Date(lastReadAt));
+    if (isUnread) {
+      unreadCountMap.set(msg.conversation_id, (unreadCountMap.get(msg.conversation_id) ?? 0) + 1);
+    }
+  }
 
   // Construir mapa de metadados e de participantes
   const convMap = Object.fromEntries((convRows ?? []).map((c) => [c.id, c]));
   const partMap = {};
   for (const p of otherParts ?? []) {
     if (!partMap[p.conversation_id]) partMap[p.conversation_id] = [];
-    partMap[p.conversation_id].push({ user_id: p.user_id, profile: p.profile });
+    partMap[p.conversation_id].push({ user_id: p.user_id, profile: profileMap.get(p.user_id) ?? null });
   }
 
-  const result = myParts.map((p) => ({
-    conversation_id: p.conversation_id,
-    last_read_at: p.last_read_at,
-    conversation: convMap[p.conversation_id] ?? null,
-    other_participants: partMap[p.conversation_id] ?? [],
-  }));
+  const result = myParts
+    .map((p) => {
+      const latest = latestMessageMap.get(p.conversation_id) ?? null;
+      const participants = (partMap[p.conversation_id] ?? []).filter((x) => x.profile?.id);
+      return {
+        conversation_id: p.conversation_id,
+        last_read_at: p.last_read_at,
+        conversation: convMap[p.conversation_id] ?? null,
+        other_participants: participants,
+        last_message_preview: String(latest?.content ?? "").trim(),
+        last_message_at: latest?.created_at ?? convMap[p.conversation_id]?.updated_at ?? null,
+        unread_count: unreadCountMap.get(p.conversation_id) ?? 0,
+      };
+    })
+    // Só manter conversas com participante real resolvido
+    .filter((c) => c.other_participants.length > 0);
 
   return result.sort((a, b) => {
-    const dateA = new Date(a.conversation?.updated_at ?? 0).getTime();
-    const dateB = new Date(b.conversation?.updated_at ?? 0).getTime();
+    const dateA = new Date(a.last_message_at ?? a.conversation?.updated_at ?? 0).getTime();
+    const dateB = new Date(b.last_message_at ?? b.conversation?.updated_at ?? 0).getTime();
     return dateB - dateA;
   });
 }
@@ -193,6 +265,8 @@ export async function getOtherReadAt(conversationId) {
 
 // Gestor de canais partilhados para read receipts
 const _receiptChannels = new Map();
+// Gestor de canais partilhados para atualizações de conversas (badge/unread)
+const _conversationChannels = new Map();
 
 /**
  * Subscreve a atualizações de last_read_at do outro participante.
@@ -217,7 +291,13 @@ export function subscribeToReadReceipts(conversationId, currentUserId, callback)
         (payload) => {
           // Apenas propaga atualizações do OUTRO participante
           if (payload.new?.user_id !== currentUserId) {
-            listeners.forEach((cb) => cb(payload.new.last_read_at));
+            listeners.forEach((cb) => {
+              try {
+                cb(payload.new.last_read_at);
+              } catch {
+                // Isola falha de um listener para não derrubar os restantes.
+              }
+            });
           }
         }
       )
@@ -261,14 +341,39 @@ export function subscribeToMessages(conversationId, callback) {
  */
 export function subscribeToConversations(userId, callback) {
   if (!supabase || !userId) return () => {};
-  const channel = supabase
-    .channel(`convs:${userId}`)
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "messages" },
-      callback
-    )
-    .subscribe();
 
-  return () => supabase.removeChannel(channel);
+  const key = `convs:${userId}`;
+
+  if (!_conversationChannels.has(key)) {
+    const listeners = new Set();
+    const channel = supabase
+      .channel(key)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          listeners.forEach((cb) => {
+            try {
+              cb(payload);
+            } catch {
+              // Isola erro de listener para não quebrar a subscrição partilhada.
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    _conversationChannels.set(key, { channel, listeners });
+  }
+
+  const entry = _conversationChannels.get(key);
+  entry.listeners.add(callback);
+
+  return () => {
+    entry.listeners.delete(callback);
+    if (entry.listeners.size === 0) {
+      supabase.removeChannel(entry.channel);
+      _conversationChannels.delete(key);
+    }
+  };
 }
