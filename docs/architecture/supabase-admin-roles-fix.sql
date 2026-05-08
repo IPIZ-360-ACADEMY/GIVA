@@ -25,6 +25,7 @@ CREATE OR REPLACE FUNCTION public.admin_create_platform_user(
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid uuid;
@@ -91,7 +92,7 @@ BEGIN
     v_uid,
     '00000000-0000-0000-0000-000000000000',
     v_email,
-    crypt(p_password, gen_salt('bf')),
+    extensions.crypt(p_password, extensions.gen_salt('bf'::text)),
     now(),
     v_app_meta,
     jsonb_build_object(

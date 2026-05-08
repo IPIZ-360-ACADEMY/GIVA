@@ -99,7 +99,10 @@ BEGIN
       NULLIF(TRIM(NEW.raw_user_meta_data->>'empresa'), ''),
       _display_name
     );
-    _nif := COALESCE(NULLIF(TRIM(NEW.raw_user_meta_data->>'nif'), ''), '');
+    _nif := NULLIF(TRIM(NEW.raw_user_meta_data->>'nif'), '');
+    IF _nif IS NULL THEN
+      _nif := 'AUTO-' || UPPER(REPLACE(LEFT(NEW.id::text, 12), '-', ''));
+    END IF;
 
     INSERT INTO public.company_accounts (
       id,
@@ -152,6 +155,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_nif TEXT;
 BEGIN
   -- Validações básicas
   IF p_user_id IS NULL THEN
@@ -180,20 +185,25 @@ BEGIN
                        END,
         display_name = COALESCE(NULLIF(TRIM(p_display_name), ''), public.user_profiles.display_name);
 
+  v_nif := NULLIF(TRIM(COALESCE(p_nif, '')), '');
+  IF v_nif IS NULL THEN
+    v_nif := 'AUTO-' || UPPER(REPLACE(LEFT(p_user_id::text, 12), '-', ''));
+  END IF;
+
   -- Criar/actualizar company_accounts
   INSERT INTO public.company_accounts (
     id, empresa, nif, localizacao, responsible_name, responsible_contact
   ) VALUES (
     p_user_id,
     COALESCE(NULLIF(TRIM(p_empresa), ''), TRIM(p_display_name)),
-    COALESCE(NULLIF(TRIM(p_nif), ''), ''),
+    v_nif,
     NULLIF(TRIM(COALESCE(p_localizacao, '')), ''),
     NULLIF(TRIM(COALESCE(p_responsible_name, '')), ''),
     NULLIF(TRIM(COALESCE(p_responsible_contact, '')), '')
   )
   ON CONFLICT (id) DO UPDATE
     SET empresa             = COALESCE(NULLIF(TRIM(p_empresa), ''), public.company_accounts.empresa),
-        nif                 = COALESCE(NULLIF(TRIM(p_nif), ''), public.company_accounts.nif),
+        nif                 = COALESCE(NULLIF(TRIM(v_nif), ''), public.company_accounts.nif),
         localizacao         = COALESCE(NULLIF(TRIM(p_localizacao), ''), public.company_accounts.localizacao),
         responsible_name    = COALESCE(NULLIF(TRIM(p_responsible_name), ''), public.company_accounts.responsible_name),
         responsible_contact = COALESCE(NULLIF(TRIM(p_responsible_contact), ''), public.company_accounts.responsible_contact);

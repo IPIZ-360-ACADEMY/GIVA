@@ -156,6 +156,7 @@ create or replace function public.admin_create_platform_user(
 returns uuid
 language plpgsql
 security definer
+set search_path = public, extensions
 as $$
 declare
   v_uid      uuid;
@@ -226,7 +227,7 @@ begin
     v_uid,
     '00000000-0000-0000-0000-000000000000',
     lower(trim(p_email)),
-    crypt(p_password, gen_salt('bf')),
+    extensions.crypt(p_password, extensions.gen_salt('bf'::text)),
     now(),
     v_app_meta,
     jsonb_build_object(

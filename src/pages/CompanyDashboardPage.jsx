@@ -20,6 +20,9 @@ import {
 } from "../services/companyBatchAuditService.js";
 import InternDetailPanel from "../components/InternDetailPanel.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import CompanyOverviewPanel from "../components/CompanyOverviewPanel.jsx";
+import InternManagementPanel from "../components/InternManagementPanel.jsx";
+import { listTrainingAreas } from "../services/trainingAreaService.js";
 
 function getPendingDays(appliedAt) {
   if (!appliedAt) return 0;
@@ -52,7 +55,8 @@ export default function CompanyDashboardPage() {
   const [companyAccount, setCompanyAccount] = useState(null);
   const [vacancies, setVacancies] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [activeTab, setActiveTab] = useState("pending");
+  const [trainingAreas, setTrainingAreas] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [actionTarget, setActionTarget] = useState(null); // { id, action: "accept"|"reject", notes: "" }
@@ -107,6 +111,10 @@ export default function CompanyDashboardPage() {
 
     const p = await getMyPartner();
     setPartner(p);
+
+    // Carregar áreas de treinamento
+    const areas = await listTrainingAreas().catch(() => []);
+    setTrainingAreas(areas || []);
 
     if (!p) {
       // Pré-popular nome com: company_accounts.empresa → authProfile.displayName
@@ -635,6 +643,8 @@ export default function CompanyDashboardPage() {
   ];
 
   const tabs = [
+    { key: "overview", label: "Visão Geral", count: 0 },
+    { key: "management", label: "Gestão Estagiários", count: accepted.length },
     { key: "pending", label: t("companyDashboard.tab.pending"), count: pending.length },
     { key: "accepted", label: t("companyDashboard.tab.accepted"), count: accepted.length },
     { key: "rejected", label: t("companyDashboard.tab.rejected"), count: rejected.length },
@@ -943,6 +953,31 @@ export default function CompanyDashboardPage() {
           </button>
         ))}
       </div>
+
+      {/* Tab: Visão Geral */}
+      {activeTab === "overview" && (
+        <CompanyOverviewPanel
+          partner={partner}
+          applications={applications}
+          vacancies={vacancies}
+          t={t}
+        />
+      )}
+
+      {/* Tab: Gestão de Estagiários */}
+      {activeTab === "management" && (
+        <InternManagementPanel
+          applications={applications}
+          trainingAreas={trainingAreas}
+          onAreaChange={(internId, areaId) => {
+            console.log("Area changed for intern:", internId, areaId);
+          }}
+          onInternNoteUpdate={(internId, note) => {
+            console.log("Note updated for intern:", internId, note);
+          }}
+          t={t}
+        />
+      )}
 
       {/* Tab: Interns with timeline */}
       {activeTab === "interns" && (

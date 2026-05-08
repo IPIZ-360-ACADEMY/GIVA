@@ -299,12 +299,19 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
   const [step, setStep] = useState(1);
   const [openWizard, setOpenWizard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
+
+  function isValidEmail(value) {
+    const email = String(value ?? "").trim().toLowerCase();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
   function set(k, v) { setForm((p) => ({ ...p, [k]: v })); }
 
   function openRegisterWizard() {
     setForm(BLANK_USER);
     setStep(1);
+    setSubmitMessage({ type: "", text: "" });
     setOpenWizard(true);
   }
 
@@ -312,6 +319,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     if (submitting) return;
     setOpenWizard(false);
     setStep(1);
+    setSubmitMessage({ type: "", text: "" });
   }
 
   function handleTypeChange(nextType) {
@@ -322,6 +330,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       areaId: nextType === "admin" ? prev.areaId : "",
       email: "", // Limpar email ao mudar tipo
     }));
+    setSubmitMessage({ type: "", text: "" });
   }
 
   function getDisplayEmail(type, email) {
@@ -365,22 +374,36 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setSubmitMessage({ type: "", text: "" });
+
     if (!isSuperAdmin) {
+      setSubmitMessage({ type: "error", text: "Apenas o Super Admin pode criar utilizadores." });
       toast("Apenas o Super Admin pode criar utilizadores.", "error");
       return;
     }
 
-    if (!form.email.trim()) { toast("Email é obrigatório.", "error"); return; }
-    if (!form.display_name.trim()) { toast("Nome de apresentação é obrigatório.", "error"); return; }
+    if (!form.email.trim()) {
+      setSubmitMessage({ type: "error", text: "Email é obrigatório." });
+      toast("Email é obrigatório.", "error");
+      return;
+    }
+    if (!form.display_name.trim()) {
+      setSubmitMessage({ type: "error", text: "Nome de apresentação é obrigatório." });
+      toast("Nome de apresentação é obrigatório.", "error");
+      return;
+    }
     if (form.password.length < 8) {
+      setSubmitMessage({ type: "error", text: "Password deve ter pelo menos 8 caracteres." });
       toast("Password deve ter pelo menos 8 caracteres.", "error");
       return;
     }
     if (form.password !== form.confirmPassword) {
+      setSubmitMessage({ type: "error", text: "As passwords não coincidem." });
       toast("As passwords não coincidem.", "error");
       return;
     }
     if ((form.role === "COORDINATOR" || form.role === "ADMIN_1") && !form.areaId) {
+      setSubmitMessage({ type: "error", text: "Para coordenador, a área de formação é obrigatória." });
       toast("Para coordenador, a área de formação é obrigatória.", "error");
       return;
     }
@@ -389,6 +412,13 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     try {
       const moderation = defaultModerationForAccountType(form.type);
       const finalEmail = getDisplayEmail(form.type, form.email);
+
+      if (!isValidEmail(finalEmail)) {
+        setSubmitMessage({ type: "error", text: "Informe um email válido para login (ex: nome@dominio.ao)." });
+        toast("Informe um email válido para login (ex: nome@dominio.ao).", "error");
+        return;
+      }
+
       const processNumber = form.type === "student"
         ? getStudentProcessNumberFromIdentifier(form.email)
         : null;
@@ -409,6 +439,10 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
         await adminSetUserArea(uid, form.areaId);
       }
 
+      setSubmitMessage({
+        type: "success",
+        text: `Utilizador criado com sucesso. ID: ${uid}`,
+      });
       toast(`Utilizador criado — ID: ${uid}`);
 
       setForm(BLANK_USER);
@@ -416,6 +450,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       setStep(1);
       if (onCreated) onCreated();
     } catch (err) {
+      setSubmitMessage({ type: "error", text: err.message || "Erro ao criar utilizador." });
       toast("Erro ao criar utilizador: " + err.message, "error");
     } finally {
       setSubmitting(false);
@@ -576,6 +611,19 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
                   </button>
                 )}
               </div>
+
+              {submitMessage.text ? (
+                <p
+                  style={{
+                    marginTop: "0.75rem",
+                    marginBottom: 0,
+                    fontSize: "0.85rem",
+                    color: submitMessage.type === "error" ? "var(--danger, #dc2626)" : "var(--success, #059669)",
+                  }}
+                >
+                  {submitMessage.text}
+                </p>
+              ) : null}
             </form>
           </div>
         </div>
@@ -592,9 +640,9 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
 }
 
 // ── Page ──────────────────────────────────────────────────────
-export default function UsersManagementPage({ embedded = false }) {
+export default function UsersManagementPage({ embedded = false, showToast: showToastProp }) {
   const ctx = useOutletContext?.() ?? {};
-  const { showToast } = ctx;
+  const showToast = showToastProp ?? ctx?.showToast;
   const { authProfile } = useAuth();
 
   const [users, setUsers] = useState([]);

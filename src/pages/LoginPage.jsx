@@ -42,7 +42,8 @@ export default function LoginPage() {
   }, [authEnabled, isAuthenticated, loading, navigate]);
 
   function resolveAuthErrorMessage(error) {
-    const message = String(error?.message ?? "").toLowerCase();
+    const rawMessage = String(error?.message ?? "").trim();
+    const message = rawMessage.toLowerCase();
 
     if (message.includes("email not confirmed") || message.includes("email_not_confirmed")) {
       return "Conta criada, mas o e-mail ainda não foi confirmado. Verifica a tua caixa de entrada e confirma o e-mail para entrar.";
@@ -50,6 +51,14 @@ export default function LoginPage() {
 
     if (message.includes("invalid login credentials") || message.includes("invalid credentials")) {
       return t("login.authInvalid");
+    }
+
+    if (message.includes("fetch") || message.includes("network") || message.includes("failed to fetch")) {
+      return "Falha de rede ao autenticar. Verifique sua conexão e tente novamente.";
+    }
+
+    if (rawMessage) {
+      return `Falha na autenticação: ${rawMessage}`;
     }
 
     return t("login.authGeneric");
@@ -78,6 +87,13 @@ export default function LoginPage() {
     setSubmitting(false);
 
     if (error) {
+      console.error("Login failed", {
+        identifier: rawIdentifier,
+        normalizedIdentifier,
+        errorMessage: error?.message,
+        errorStatus: error?.status,
+      });
+
       const isInvalidCredentials = String(error?.message ?? "").toLowerCase().includes("invalid");
 
       if (isProcessNumber && isInvalidCredentials && !autoRegisterInProgress) {

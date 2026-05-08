@@ -2352,7 +2352,7 @@ export default function ToolsPage() {
         {activeTab === "vagas"      && <VagasTab showToast={showToast} />}
         {activeTab === "atribuicao" && <AtribuicaoTab showToast={showToast} reloadToken={reloadToken} />}
         {activeTab === "pautas"     && <PautasTab showToast={showToast} reloadToken={reloadToken} />}
-        {activeTab === "utilizadores" && isSuperAdmin && <UsersManagementPage embedded />}
+        {activeTab === "utilizadores" && isSuperAdmin && <UsersManagementPage embedded showToast={showToast} />}
         {activeTab === "orquestracao" && isSuperAdmin && <OrquestracaoSuperAdminTab showToast={showToast} />}
         {activeTab === "estrutura"  && isSuperAdmin && <EstruturaAcademicaTab showToast={showToast} />}
       </div>
