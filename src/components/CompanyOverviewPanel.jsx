@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 
 export default function CompanyOverviewPanel({
   partner,
@@ -6,7 +6,19 @@ export default function CompanyOverviewPanel({
   vacancies = [],
   t = (key) => key,
 }) {
-  // Estatísticas de candidaturas
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const dt = new Date(value);
+    return Number.isNaN(dt.getTime()) ? "—" : dt.toLocaleDateString("pt-PT");
+  };
+
+  const getDaysSince = (value) => {
+    if (!value) return null;
+    const ts = new Date(value).getTime();
+    if (!Number.isFinite(ts)) return null;
+    return Math.max(0, Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24)));
+  };
+
   const stats = useMemo(() => {
     const pending = applications.filter((a) => a.status === "PENDING").length;
     const accepted = applications.filter((a) => a.status === "ACCEPTED").length;
@@ -36,15 +48,12 @@ export default function CompanyOverviewPanel({
     };
   }, [applications, vacancies]);
 
-  // Taxa de aceitação
   const acceptanceRate =
     stats.total > 0 ? Math.round((stats.accepted / stats.total) * 100) : 0;
 
-  // Taxa de rejeição
   const rejectionRate =
     stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0;
 
-  // Tempo médio de decisão
   const averageResolutionTime = useMemo(() => {
     const resolved = applications.filter((a) => a.reviewed_at);
     if (resolved.length === 0) return null;
@@ -56,8 +65,51 @@ export default function CompanyOverviewPanel({
     }, 0);
 
     const avgMs = totalMs / resolved.length;
-    return Math.round(avgMs / (1000 * 60 * 60 * 24)); // em dias
+    return Math.round(avgMs / (1000 * 60 * 60 * 24));
   }, [applications]);
+
+  const pendingQueue = useMemo(() => {
+    return [...applications]
+      .filter((a) => a.status === "PENDING")
+      .sort((a, b) => {
+        const da = getDaysSince(a.applied_at) ?? 0;
+        const db = getDaysSince(b.applied_at) ?? 0;
+        return db - da;
+      });
+  }, [applications]);
+
+  const activeInternships = useMemo(() => {
+    return [...applications]
+      .filter((a) => a.status === "ACCEPTED")
+      .sort((a, b) => {
+        const ta = new Date(a.accepted_at || a.reviewed_at || 0).getTime();
+        const tb = new Date(b.accepted_at || b.reviewed_at || 0).getTime();
+        return tb - ta;
+      });
+  }, [applications]);
+
+  const recentApplications = useMemo(() => {
+    return [...applications]
+      .sort((a, b) => new Date(b.applied_at || 0).getTime() - new Date(a.applied_at || 0).getTime())
+      .slice(0, 6);
+  }, [applications]);
+
+  const performanceScore = useMemo(() => {
+    const occupancy = Math.min(100, Math.max(0, stats.occupancyRate));
+    const accept = Math.min(100, Math.max(0, acceptanceRate));
+    const velocity = averageResolutionTime === null
+      ? 60
+      : Math.max(0, Math.min(100, 100 - (averageResolutionTime * 12)));
+    return Math.round((occupancy * 0.35) + (accept * 0.35) + (velocity * 0.3));
+  }, [stats.occupancyRate, acceptanceRate, averageResolutionTime]);
+
+  const performanceLabel = performanceScore >= 80
+    ? "Alto desempenho"
+    : performanceScore >= 60
+      ? "Desempenho estável"
+      : performanceScore >= 40
+        ? "Atenção operacional"
+        : "Risco operacional";
 
   const getMetricColor = (value, thresholds) => {
     if (value >= thresholds.excellent) return { bg: "#dcfce7", fg: "#166534", label: "Excelente" };
@@ -82,9 +134,40 @@ export default function CompanyOverviewPanel({
 
   return (
     <div className="company-overview-panel">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {/* Candidaturas Totais */}
-        <div className="panel-card" style={{ padding: "1.25rem" }}>
+      <div
+        className="panel-card"
+        style={{
+          padding: "1.15rem 1.25rem",
+          marginBottom: "1.15rem",
+          background: "linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(255, 255, 255, 0.02))",
+          border: "1px solid rgba(56, 189, 248, 0.3)",
+          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.8rem", flexWrap: "wrap" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.1rem" }}>Visão geral de candidaturas e estágios</h3>
+            <p style={{ margin: "0.35rem 0 0", opacity: 0.8 }}>
+              {partner?.empresa || "Empresa"} · acompanhamento operacional do pipeline e desempenho.
+            </p>
+          </div>
+          <div
+            style={{
+              borderRadius: 12,
+              padding: "0.45rem 0.7rem",
+              background: performanceScore >= 80 ? "#dcfce7" : performanceScore >= 60 ? "#cffafe" : "#fef3c7",
+              color: performanceScore >= 80 ? "#166534" : performanceScore >= 60 ? "#0c4a6e" : "#92400e",
+              fontWeight: 700,
+              fontSize: "0.82rem",
+            }}
+          >
+            Índice: {performanceScore}/100 · {performanceLabel}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem", borderTop: "3px solid #38bdf8" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
             <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Candidaturas</span>
             <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>application_form</span>
@@ -106,9 +189,9 @@ export default function CompanyOverviewPanel({
         </div>
 
         {/* Taxa de Aceitação */}
-        <div className="panel-card" style={{ padding: "1.25rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem", borderTop: "3px solid #22c55e" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
-            <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Taxa Aceitação</span>
+            <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Taxa de aceitação</span>
             <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>trending_up</span>
           </div>
           <div style={{ fontSize: "2rem", fontWeight: 700, lineHeight: 1, marginBottom: "0.5rem" }}>
@@ -129,10 +212,9 @@ export default function CompanyOverviewPanel({
           </div>
         </div>
 
-        {/* Ocupação de Vagas */}
-        <div className="panel-card" style={{ padding: "1.25rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem", borderTop: "3px solid #0f766e" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
-            <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Ocupação Vagas</span>
+            <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Ocupação de vagas</span>
             <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>people_alt</span>
           </div>
           <div style={{ fontSize: "2rem", fontWeight: 700, lineHeight: 1, marginBottom: "0.5rem" }}>
@@ -156,8 +238,7 @@ export default function CompanyOverviewPanel({
           </div>
         </div>
 
-        {/* Tempo Médio Decisão */}
-        <div className="panel-card" style={{ padding: "1.25rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem", borderTop: "3px solid #f59e0b" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
             <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Tempo Médio Decisão</span>
             <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>schedule</span>
@@ -176,8 +257,7 @@ export default function CompanyOverviewPanel({
           </div>
         </div>
 
-        {/* Vagas Ativas */}
-        <div className="panel-card" style={{ padding: "1.25rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem", borderTop: "3px solid #3b82f6" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
             <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Vagas Publicadas</span>
             <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>business_center</span>
@@ -186,88 +266,155 @@ export default function CompanyOverviewPanel({
             {stats.activeVacancies}
           </div>
           <div style={{ fontSize: "0.8rem", opacity: 0.75 }}>
-            {stats.closedVacancies} fechadas
+            {stats.closedVacancies} fechadas · {stats.totalSlots} vagas totais
           </div>
         </div>
 
-        {/* Status Geral */}
-        <div className="panel-card" style={{ padding: "1.25rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem", borderTop: "3px solid #ef4444" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "0.75rem" }}>
-            <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Status</span>
-            <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>check_circle</span>
+            <span style={{ fontSize: "0.85rem", opacity: 0.7, fontWeight: 500 }}>Rejeição</span>
+            <span className="material-icons" style={{ fontSize: "1.5rem", opacity: 0.5 }}>trending_down</span>
           </div>
-          <div style={{ fontSize: "0.9rem", fontWeight: 500, marginBottom: "0.5rem" }}>
-            {partner?.empresa || "Empresa"}
+          <div style={{ fontSize: "2rem", fontWeight: 700, lineHeight: 1, marginBottom: "0.5rem" }}>
+            {rejectionRate}%
           </div>
           <div
             style={{
               padding: "0.35rem 0.6rem",
               borderRadius: 6,
-              background: stats.activeVacancies > 0 ? "#dcfce7" : "#fef3c7",
-              color: stats.activeVacancies > 0 ? "#166534" : "#92400e",
+              background: rejectionRate <= 30 ? "#dcfce7" : rejectionRate <= 45 ? "#fef3c7" : "#fee2e2",
+              color: rejectionRate <= 30 ? "#166534" : rejectionRate <= 45 ? "#92400e" : "#991b1b",
               fontSize: "0.75rem",
               fontWeight: 600,
               display: "inline-block",
             }}
           >
-            {stats.activeVacancies > 0 ? "Recrutando" : "Sem vagas ativas"}
+            {rejectionRate <= 30 ? "Nível controlado" : rejectionRate <= 45 ? "Sob observação" : "Taxa elevada"}
           </div>
         </div>
       </div>
 
-      {/* Gráfico de Distribuição de Candidaturas */}
-      <div className="panel-card" style={{ padding: "1.25rem", marginBottom: "2rem" }}>
-        <h4 style={{ margin: "0 0 1rem", fontSize: "0.95rem", fontWeight: 600 }}>
-          Distribuição de Candidaturas
-        </h4>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "1rem", height: "120px" }}>
-          {/* Barra Pendentes */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-            <div
-              style={{
-                width: "100%",
-                height: stats.total > 0 ? `${(stats.pending / stats.total) * 100}%` : "0",
-                background: "#fbbf24",
-                borderRadius: "4px 4px 0 0",
-                minHeight: stats.pending > 0 ? "10px" : "0",
-                transition: "height 0.3s ease",
-              }}
-            />
-            <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Pendentes</span>
-            <strong style={{ fontSize: "0.85rem" }}>{stats.pending}</strong>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem" }}>
+          <h4 style={{ margin: "0 0 0.85rem", fontSize: "0.95rem", fontWeight: 700 }}>
+            Pipeline de candidaturas
+          </h4>
+          <div style={{ display: "grid", gap: "0.65rem" }}>
+            {[
+              { label: "Pendentes", value: stats.pending, color: "#f59e0b" },
+              { label: "Aceites", value: stats.accepted, color: "#22c55e" },
+              { label: "Rejeitadas", value: stats.rejected, color: "#ef4444" },
+            ].map((item) => {
+              const pct = stats.total > 0 ? Math.round((item.value / stats.total) * 100) : 0;
+              return (
+                <div key={item.label}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", marginBottom: "0.3rem" }}>
+                    <span>{item.label}</span>
+                    <strong>{item.value} ({pct}%)</strong>
+                  </div>
+                  <div style={{ height: 7, borderRadius: 999, background: "rgba(148, 163, 184, 0.2)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: item.color }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Barra Aceites */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-            <div
-              style={{
-                width: "100%",
-                height: stats.total > 0 ? `${(stats.accepted / stats.total) * 100}%` : "0",
-                background: "#34d399",
-                borderRadius: "4px 4px 0 0",
-                minHeight: stats.accepted > 0 ? "10px" : "0",
-                transition: "height 0.3s ease",
-              }}
-            />
-            <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Aceites</span>
-            <strong style={{ fontSize: "0.85rem" }}>{stats.accepted}</strong>
+        <div className="panel-card" style={{ padding: "1.25rem" }}>
+          <h4 style={{ margin: "0 0 0.85rem", fontSize: "0.95rem", fontWeight: 700 }}>
+            Acompanhamentos prioritários
+          </h4>
+          <div style={{ display: "grid", gap: "0.55rem" }}>
+            <div style={{ padding: "0.7rem", borderRadius: 10, background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.25)" }}>
+              <strong style={{ fontSize: "0.83rem" }}>Triagem pendente</strong>
+              <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", opacity: 0.9 }}>
+                {pendingQueue.filter((app) => (getDaysSince(app.applied_at) ?? 0) >= 3).length} candidatura(s) acima de 3 dias.
+              </p>
+            </div>
+            <div style={{ padding: "0.7rem", borderRadius: 10, background: "rgba(34, 197, 94, 0.12)", border: "1px solid rgba(34, 197, 94, 0.25)" }}>
+              <strong style={{ fontSize: "0.83rem" }}>Estágios em curso</strong>
+              <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", opacity: 0.9 }}>
+                {activeInternships.length} estagiário(s) ativo(s) com acompanhamento contínuo.
+              </p>
+            </div>
+            <div style={{ padding: "0.7rem", borderRadius: 10, background: "rgba(14, 165, 233, 0.12)", border: "1px solid rgba(14, 165, 233, 0.25)" }}>
+              <strong style={{ fontSize: "0.83rem" }}>Capacidade operacional</strong>
+              <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", opacity: 0.9 }}>
+                {stats.totalSlots - stats.occupiedSlots > 0
+                  ? `${stats.totalSlots - stats.occupiedSlots} vaga(s) ainda disponível(is).`
+                  : "Sem vagas disponíveis no momento."}
+              </p>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Barra Rejeitadas */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-            <div
-              style={{
-                width: "100%",
-                height: stats.total > 0 ? `${(stats.rejected / stats.total) * 100}%` : "0",
-                background: "#f87171",
-                borderRadius: "4px 4px 0 0",
-                minHeight: stats.rejected > 0 ? "10px" : "0",
-                transition: "height 0.3s ease",
-              }}
-            />
-            <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>Rejeitadas</span>
-            <strong style={{ fontSize: "0.85rem" }}>{stats.rejected}</strong>
-          </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1rem" }}>
+        <div className="panel-card" style={{ padding: "1.25rem" }}>
+          <h4 style={{ margin: "0 0 0.85rem", fontSize: "0.95rem", fontWeight: 700 }}>
+            Estágios ativos (acompanhamento)
+          </h4>
+          {activeInternships.length === 0 ? (
+            <p className="empty-state-text" style={{ margin: 0, textAlign: "left" }}>
+              Ainda não há estagiários ativos.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.55rem" }}>
+              {activeInternships.slice(0, 5).map((app) => {
+                const daysActive = getDaysSince(app.accepted_at || app.reviewed_at);
+                return (
+                  <div key={app.id} style={{ border: "1px solid var(--border-color, #e2e8f0)", borderRadius: 10, padding: "0.6rem 0.7rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
+                      <strong style={{ fontSize: "0.86rem" }}>{app.student?.full_name || "Sem nome"}</strong>
+                      <span style={{ fontSize: "0.75rem", opacity: 0.75 }}>
+                        {daysActive === null ? "—" : `${daysActive} dia(s)`}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "0.78rem", opacity: 0.78, marginTop: "0.2rem" }}>
+                      {app.vacancy?.title || "Sem vaga associada"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="panel-card" style={{ padding: "1.25rem" }}>
+          <h4 style={{ margin: "0 0 0.85rem", fontSize: "0.95rem", fontWeight: 700 }}>
+            Últimas candidaturas
+          </h4>
+          {recentApplications.length === 0 ? (
+            <p className="empty-state-text" style={{ margin: 0, textAlign: "left" }}>
+              Sem candidaturas recentes.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.55rem" }}>
+              {recentApplications.map((app) => (
+                <div key={app.id} style={{ border: "1px solid var(--border-color, #e2e8f0)", borderRadius: 10, padding: "0.6rem 0.7rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", alignItems: "center" }}>
+                    <strong style={{ fontSize: "0.86rem" }}>{app.student?.full_name || "Sem nome"}</strong>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: 999,
+                        background: app.status === "PENDING" ? "#fef3c7" : app.status === "ACCEPTED" ? "#dcfce7" : "#fee2e2",
+                        color: app.status === "PENDING" ? "#92400e" : app.status === "ACCEPTED" ? "#166534" : "#991b1b",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {app.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "0.78rem", opacity: 0.78, marginTop: "0.2rem" }}>
+                    {app.vacancy?.title || "Sem vaga"} · {formatDate(app.applied_at)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

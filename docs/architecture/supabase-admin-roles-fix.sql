@@ -134,7 +134,16 @@ BEGIN
   END IF;
 
   INSERT INTO public.auth_login_aliases (alias, user_id, login_email, account_type)
-  VALUES (v_email, v_uid, v_email, p_type)
+  VALUES (
+    v_email,
+    v_uid,
+    v_email,
+    CASE
+      WHEN p_type IN ('student', 'company', 'external', 'admin') THEN p_type
+      WHEN p_type IN ('coordinator', 'teacher') THEN 'admin'
+      ELSE 'external'
+    END
+  )
   ON CONFLICT (alias) DO UPDATE
   SET user_id = excluded.user_id,
       login_email = excluded.login_email;
@@ -177,5 +186,5 @@ UPDATE public.auth_login_aliases ala
 SET account_type = up.type::text
 FROM public.user_profiles up
 WHERE ala.user_id = up.id
-  AND up.type::text IN ('coordinator', 'teacher')
-  AND ala.account_type NOT IN ('coordinator', 'teacher');
+  AND up.type::text IN ('coordinator', 'teacher', 'admin')
+  AND ala.account_type <> 'admin';

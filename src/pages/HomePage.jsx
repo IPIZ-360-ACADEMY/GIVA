@@ -4,6 +4,7 @@ import CreatePostCard from "../components/CreatePostCard.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import PostCard from "../components/PostCard.jsx";
+import "../styles/community-feed.css";
 import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { getBookmarkedPostIds, getBookmarkedPosts, getFeedPosts, sharePost, subscribeToFeed, toggleReaction } from "../services/postsService.js";
 export default function HomePage() {

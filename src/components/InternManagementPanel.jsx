@@ -1,20 +1,138 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createStudentNote, listStudentNotes } from "../services/studentNotesService.js";
+import {
+  createFollowupLog,
+  upsertEvaluation,
+  RECOMMENDATION_LABELS,
+} from "../services/internFollowupService.js";
+import { getCompanyProgress } from "../services/companyProgressService.js";
+
+function normalizeKey(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getDefaultEvaluationType(stage) {
+  const normalized = String(stage ?? "").trim().toUpperCase();
+  if (["COMPLETED", "TERMINATED"].includes(normalized)) {
+    return "FINAL";
+  }
+
+  if (["INTERNSHIP", "FIXED_TERM_CONTRACT", "PERMANENT_CONTRACT"].includes(normalized)) {
+    return "MIDTERM";
+  }
+
+  return null;
+}
+
+function RatingPicker({ value, onChange }) {
+  return (
+    <div style={{ display: "inline-flex", gap: "0.15rem", flexWrap: "wrap" }}>
+      {[1, 2, 3, 4, 5].map((score) => (
+        <button
+          key={score}
+          type="button"
+          onClick={() => onChange(score)}
+          className="btn btn-ghost btn-sm"
+          style={{
+            minWidth: 36,
+            padding: "0.35rem 0.5rem",
+            borderColor: score <= value ? "#f59e0b" : undefined,
+            color: score <= value ? "#b45309" : undefined,
+            background: score <= value ? "rgba(245, 158, 11, 0.12)" : undefined,
+          }}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function InternManagementPanel({
   applications = [],
   trainingAreas = [],
-  onAreaChange = () => {},
-  onInternNoteUpdate = () => {},
+  partner = null,
+  showToast = () => {},
   t = (key) => key,
 }) {
   const [activeArea, setActiveArea] = useState(null);
   const [internNotes, setInternNotes] = useState({});
+  const [progressByInternId, setProgressByInternId] = useState({});
+  const [evaluationDrafts, setEvaluationDrafts] = useState({});
+  const [activeEvaluationId, setActiveEvaluationId] = useState(null);
+  const [loadingSupplemental, setLoadingSupplemental] = useState(false);
+  const [savingInternId, setSavingInternId] = useState(null);
   const [expandedInternId, setExpandedInternId] = useState(null);
 
   // Interns aceites
   const interns = useMemo(() => {
     return applications.filter((a) => a.status === "ACCEPTED");
   }, [applications]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSupplementalData() {
+      if (interns.length === 0) {
+        setInternNotes({});
+        setProgressByInternId({});
+        setEvaluationDrafts({});
+        return;
+      }
+
+      setLoadingSupplemental(true);
+
+      try {
+        const [noteRows, progressEntries] = await Promise.all([
+          listStudentNotes().catch(() => []),
+          partner?.id
+            ? Promise.all(
+                interns.map(async (intern) => {
+                  const studentId = intern.student?.id;
+                  if (!studentId) {
+                    return [intern.id, null];
+                  }
+
+                  const progress = await getCompanyProgress(studentId, partner.id).catch(() => null);
+                  return [intern.id, progress];
+                })
+              )
+            : Promise.resolve([]),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        const latestNoteByStudent = {};
+        for (const row of noteRows) {
+          const key = normalizeKey(row.student_name);
+          if (key && latestNoteByStudent[key] === undefined) {
+            latestNoteByStudent[key] = String(row.note ?? "").trim();
+          }
+        }
+
+        const nextNotes = {};
+        for (const intern of interns) {
+          const studentName = normalizeKey(intern.student?.full_name ?? intern.student?.name ?? "");
+          nextNotes[intern.id] = latestNoteByStudent[studentName] ?? "";
+        }
+
+        setInternNotes(nextNotes);
+        setProgressByInternId(Object.fromEntries(progressEntries.filter(Boolean)));
+      } finally {
+        if (!cancelled) {
+          setLoadingSupplemental(false);
+        }
+      }
+    }
+
+    loadSupplementalData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [interns, partner?.id]);
 
   // Agrupar estagiários por área de atuação (se existir)
   const internsByArea = useMemo(() => {
@@ -44,8 +162,153 @@ export default function InternManagementPanel({
       ...prev,
       [internId]: note,
     }));
-    onInternNoteUpdate(internId, note);
   };
+
+  async function handleSaveNote(intern) {
+    const studentName = String(intern.student?.full_name ?? intern.student?.name ?? "Aluno").trim() || "Aluno";
+    const note = String(internNotes[intern.id] ?? "").trim();
+
+    if (!note) {
+      showToast("Escreva uma nota antes de guardar.", "error");
+      return;
+    }
+
+    setSavingInternId(intern.id);
+
+    try {
+      await createStudentNote({ studentName, note });
+      showToast("Nota guardada com sucesso.", "success");
+    } catch (error) {
+      showToast(error?.message || "Não foi possível guardar a nota.", "error");
+    } finally {
+      setSavingInternId(null);
+    }
+  }
+
+  async function handleContactIntern(intern) {
+    const progress = progressByInternId[intern.id];
+    const studentId = intern.student?.id;
+    const studentName = String(intern.student?.full_name ?? intern.student?.name ?? "Aluno").trim() || "Aluno";
+    const note = String(internNotes[intern.id] ?? "").trim();
+    const today = new Date().toISOString().slice(0, 10);
+
+    setSavingInternId(intern.id);
+
+    try {
+      if (progress?.id && partner?.id && studentId) {
+        const result = await createFollowupLog({
+          company_progress_id: progress.id,
+          partner_id: partner.id,
+          student_id: studentId,
+          period_start: today,
+          period_end: today,
+          attendance_present: 0,
+          attendance_absent: 0,
+          attendance_justified: 0,
+          activities: "Contacto registado pela empresa",
+          supervisor_notes: note || "Contacto inicial guardado no painel da empresa.",
+          performance_rating: null,
+        });
+
+        if (!result) {
+          throw new Error("Não foi possível guardar o contacto.");
+        }
+
+        showToast("Contacto guardado no acompanhamento.", "success");
+        return;
+      }
+
+      await createStudentNote({
+        studentName,
+        note: note ? `Contacto registado: ${note}` : "Contacto registado pela empresa.",
+      });
+      showToast("Contacto guardado como nota.", "success");
+    } catch (error) {
+      showToast(error?.message || "Não foi possível registar o contacto.", "error");
+    } finally {
+      setSavingInternId(null);
+    }
+  }
+
+  function startEvaluation(intern) {
+    const progress = progressByInternId[intern.id];
+    const evalType = getDefaultEvaluationType(progress?.progression_stage);
+
+    if (!progress?.id || !partner?.id || !intern.student?.id || !evalType) {
+      showToast("Esta avaliação ainda não está disponível para este processo.", "error");
+      return;
+    }
+
+    setActiveEvaluationId(intern.id);
+    setEvaluationDrafts((prev) => ({
+      ...prev,
+      [intern.id]: prev[intern.id] || {
+        eval_type: evalType,
+        eval_date: new Date().toISOString().slice(0, 10),
+        rating: 3,
+        recommendation: "NO_ACTION",
+        general_comments: String(internNotes[intern.id] ?? "").trim(),
+      },
+    }));
+  }
+
+  async function handleSaveEvaluation(intern) {
+    const progress = progressByInternId[intern.id];
+    const draft = evaluationDrafts[intern.id];
+
+    if (!progress?.id || !partner?.id || !intern.student?.id || !draft) {
+      showToast("Não foi possível preparar a avaliação.", "error");
+      return;
+    }
+
+    const rating = Number(draft.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      showToast("A classificação deve estar entre 1 e 5.", "error");
+      return;
+    }
+
+    const evalType = getDefaultEvaluationType(progress.progression_stage);
+    if (!evalType) {
+      showToast("A avaliação ainda não pode ser registada nesta fase.", "error");
+      return;
+    }
+
+    setSavingInternId(intern.id);
+
+    try {
+      const result = await upsertEvaluation({
+        company_progress_id: progress.id,
+        partner_id: partner.id,
+        student_id: intern.student.id,
+        eval_type: evalType,
+        eval_date: draft.eval_date || new Date().toISOString().slice(0, 10),
+        rating_punctuality: rating,
+        rating_initiative: rating,
+        rating_teamwork: rating,
+        rating_technical: rating,
+        rating_communication: rating,
+        general_comments: String(draft.general_comments ?? "").trim() || null,
+        recommendation: draft.recommendation || null,
+        signed_by_company: true,
+        signed_by_student: false,
+      });
+
+      if (result?.__error) {
+        throw new Error(result.message || "Não foi possível guardar a avaliação.");
+      }
+
+      if (!result) {
+        throw new Error("Não foi possível guardar a avaliação.");
+      }
+
+      showToast("Avaliação guardada com sucesso.", "success");
+      setActiveEvaluationId(null);
+    } catch (error) {
+      showToast(error?.message || "Não foi possível guardar a avaliação.", "error");
+    } finally {
+      setSavingInternId(null);
+    }
+  }
 
   if (interns.length === 0) {
     return (
@@ -57,6 +320,17 @@ export default function InternManagementPanel({
       </div>
     );
   }
+
+    if (loadingSupplemental) {
+      return (
+        <div className="panel-card" style={{ padding: "2rem", textAlign: "center" }}>
+          <span className="material-icons" style={{ fontSize: "3rem", opacity: 0.3, display: "block", marginBottom: "1rem" }}>
+            sync
+          </span>
+          <p style={{ opacity: 0.7 }}>A sincronizar acompanhamento da empresa...</p>
+        </div>
+      );
+    }
 
   return (
     <div className="intern-management-panel">
@@ -230,7 +504,156 @@ export default function InternManagementPanel({
                         }}
                       />
                     </label>
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleSaveNote(intern)}
+                        disabled={savingInternId === intern.id}
+                      >
+                        {savingInternId === intern.id ? "A guardar..." : "Guardar nota"}
+                      </button>
+                      <span style={{ fontSize: "0.78rem", opacity: 0.65, alignSelf: "center" }}>
+                        Fica registada na área atual da empresa.
+                      </span>
+                    </div>
                   </div>
+
+                  <div style={{ display: "grid", gap: "0.5rem" }}>
+                    <h4 style={{ margin: "0", fontSize: "0.85rem", fontWeight: 600, opacity: 0.8 }}>
+                      Acompanhamento real
+                    </h4>
+                    <div style={{ fontSize: "0.8rem", opacity: 0.75 }}>
+                      <strong>Progresso:</strong> {progressByInternId[intern.id]?.progression_stage || "—"}
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => handleContactIntern(intern)}
+                        disabled={savingInternId === intern.id}
+                      >
+                        <span className="material-icons" style={{ fontSize: "1rem" }}>mail</span>
+                        Contactar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => startEvaluation(intern)}
+                        disabled={savingInternId === intern.id}
+                      >
+                        <span className="material-icons" style={{ fontSize: "1rem" }}>star</span>
+                        Avaliar
+                      </button>
+                    </div>
+                  </div>
+
+                  {activeEvaluationId === intern.id && (
+                    <div style={{ border: "1px solid var(--border-color, #d1d5db)", borderRadius: 12, padding: "1rem", background: "var(--surface-subtle, #f8fafc)" }}>
+                      <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+                        <label style={{ display: "grid", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Tipo</span>
+                          <input
+                            value={evaluationDrafts[intern.id]?.eval_type || ""}
+                            disabled
+                            style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Data</span>
+                          <input
+                            type="date"
+                            value={evaluationDrafts[intern.id]?.eval_date || ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setEvaluationDrafts((prev) => ({
+                                ...prev,
+                                [intern.id]: {
+                                  ...(prev[intern.id] || {}),
+                                  eval_date: value,
+                                },
+                              }));
+                            }}
+                            style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Classificação</span>
+                          <RatingPicker
+                            value={Number(evaluationDrafts[intern.id]?.rating || 3)}
+                            onChange={(rating) => {
+                              setEvaluationDrafts((prev) => ({
+                                ...prev,
+                                [intern.id]: {
+                                  ...(prev[intern.id] || {}),
+                                  rating,
+                                },
+                              }));
+                            }}
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Recomendação</span>
+                          <select
+                            value={evaluationDrafts[intern.id]?.recommendation || "NO_ACTION"}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setEvaluationDrafts((prev) => ({
+                                ...prev,
+                                [intern.id]: {
+                                  ...(prev[intern.id] || {}),
+                                  recommendation: value,
+                                },
+                              }));
+                            }}
+                            style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
+                          >
+                            {Object.entries(RECOMMENDATION_LABELS).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <label style={{ display: "grid", gap: "0.35rem", marginTop: "0.75rem" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Comentários gerais</span>
+                        <textarea
+                          rows={3}
+                          value={evaluationDrafts[intern.id]?.general_comments || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEvaluationDrafts((prev) => ({
+                              ...prev,
+                              [intern.id]: {
+                                ...(prev[intern.id] || {}),
+                                general_comments: value,
+                              },
+                            }));
+                          }}
+                          placeholder="Resumo da avaliação..."
+                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)", fontFamily: "inherit" }}
+                        />
+                      </label>
+                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleSaveEvaluation(intern)}
+                          disabled={savingInternId === intern.id}
+                        >
+                          {savingInternId === intern.id ? "A guardar..." : "Guardar avaliação"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setActiveEvaluationId(null)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Documentos */}
                   <div style={{ display: "grid", gap: "0.5rem" }}>
@@ -267,25 +690,11 @@ export default function InternManagementPanel({
                     </div>
                   </div>
 
-                  {/* Ações */}
-                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => console.log("Contactar", intern.student?.email)}
-                    >
-                      <span className="material-icons" style={{ fontSize: "1rem" }}>mail</span>
-                      Contactar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => console.log("Avaliar", intern.id)}
-                    >
-                      <span className="material-icons" style={{ fontSize: "1rem" }}>star</span>
-                      Avaliar
-                    </button>
-                  </div>
+                  {loadingSupplemental && (
+                    <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65 }}>
+                      A sincronizar dados do acompanhamento...
+                    </p>
+                  )}
                 </div>
               )}
             </div>

@@ -56,7 +56,7 @@ function PendingApprovalScreen() {
 }
 
 export default function RequireAuth({ children }) {
-  const { authEnabled, isAuthenticated, loading, userProfile, authProfile, user } = useAuth();
+  const { authEnabled, isAuthenticated, loading, loadingPhase, userProfile, authProfile, user } = useAuth();
   const location = useLocation();
 
   if (!authEnabled) {
@@ -64,10 +64,14 @@ export default function RequireAuth({ children }) {
   }
 
   if (loading) {
+    const loadingLabel = loadingPhase === "profile"
+      ? "A carregar perfil e permissoes..."
+      : "A validar sessao...";
+
     return (
       <main className="page" aria-busy="true">
         <section className="panel">
-          <p>A validar sessao...</p>
+          <p>{loadingLabel}</p>
         </section>
       </main>
     );

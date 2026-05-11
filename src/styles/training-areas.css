@@ -1,0 +1,106 @@
+/* ── TrainingAreaCard + TrainingAreasPage ── */
+.training-areas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .training-areas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.training-area-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border-left: 3px solid;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow var(--motion-fast) var(--ease-out);
+}
+.training-area-card:hover { box-shadow: var(--shadow-sm); }
+
+.training-area-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-out);
+}
+
+.training-area-header:hover {
+  background: var(--bg-soft);
+}
+
+.training-area-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--text-inverted);
+  flex-shrink: 0;
+}
+
+.training-area-icon .material-icons-sharp { font-size: 1.15rem; }
+
+.training-area-info { flex: 1; min-width: 0; }
+.training-area-info h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expand-icon { color: var(--text-muted); font-size: 1.1rem !important; }
+
+.training-area-content {
+  padding: 0.85rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+}
+
+.course-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+  font-size: 0.845rem;
+  transition: background var(--motion-fast) var(--ease-out);
+}
+.course-item:hover { background: var(--primary-light); }
+
+.course-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.course-form input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.845rem;
+  background: var(--bg-elevated);
+  color: var(--text);
+}

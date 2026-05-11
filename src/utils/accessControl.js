@@ -21,6 +21,29 @@ export function normalizeAccountType(value, fallback = "external") {
   return KNOWN_ACCOUNT_TYPES.has(fallbackType) ? fallbackType : "external";
 }
 
+export function normalizeAliasAccountType(value) {
+  const raw = String(value ?? "").trim().toLowerCase();
+
+  if (raw === "admin_1" || raw === "super_admin") {
+    return "admin";
+  }
+
+  const normalized = normalizeAccountType(raw, "external");
+
+  if (normalized === "student") return "student";
+  if (normalized === "company") return "company";
+  if (normalized === "admin") return "admin";
+  if (normalized === "external") return "external";
+
+  // Perfis administrativos/académicos partilham categoria "admin"
+  // na tabela de aliases para manter compatibilidade com a constraint.
+  if (["coordinator", "teacher"].includes(normalized)) {
+    return "admin";
+  }
+
+  return "external";
+}
+
 export function normalizePlatformRole(value, fallback = "authenticated") {
   const raw = String(value ?? "").trim();
   if (!raw) {

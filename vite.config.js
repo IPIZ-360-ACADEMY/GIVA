@@ -7,10 +7,27 @@ export default defineConfig({
   base: isGitHubPagesBuild ? "/GIVA/" : "/",
   plugins: [react()],
   build: {
+    // Target browsers com suporte a ES modules modernos — menos polyfills
+    target: "es2020",
+    // Aviso apenas para chunks > 600KB (o padrão 500 gera falso alarme)
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
+        manualChunks(id) {
+          // Supabase em chunk separado — carrega só quando precisa de auth/db
+          if (id.includes("node_modules/@supabase")) {
+            return "supabase";
+          }
+          // React core e router num único chunk de vendor leve
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/react-router-dom/") ||
+            id.includes("node_modules/react-router/") ||
+            id.includes("node_modules/@remix-run/")
+          ) {
+            return "vendor";
+          }
         },
       },
     },

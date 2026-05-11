@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PostCard from "../components/PostCard.jsx";
+import "../styles/community-feed.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { getOrCreateConversation } from "../services/chatService.js";
 import { getFeedPosts, toggleReaction } from "../services/postsService.js";

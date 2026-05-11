@@ -2,6 +2,7 @@
 import { useNavigate, useOutletContext } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
+import "../styles/admin.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { supabase } from "../lib/supabase.js";
 import { getPendingPosts, moderatePost } from "../services/postsService.js";
@@ -248,7 +249,7 @@ function StudentRegisterSection({ toast, authProfile }) {
   return (
     <div className="admin-academic-split">
       <div className="admin-academic-form">
-        <h3 className="admin-section-h3">Registar Novo Aluno</h3>
+        <h3 className="admin-section-h3">Registar Aluno</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="form-field">
@@ -278,7 +279,7 @@ function StudentRegisterSection({ toast, authProfile }) {
               <input id="as-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
             </div>
             <div className="form-field">
-              <label htmlFor="as-password">Palavra-passe de acesso *</label>
+              <label htmlFor="as-password">Palavra-passe de adesão *</label>
               <input
                 id="as-password"
                 type="password"
@@ -290,7 +291,7 @@ function StudentRegisterSection({ toast, authProfile }) {
               <small className="form-hint">Login automático do aluno: {loginEmailPreview}</small>
             </div>
             <div className="form-field">
-              <label htmlFor="as-password-confirm">Confirmar palavra-passe *</label>
+              <label htmlFor="as-password-confirm">Confirmar a palavra-passe *</label>
               <input
                 id="as-password-confirm"
                 type="password"

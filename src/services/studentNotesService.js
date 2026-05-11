@@ -28,3 +28,20 @@ export async function createStudentNote(input) {
 
   return data;
 }
+
+export async function listStudentNotes() {
+  if (!canUseStudentNotesApi()) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from(STUDENT_NOTES_TABLE)
+    .select("id, student_name, note, area_id, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}

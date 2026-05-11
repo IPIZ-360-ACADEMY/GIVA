@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchesSearch } from "../utils/search.js";
 import PanelSection from "../components/PanelSection.jsx";
 import DocumentSubmitModal from "../components/DocumentSubmitModal.jsx";
+import "../styles/documents.css";
 import { useAccessProfile, useAuth } from "../contexts/AuthContext.jsx";
 import { listManualClasses } from "../services/classesService.js";
 import { listPartners } from "../services/partnersService.js";

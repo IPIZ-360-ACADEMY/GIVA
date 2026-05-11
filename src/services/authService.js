@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
+import { normalizeAliasAccountType } from "../utils/accessControl.js";
 
 const DEFAULT_EMAIL_DOMAIN = "giva.ao";
 export const PENDING_STUDENT_OAUTH_STORAGE = "giva.pendingStudentOAuth";
@@ -172,7 +173,7 @@ async function upsertLoginAliases(rows) {
       user_id: row.user_id,
       alias: normalizeAlias(row.alias),
       login_email: normalizeAlias(row.login_email),
-      account_type: normalizeAlias(row.account_type || "external"),
+      account_type: normalizeAliasAccountType(row.account_type || "external"),
     }))
     .filter((row) => row.user_id && row.alias && row.login_email);
 
@@ -265,6 +266,54 @@ export async function updateUserProfile({ displayName, phone }) {
   if (phone !== undefined) updates.phone_number = phone;
 
   return supabase.auth.updateUser({ data: updates });
+}
+
+export async function updateUserAccountSettings({
+  email,
+  displayName,
+  phone,
+  website,
+  location,
+  jobTitle,
+  instagramUrl,
+  facebookUrl,
+  linkedinUrl,
+  githubUrl,
+  twitterUrl,
+}) {
+  if (!isAuthEnabled()) {
+    return { error: new Error("Supabase Auth is not configured") };
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    return { error: userError };
+  }
+
+  const currentMetadata = user?.user_metadata ?? {};
+  const nextMetadata = {
+    ...currentMetadata,
+  };
+
+  if (displayName !== undefined) nextMetadata.display_name = displayName || null;
+  if (phone !== undefined) nextMetadata.phone_number = phone || null;
+  if (website !== undefined) nextMetadata.website = website || null;
+  if (location !== undefined) nextMetadata.location = location || null;
+  if (jobTitle !== undefined) nextMetadata.job_title = jobTitle || null;
+  if (instagramUrl !== undefined) nextMetadata.instagram_url = instagramUrl || null;
+  if (facebookUrl !== undefined) nextMetadata.facebook_url = facebookUrl || null;
+  if (linkedinUrl !== undefined) nextMetadata.linkedin_url = linkedinUrl || null;
+  if (githubUrl !== undefined) nextMetadata.github_url = githubUrl || null;
+  if (twitterUrl !== undefined) nextMetadata.twitter_url = twitterUrl || null;
+
+  const payload = { data: nextMetadata };
+  if (email !== undefined) payload.email = email || undefined;
+
+  return supabase.auth.updateUser(payload);
 }
 
 export async function updateUserPassword(newPassword) {
@@ -568,4 +617,40 @@ export async function getMyCompanyAccount() {
 
   if (error || !data) return null;
   return data;
+}
+
+export async function updateMyCompanyAccount(updates) {
+  if (!isAuthEnabled()) {
+    return { data: null, error: new Error("Supabase Auth is not configured") };
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData?.user?.id;
+  if (!userId) {
+    return { data: null, error: new Error("Authentication required") };
+  }
+
+  const payload = {};
+  if (updates?.empresa !== undefined) payload.empresa = String(updates.empresa ?? "").trim();
+  if (updates?.nif !== undefined) payload.nif = String(updates.nif ?? "").trim();
+  if (updates?.localizacao !== undefined) payload.localizacao = String(updates.localizacao ?? "").trim() || null;
+  if (updates?.responsible_name !== undefined) payload.responsible_name = String(updates.responsible_name ?? "").trim() || null;
+  if (updates?.responsible_contact !== undefined) payload.responsible_contact = String(updates.responsible_contact ?? "").trim() || null;
+  if (updates?.setor !== undefined) payload.setor = String(updates.setor ?? "").trim() || null;
+  if (updates?.website !== undefined) payload.website = String(updates.website ?? "").trim() || null;
+  if (updates?.endereco !== undefined) payload.endereco = String(updates.endereco ?? "").trim() || null;
+  if (updates?.cidade !== undefined) payload.cidade = String(updates.cidade ?? "").trim() || null;
+
+  const { data, error } = await supabase
+    .from("company_accounts")
+    .update(payload)
+    .eq("id", userId)
+    .select("id, empresa, nif, nif_is_provisional, localizacao, responsible_name, responsible_contact, setor, website, endereco, cidade")
+    .single();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  return { data, error: null };
 }

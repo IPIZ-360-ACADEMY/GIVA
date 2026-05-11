@@ -4,6 +4,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
 import TrainingAreaCard from "../components/TrainingAreaCard.jsx";
 import ModalStepper from "../components/ModalStepper.jsx";
+import "../styles/training-areas.css";
 import { listTrainingAreas } from "../services/trainingAreaService.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { isCoordinatorRole } from "../utils/accessControl.js";

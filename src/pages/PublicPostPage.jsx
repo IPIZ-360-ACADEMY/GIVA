@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
 import PostCard from "../components/PostCard.jsx";
+import "../styles/community-feed.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { getPublicPostById, toggleReaction } from "../services/postsService.js";
 

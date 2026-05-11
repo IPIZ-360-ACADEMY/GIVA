@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { isAuthEnabled, signInWithOAuth } from "../services/authService.js";
+import { isAuthEnabled, signInWithOAuth, updateUserAccountSettings } from "../services/authService.js";
 import { supabase } from "../lib/supabase.js";
 
 const PROVIDERS = [
@@ -71,9 +72,20 @@ export default function SettingsAccountsPage() {
   const { user } = useAuth();
   const [identities, setIdentities] = useState([]);
   const [loadingProvider, setLoadingProvider] = useState(null);
+  const [identityForm, setIdentityForm] = useState({ email: "", phone: "" });
+  const [savingIdentity, setSavingIdentity] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const authEnabled = isAuthEnabled();
+
+  useEffect(() => {
+    if (!user) return;
+    const metadata = user.user_metadata ?? {};
+    setIdentityForm({
+      email: user.email || "",
+      phone: metadata.phone_number || "",
+    });
+  }, [user]);
 
   useEffect(() => {
     if (!authEnabled || !user) return;
@@ -114,6 +126,44 @@ export default function SettingsAccountsPage() {
     showToast("Conta eliminada.");
   }
 
+  async function handleIdentitySubmit(event) {
+    event.preventDefault();
+
+    if (!authEnabled || !user) {
+      showToast("Ligação ao Supabase necessária para actualizar a conta.", "error");
+      return;
+    }
+
+    const normalizedEmail = String(identityForm.email ?? "").trim().toLowerCase();
+    const normalizedPhone = String(identityForm.phone ?? "").trim();
+    const currentEmail = String(user.email ?? "").trim().toLowerCase();
+    const emailChanged = Boolean(normalizedEmail) && normalizedEmail !== currentEmail;
+
+    setSavingIdentity(true);
+    const { error } = await updateUserAccountSettings({
+      email: emailChanged ? normalizedEmail : undefined,
+      phone: normalizedPhone || null,
+    });
+    setSavingIdentity(false);
+
+    if (error) {
+      showToast(`Erro ao atualizar conta: ${error.message}`, "error");
+      return;
+    }
+
+    showToast(
+      emailChanged
+        ? "Pedido de alteração de email enviado. Confirme o novo endereço para concluir a mudança."
+        : "Dados de contacto atualizados."
+    );
+  }
+
+  const linkedCount = useMemo(() => identities.length, [identities]);
+  const connectedProviders = useMemo(
+    () => PROVIDERS.filter((provider) => identities.some((identity) => identity.provider === provider.id)).length,
+    [identities]
+  );
+
   if (!authEnabled || !user) {
     return (
       <section className="form-card">
@@ -123,34 +173,111 @@ export default function SettingsAccountsPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      {/* Conta principal */}
-      <section className="form-card">
-        <h3>Conta Principal</h3>
-        <div className="account-main-row">
-          <span className="material-icons-sharp" style={{ fontSize: "1.5rem", opacity: 0.6 }}>
-            alternate_email
-          </span>
-          <div>
-            <p style={{ margin: 0, fontWeight: 600 }}>{user.email}</p>
-            <p className="meta" style={{ margin: 0, fontSize: "0.8rem" }}>
-              Email principal · gerido pelo Supabase Auth
-            </p>
+    <div className="settings-premium-shell settings-premium-shell--account">
+      <section className="form-card settings-hero-card settings-hero-card--account">
+        <div className="settings-hero-main">
+          <span className="settings-section-kicker">Conta e acesso</span>
+          <h3 className="settings-hero-title">Centro de identidade da conta</h3>
+          <p className="settings-hero-subtitle">
+            Controle o email principal, o telefone e os métodos de entrada com uma experiência única e mais elevada.
+          </p>
+          <div className="settings-hero-chip-row">
+            <span className="settings-hero-chip">{linkedCount} identidades ativas</span>
+            <span className="settings-hero-chip">{connectedProviders} provedores conectados</span>
+            <span className="settings-hero-chip settings-hero-chip--subtle">Conta protegida por autenticação</span>
           </div>
+          <div className="settings-hero-actions">
+            <Link className="btn secondary" to="/config/perfil">
+              Voltar ao perfil
+            </Link>
+            <Link className="btn ghost" to="/config/seguranca">
+              Abrir segurança
+            </Link>
+          </div>
+        </div>
+
+        <div className="settings-hero-stats">
+          <article className="settings-hero-stat">
+            <span className="settings-hero-stat-label">Email principal</span>
+            <strong>{user.email}</strong>
+            <small>Utilizado para autenticação e comunicação da conta</small>
+          </article>
+          <article className="settings-hero-stat">
+            <span className="settings-hero-stat-label">Telefone</span>
+            <strong>{identityForm.phone || "Por definir"}</strong>
+            <small>Canal direto para contacto e validação</small>
+          </article>
+          <article className="settings-hero-stat">
+            <span className="settings-hero-stat-label">Ligações rápidas</span>
+            <strong>{connectedProviders}/{PROVIDERS.length}</strong>
+            <small>Entre com Google ou LinkedIn quando necessário</small>
+          </article>
         </div>
       </section>
 
-      {/* Contas vinculadas */}
-      <section className="form-card">
-        <h3>Contas Vinculadas</h3>
-        <p className="meta" style={{ marginBottom: "1.25rem", fontSize: "0.85rem" }}>
-          Vincule contas Google ou LinkedIn para entrar rapidamente sem password.
-        </p>
+      <section className="form-card settings-profile-card">
+        <div className="settings-section-head">
+          <div>
+            <span className="settings-section-kicker">Contacto principal</span>
+            <h3>Dados pessoais da conta</h3>
+          </div>
+          <p className="settings-section-desc">
+            Pode alterar o email principal e o telefone. Alterações de email podem exigir confirmação no novo endereço.
+          </p>
+        </div>
+
+        <form className="settings-account-form" onSubmit={handleIdentitySubmit}>
+          <div className="settings-profile-grid">
+            <div className="form-field">
+              <label htmlFor="cfg-account-email">Email principal</label>
+              <input
+                id="cfg-account-email"
+                type="email"
+                value={identityForm.email}
+                placeholder="nome@dominio.com"
+                onChange={(event) => setIdentityForm((prev) => ({ ...prev, email: event.target.value }))}
+              />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="cfg-account-phone">Telefone</label>
+              <input
+                id="cfg-account-phone"
+                type="tel"
+                value={identityForm.phone}
+                placeholder="+244 9xx xxx xxx"
+                onChange={(event) => setIdentityForm((prev) => ({ ...prev, phone: event.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="settings-inline-note">
+            <span className="material-icons-sharp">info</span>
+            <p>Se o projeto estiver com confirmação de email ativa, o Supabase enviará um pedido de validação antes de concluir a mudança.</p>
+          </div>
+
+          <div className="form-actions settings-account-actions">
+            <button className="btn primary" type="submit" disabled={savingIdentity}>
+              {savingIdentity ? "A guardar..." : "Guardar dados da conta"}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="form-card settings-profile-card">
+        <div className="settings-section-head">
+          <div>
+            <span className="settings-section-kicker">Ligações externas</span>
+            <h3>Contas vinculadas</h3>
+          </div>
+          <p className="settings-section-desc">
+            Vincule contas Google ou LinkedIn para entrar rapidamente sem depender apenas de password.
+          </p>
+        </div>
 
         <div className="account-providers-list">
           {PROVIDERS.map((provider) => {
             const identity = identities.find((i) => i.provider === provider.id);
-            // Can disconnect only if there are at least 2 identities
             const canDisconnect = identities.length > 1;
             return (
               <ProviderCard
@@ -167,7 +294,6 @@ export default function SettingsAccountsPage() {
         </div>
       </section>
 
-      {/* Zona de perigo */}
       <section className="form-card danger-zone">
         <h3>
           <span className="material-icons-sharp" style={{ fontSize: "1.1rem", verticalAlign: "middle", marginRight: "0.4rem", color: "var(--color-danger)" }}>

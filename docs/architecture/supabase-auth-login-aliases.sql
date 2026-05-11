@@ -15,7 +15,18 @@ create table if not exists public.auth_login_aliases (
   alias text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   login_email text not null,
-  account_type text not null check (account_type in ('student', 'company', 'external', 'admin')),
+  account_type text not null check (
+    account_type in (
+      'student',
+      'company',
+      'external',
+      'admin',
+      'coordinator',
+      'teacher',
+      'admin_1',
+      'super_admin'
+    )
+  ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

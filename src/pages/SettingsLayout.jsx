@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useOutletContext } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
+import "../styles/settings.css";
 
 function tabClass({ isActive }) {
   return isActive ? "settings-tab active" : "settings-tab";

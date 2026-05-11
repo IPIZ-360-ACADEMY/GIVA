@@ -1,0 +1,883 @@
+﻿/* ============================================================
+   Company Dashboard — refinamento visual
+   ============================================================ */
+.company-page {
+  --company-accent: #0284c7;
+  --company-accent-soft: rgba(2, 132, 199, 0.14);
+}
+
+.company-page .panel-card {
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.06);
+}
+
+.company-onboarding-empty {
+  gap: 0.9rem;
+}
+
+.company-hero-card {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.company-hero-chip {
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.company-feature-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.company-feature-item {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(2, 132, 199, 0.04));
+  transition: transform var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
+}
+
+.company-feature-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(2, 132, 199, 0.35) !important;
+}
+
+.company-sync-banner {
+  border-radius: 14px;
+}
+
+.company-operations-hero {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(2, 132, 199, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(2, 132, 199, 0.16), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(2, 132, 199, 0.04));
+}
+
+.company-operations-grid {
+  align-items: stretch;
+}
+
+.company-operation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 220px;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(2, 132, 199, 0.05));
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
+}
+
+.company-operation-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(2, 132, 199, 0.28);
+  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.08);
+}
+
+.company-operation-card .material-icons {
+  color: var(--company-accent);
+  font-size: 1.55rem;
+}
+
+.company-operation-card--active {
+  border-color: rgba(2, 132, 199, 0.42);
+  background:
+    radial-gradient(circle at top right, rgba(2, 132, 199, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(2, 132, 199, 0.09));
+  box-shadow: 0 18px 36px rgba(2, 132, 199, 0.12);
+}
+
+.company-operation-card__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(2, 132, 199, 0.1);
+  color: #075985;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.company-operation-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: auto;
+}
+
+.company-operation-card__stats span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.company-editor-card {
+  border-radius: 14px;
+}
+
+.company-editor-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.company-editor-card label span {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.company-editor-card input,
+.company-editor-card textarea {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out);
+}
+
+.company-editor-card input:focus,
+.company-editor-card textarea:focus {
+  border-color: var(--company-accent) !important;
+  box-shadow: 0 0 0 3px var(--company-accent-soft);
+  outline: none;
+}
+
+.company-nif-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.company-publish-card,
+.company-sla-card,
+.company-vacancies-card {
+  border-radius: 14px;
+}
+
+.company-page .tabs-bar {
+  margin-bottom: 1.1rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.company-page .tab-btn {
+  border-bottom: none;
+  border-radius: 999px;
+  margin-bottom: 0;
+}
+
+.company-page .tab-btn--active {
+  background: var(--bg-elevated);
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.08);
+}
+
+@media (max-width: 860px) {
+  .company-page {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+
+  .company-onboarding-empty {
+    max-width: 100% !important;
+  }
+
+  .company-operations-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .company-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animação de rotação para ícones de loading */
+.spinning {
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+/* ─── Company Dashboard – restructured layout ─────────────────────────── */
+
+.company-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1.2rem 1.4rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(14,165,233,0.07), transparent);
+}
+
+.company-dashboard-header__name {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.company-dashboard-header__sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.company-dashboard-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.company-kpi-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  min-width: 90px;
+}
+
+.company-kpi-chip .material-icons {
+  font-size: 1.1rem;
+  color: var(--company-accent, #0ea5e9);
+}
+
+.company-kpi-chip strong {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.company-kpi-chip small {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Tab nav */
+.company-tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.company-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-fast), color var(--motion-fast);
+  white-space: nowrap;
+}
+
+.company-tab-btn .material-icons {
+  font-size: 1rem;
+}
+
+.company-tab-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.company-tab-btn--active {
+  background: var(--bg-elevated);
+  color: var(--company-accent, #0ea5e9);
+  box-shadow: 0 2px 8px rgba(2,6,23,0.08);
+}
+
+.company-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(14,165,233,0.15);
+  color: #0369a1;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.company-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Vagas tab */
+.company-vagas-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .company-vagas-layout { grid-template-columns: 1fr; }
+}
+
+.company-publish-panel {
+  padding: 1.25rem;
+}
+
+.company-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.company-section-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.company-section-header p {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.company-section-header--space {
+  justify-content: space-between;
+}
+
+.company-section-header--space h2 {
+  margin: 0;
+}
+
+.company-publish-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.company-publish-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.company-publish-form input,
+.company-publish-form textarea {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.company-publish-form input:focus,
+.company-publish-form textarea:focus {
+  outline: none;
+  border-color: var(--company-accent, #0ea5e9);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.15);
+}
+
+/* Metrics strip */
+.company-vacancy-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.company-metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  text-align: center;
+}
+
+.company-metric-card .material-icons {
+  font-size: 1.2rem;
+  color: var(--company-accent, #0ea5e9);
+}
+
+.company-metric-card strong {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.company-metric-card small {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Vacancies list */
+.company-vacancies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.company-vacancy-row {
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  transition: border-color var(--motion-fast);
+}
+
+.company-vacancy-row:hover {
+  border-color: rgba(14,165,233,0.3);
+}
+
+.company-vacancy-row__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.company-vacancy-row__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.company-vacancy-row__title {
+  font-size: 0.95rem;
+}
+
+.company-vacancy-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.company-vacancy-row__slots {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.company-vacancy-row__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.company-vacancy-row__progress span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.company-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.company-progress-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+  transition: width 0.4s var(--ease-out);
+}
+
+.company-vacancy-row__desc {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Status badges */
+.company-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.company-status-badge--open   { background: #dcfce7; color: #166534; }
+.company-status-badge--closed { background: #f1f5f9; color: #64748b; }
+.company-status-badge--warn   { background: #fff7ed; color: #b45309; }
+.company-status-badge--success { background: #dcfce7; color: #166534; }
+.company-status-badge--error  { background: #fee2e2; color: #b91c1c; }
+.company-status-badge--skipped { background: #f1f5f9; color: #64748b; }
+
+/* Filter row */
+.company-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.company-filter-row input,
+.company-filter-row select {
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 0.83rem;
+  min-width: 120px;
+}
+
+/* SLA strip */
+.company-sla-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  margin-bottom: 0.75rem;
+}
+
+.company-sla-strip strong {
+  margin-right: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.sla-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sla-chip--healthy  { background: #dcfce7; color: #166534; }
+.sla-chip--warning  { background: #fef3c7; color: #92400e; }
+.sla-chip--critical { background: #fee2e2; color: #b91c1c; }
+
+.sla-filter-btns {
+  display: flex;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+/* Applications list */
+.company-applications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.company-application-card {
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  transition: border-color var(--motion-fast);
+}
+
+.company-application-card--selected {
+  border-color: rgba(14,165,233,0.45);
+  background: rgba(14,165,233,0.04);
+}
+
+.company-application-card__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.company-application-card__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.company-application-card__identity strong { font-size: 0.92rem; }
+.company-application-card__identity small  { font-size: 0.75rem; color: var(--text-muted); }
+
+.company-application-card__vacancy {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.company-application-card__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+/* Batch bar */
+.company-batch-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(14,165,233,0.3);
+  background: rgba(14,165,233,0.06);
+  margin-bottom: 0.75rem;
+}
+
+.company-batch-bar input {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 0.82rem;
+}
+
+/* Interns grid */
+.company-interns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+
+.company-intern-card {
+  padding: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition: border-color var(--motion-fast);
+}
+
+.company-intern-card:hover { border-color: rgba(14,165,233,0.3); }
+
+.company-intern-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.company-intern-card__header strong { font-size: 0.92rem; }
+
+.company-phase-badge {
+  display: inline-flex;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.company-phase-badge--onboarding { background: #dbeafe; color: #1e40af; }
+.company-phase-badge--active     { background: #dcfce7; color: #166534; }
+.company-phase-badge--contract   { background: #fef9c3; color: #854d0e; }
+
+.company-intern-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.company-intern-card__meta small {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.company-intern-card__meta .material-icons { font-size: 0.85rem; }
+
+.company-intern-card__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+/* Report table */
+.company-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
+
+.company-report-table th,
+.company-report-table td {
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.company-report-table th {
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--bg-soft);
+}
+
+.company-report-table tr:hover td {
+  background: var(--bg-elevated);
+}
+
+.company-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .company-dashboard-header {
+    background: linear-gradient(135deg, rgba(14,165,233,0.1), transparent);
+  }
+  .company-status-badge--open   { background: rgba(22,163,74,0.15); color: #86efac; }
+  .company-status-badge--closed { background: rgba(100,116,139,0.15); color: #94a3b8; }
+  .sla-chip--healthy  { background: rgba(22,163,74,0.2); color: #86efac; }
+  .sla-chip--warning  { background: rgba(234,179,8,0.2); color: #fde68a; }
+  .sla-chip--critical { background: rgba(239,68,68,0.2); color: #fca5a5; }
+}
+
+/* ── Applications — seção de candidaturas com refinação visual ── */
+.company-dashboard-applications {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Cards individuais de candidatura */
+.company-dashboard-app-card {
+  position: relative;
+  border-left: 4px solid var(--border);
+  transition: all var(--motion-fast) var(--ease-out);
+}
+
+.company-dashboard-app-card:hover {
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Variantes de status com cores específicas */
+.company-dashboard-app-card--pending {
+  border-left-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.02);
+}
+
+.company-dashboard-app-card--accepted {
+  border-left-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.02);
+}
+
+.company-dashboard-app-card--rejected {
+  border-left-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.02);
+}
+
+/* ── Internships — seção de estagiários com refinação visual ── */
+.company-dashboard-internships {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Cards individuais de estagiário */
+.company-dashboard-intern-card {
+  overflow: hidden;
+  transition: all var(--motion-fast) var(--ease-out);
+  border-left: 4px solid var(--primary);
+}
+
+.company-dashboard-intern-card:hover {
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.08);
+}
+
+.company-dashboard-intern-card--expanded {
+  background-color: var(--primary-lighter);
+}
+
+/* ── Vacancy Rows — linhas de vagas publicadas ── */
+.company-dashboard-vacancy-row {
+  position: relative;
+  border-left: 4px solid #0284c7;
+  transition: all var(--motion-fast) var(--ease-out);
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.02), transparent);
+}
+
+.company-dashboard-vacancy-row:hover {
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.05), transparent);
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.12);
+}
+
+/* ── Responsividade para aplicações/internships em mobile ── */
+@media (max-width: 768px) {
+  .company-dashboard-app-card {
+    flex-direction: column;
+    padding: 1rem !important;
+  }
+
+  .company-dashboard-intern-card {
+    padding: 0 !important;
+  }
+
+  .company-dashboard-vacancy-row {
+    padding: 0.75rem !important;
+  }
+}
+
+

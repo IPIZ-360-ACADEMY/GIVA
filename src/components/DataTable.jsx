@@ -1,4 +1,6 @@
-export default function DataTable({ columns, rows, emptyText = "Sem dados para exibir." }) {
+import { memo } from "react";
+
+const DataTable = memo(function DataTable({ columns, rows, emptyText = "Sem dados para exibir." }) {
   return (
     <div className="table-wrap">
       <table>
@@ -31,4 +33,6 @@ export default function DataTable({ columns, rows, emptyText = "Sem dados para e
       </table>
     </div>
   );
-}
+});
+
+export default DataTable;

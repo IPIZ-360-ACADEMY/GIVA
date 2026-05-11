@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
@@ -35,7 +35,14 @@ const AdminPage = lazy(() => import("./pages/AdminPage.jsx"));
 const ToolsPage = lazy(() => import("./pages/ToolsPage.jsx"));
 
 function PageLoader() {
-  return <div className="page-loader" aria-busy="true" aria-label="A carregar" />;
+  const location = useLocation();
+  const isCompanyRoute = location.pathname === "/empresa";
+
+  return (
+    <div className="page-loader" aria-busy="true" aria-label="A carregar">
+      {isCompanyRoute ? "Painel da empresa" : null}
+    </div>
+  );
 }
 
 const APP_ROUTES = [

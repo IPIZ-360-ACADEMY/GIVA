@@ -221,6 +221,192 @@ REVOKE ALL ON FUNCTION public.register_company_profile FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.register_company_profile TO anon, authenticated;
 
 -- ============================================================
+-- 3b. Sincronizar company_accounts -> partners automaticamente
+--    Garante que toda conta de empresa passa a parceiro operacional
+--    sem depender de criação manual no frontend.
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.resolve_company_partner_area_id(p_company_id UUID)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _area_id UUID;
+BEGIN
+  SELECT NULLIF(
+           COALESCE(
+             au.raw_app_meta_data->>'area_id',
+             au.raw_user_meta_data->>'area_id',
+             ''
+           ),
+           ''
+         )::UUID
+  INTO _area_id
+  FROM auth.users au
+  WHERE au.id = p_company_id;
+
+  IF _area_id IS NOT NULL THEN
+    RETURN _area_id;
+  END IF;
+
+  SELECT ta.id
+  INTO _area_id
+  FROM public.training_area ta
+  WHERE ta.is_active = true
+  ORDER BY ta.display_order ASC, ta.created_at ASC
+  LIMIT 1;
+
+  IF _area_id IS NOT NULL THEN
+    RETURN _area_id;
+  END IF;
+
+  RETURN '11111111-1111-1111-1111-111111111111'::UUID;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.sync_company_partner_from_account()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _area_id UUID;
+  _email TEXT;
+  _responsavel TEXT;
+  _endereco TEXT;
+BEGIN
+  _area_id := public.resolve_company_partner_area_id(NEW.id);
+
+  SELECT COALESCE(au.email, '')
+  INTO _email
+  FROM auth.users au
+  WHERE au.id = NEW.id;
+
+  _responsavel := COALESCE(
+    NULLIF(TRIM(NEW.responsible_name), ''),
+    NULLIF(TRIM(NEW.empresa), ''),
+    split_part(COALESCE(_email, ''), '@', 1),
+    ''
+  );
+
+  _endereco := COALESCE(
+    NULLIF(TRIM(NEW.endereco), ''),
+    NULLIF(TRIM(NEW.localizacao), ''),
+    ''
+  );
+
+  INSERT INTO public.partners (
+    id,
+    empresa,
+    nif,
+    setor,
+    areas,
+    vagas,
+    sla,
+    responsavel,
+    telefone,
+    email,
+    website,
+    endereco,
+    photo_preview,
+    area_id,
+    created_by
+  ) VALUES (
+    NEW.id,
+    COALESCE(NULLIF(TRIM(NEW.empresa), ''), split_part(COALESCE(_email, ''), '@', 1)),
+    COALESCE(NULLIF(TRIM(NEW.nif), ''), 'AUTO-' || UPPER(REPLACE(LEFT(NEW.id::TEXT, 12), '-', ''))),
+    COALESCE(NULLIF(TRIM(NEW.setor), ''), 'tech'),
+    '{}'::TEXT[],
+    0,
+    '',
+    _responsavel,
+    COALESCE(NULLIF(TRIM(NEW.responsible_contact), ''), ''),
+    _email,
+    COALESCE(NULLIF(TRIM(NEW.website), ''), ''),
+    _endereco,
+    NULL,
+    _area_id,
+    NEW.id
+  )
+  ON CONFLICT (id) DO UPDATE
+    SET empresa      = EXCLUDED.empresa,
+        nif          = EXCLUDED.nif,
+        setor        = COALESCE(NULLIF(EXCLUDED.setor, ''), public.partners.setor),
+        responsavel   = COALESCE(NULLIF(EXCLUDED.responsavel, ''), public.partners.responsavel),
+        telefone      = COALESCE(NULLIF(EXCLUDED.telefone, ''), public.partners.telefone),
+        email         = COALESCE(NULLIF(EXCLUDED.email, ''), public.partners.email),
+        website       = COALESCE(NULLIF(EXCLUDED.website, ''), public.partners.website),
+        endereco      = COALESCE(NULLIF(EXCLUDED.endereco, ''), public.partners.endereco),
+        area_id       = COALESCE(public.partners.area_id, EXCLUDED.area_id),
+        created_by    = COALESCE(public.partners.created_by, EXCLUDED.created_by);
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sync_company_partner_from_account ON public.company_accounts;
+CREATE TRIGGER trg_sync_company_partner_from_account
+  AFTER INSERT OR UPDATE OF empresa, nif, setor, responsible_name, responsible_contact, website, endereco, localizacao, cidade
+  ON public.company_accounts
+  FOR EACH ROW EXECUTE FUNCTION public.sync_company_partner_from_account();
+
+INSERT INTO public.partners (
+  id,
+  empresa,
+  nif,
+  setor,
+  areas,
+  vagas,
+  sla,
+  responsavel,
+  telefone,
+  email,
+  website,
+  endereco,
+  photo_preview,
+  area_id,
+  created_by
+)
+SELECT
+  ca.id,
+  COALESCE(NULLIF(TRIM(ca.empresa), ''), split_part(COALESCE(au.email, ''), '@', 1)),
+  COALESCE(NULLIF(TRIM(ca.nif), ''), 'AUTO-' || UPPER(REPLACE(LEFT(ca.id::TEXT, 12), '-', ''))),
+  COALESCE(NULLIF(TRIM(ca.setor), ''), 'tech'),
+  '{}'::TEXT[],
+  0,
+  '',
+  COALESCE(
+    NULLIF(TRIM(ca.responsible_name), ''),
+    NULLIF(TRIM(ca.empresa), ''),
+    split_part(COALESCE(au.email, ''), '@', 1),
+    ''
+  ),
+  COALESCE(NULLIF(TRIM(ca.responsible_contact), ''), ''),
+  COALESCE(au.email, ''),
+  COALESCE(NULLIF(TRIM(ca.website), ''), ''),
+  COALESCE(NULLIF(TRIM(ca.endereco), ''), NULLIF(TRIM(ca.localizacao), ''), ''),
+  NULL,
+  public.resolve_company_partner_area_id(ca.id),
+  ca.id
+FROM public.company_accounts ca
+LEFT JOIN auth.users au ON au.id = ca.id
+LEFT JOIN public.partners p ON p.id = ca.id
+WHERE p.id IS NULL
+ON CONFLICT (id) DO UPDATE
+  SET empresa      = EXCLUDED.empresa,
+      nif          = EXCLUDED.nif,
+      setor        = COALESCE(NULLIF(EXCLUDED.setor, ''), public.partners.setor),
+      responsavel   = COALESCE(NULLIF(EXCLUDED.responsavel, ''), public.partners.responsavel),
+      telefone      = COALESCE(NULLIF(EXCLUDED.telefone, ''), public.partners.telefone),
+      email         = COALESCE(NULLIF(EXCLUDED.email, ''), public.partners.email),
+      website       = COALESCE(NULLIF(EXCLUDED.website, ''), public.partners.website),
+      endereco      = COALESCE(NULLIF(EXCLUDED.endereco, ''), public.partners.endereco),
+      area_id       = COALESCE(public.partners.area_id, EXCLUDED.area_id),
+      created_by    = COALESCE(public.partners.created_by, EXCLUDED.created_by);
+
+-- ============================================================
 -- 4. Políticas RLS adicionais para company_accounts
 --    (INSERT por anon não é necessário se trigger cria o row)
 --    Empresa pode ver e atualizar o seu próprio registo.

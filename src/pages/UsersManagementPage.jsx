@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import PageHeader from "../components/PageHeader.jsx";
 import PanelSection from "../components/PanelSection.jsx";
+import "../styles/admin.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
   defaultModerationForAccountType,

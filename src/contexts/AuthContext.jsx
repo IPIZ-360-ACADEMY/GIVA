@@ -18,6 +18,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingPhase, setLoadingPhase] = useState("idle");
   const [userProfile, setUserProfile] = useState(null);
   const [notifCount, setNotifCount] = useState(0);
   const notifUnsubRef = useRef(null);
@@ -82,31 +83,71 @@ export function AuthProvider({ children }) {
   }, [authEnabled]);
 
   const fetchUserProfile = useCallback(async (userId) => {
-    if (!userId || !authEnabled) return;
+    if (!userId || !authEnabled) {
+      setUserProfile(null);
+      return null;
+    }
+
     try {
       const { data } = await supabase
         .from("user_profiles")
         .select("id, type, display_name, avatar_url, bio, moderation")
         .eq("id", userId)
         .maybeSingle();
+
       if (data) {
         setUserProfile(data);
-      } else {
-        // user_profiles row missing — derive type from JWT role so access control works
-        const ap = await getAuthProfile();
-        const derivedType = typeFromRole(ap?.role);
-        setUserProfile({ id: userId, type: derivedType, display_name: null, avatar_url: null, bio: null, moderation: null });
+        return data;
       }
+
+      // user_profiles row missing — derive type from JWT role so access control works
+      const ap = await getAuthProfile();
+      const derivedType = typeFromRole(ap?.role);
+      const fallbackProfile = {
+        id: userId,
+        type: derivedType,
+        display_name: null,
+        avatar_url: null,
+        bio: null,
+        moderation: null,
+      };
+      setUserProfile(fallbackProfile);
+      return fallbackProfile;
     } catch {
       setUserProfile(null);
+      return null;
     }
   }, [authEnabled]);
 
   useEffect(() => {
     let active = true;
 
+    async function resolveSessionState(nextSession) {
+      setLoading(true);
+      setLoadingPhase("session");
+      setSession(nextSession);
+
+      if (!nextSession?.user?.id) {
+        setUserProfile(null);
+        setLoadingPhase("ready");
+        setLoading(false);
+        return;
+      }
+
+      setLoadingPhase("profile");
+      await finalizePendingStudentOAuth(nextSession.user);
+      if (!active) return;
+
+      await fetchUserProfile(nextSession.user.id);
+      if (!active) return;
+
+      setLoadingPhase("ready");
+      setLoading(false);
+    }
+
     async function bootstrap() {
       if (!authEnabled) {
+        setLoadingPhase("ready");
         setLoading(false);
         return;
       }
@@ -116,13 +157,10 @@ export function AuthProvider({ children }) {
         if (!active) {
           return;
         }
-        setSession(nextSession);
-        if (nextSession?.user?.id) {
-          await finalizePendingStudentOAuth(nextSession.user);
-          await fetchUserProfile(nextSession.user.id);
-        }
+        await resolveSessionState(nextSession);
       } finally {
         if (active) {
+          setLoadingPhase("ready");
           setLoading(false);
         }
       }
@@ -134,24 +172,8 @@ export function AuthProvider({ children }) {
       if (!active) {
         return;
       }
-      setSession(nextSession);
-      if (nextSession?.user?.id) {
-        // Carregar perfil ANTES de desligar o loading para evitar race condition:
-        // sem isto, RequireAuth renderiza com userProfile=null e deriva type='external',
-        // causando redirect errado para utilizadores company/student.
-        (async () => {
-          await finalizePendingStudentOAuth(nextSession.user);
-          if (active) {
-            await fetchUserProfile(nextSession.user.id);
-          }
-          if (active) {
-            setLoading(false);
-          }
-        })();
-      } else {
-        setUserProfile(null);
-        setLoading(false);
-      }
+
+      void resolveSessionState(nextSession);
     });
 
     return () => {
@@ -176,24 +198,33 @@ export function AuthProvider({ children }) {
     return () => notifUnsubRef.current?.();
   }, [session?.user?.id, authEnabled]);
 
+  // Funções estáveis extraídas para evitar que o useMemo recrie o objeto de contexto
+  // apenas por causa de closures inline — o referência estável reduz re-renders
+  // em consumidores que usam estas funções como dependência de useEffect/useCallback.
+  const resetNotifCount = useCallback(() => setNotifCount(0), []);
+  const refreshProfile = useCallback(() => {
+    if (session?.user?.id) fetchUserProfile(session.user.id);
+  }, [session?.user?.id, fetchUserProfile]);
+
   const value = useMemo(() => {
     const user = session?.user ?? null;
 
     return {
       authEnabled,
       loading,
+      loadingPhase,
       session,
       user,
       userProfile,
       notifCount,
-      resetNotifCount: () => setNotifCount(0),
-      refreshProfile: () => { if (session?.user?.id) fetchUserProfile(session.user.id); },
+      resetNotifCount,
+      refreshProfile,
       isAuthenticated: Boolean(session?.access_token),
       authProfile: getAuthProfile(user),
       signInWithPassword,
       signOut,
     };
-  }, [authEnabled, loading, session, userProfile, notifCount, fetchUserProfile]);
+  }, [authEnabled, loading, loadingPhase, session, userProfile, notifCount, resetNotifCount, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

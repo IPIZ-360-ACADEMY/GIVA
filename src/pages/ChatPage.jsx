@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import "../styles/chat.css";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
   getConversations,

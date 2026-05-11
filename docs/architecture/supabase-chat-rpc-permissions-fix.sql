@@ -16,4 +16,6 @@ CREATE POLICY conv_select
       WHERE conversation_id = conversations.id
         AND user_id = auth.uid()
     )
+    -- COMMENT ADD --
+    
   );

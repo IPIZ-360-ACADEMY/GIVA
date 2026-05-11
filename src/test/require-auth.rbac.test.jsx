@@ -46,6 +46,40 @@ function renderWithPath(path) {
   );
 }
 
+describe("RequireAuth Loading", () => {
+  it("mostra mensagem de perfil quando loadingPhase = profile", async () => {
+    authState.value = {
+      authEnabled: true,
+      isAuthenticated: true,
+      loading: true,
+      loadingPhase: "profile",
+      user: { id: "u-loading" },
+      userProfile: null,
+      authProfile: { role: "STUDENT" },
+    };
+
+    renderWithPath("/");
+
+    expect(await screen.findByText(/a carregar perfil e permissoes/i)).toBeInTheDocument();
+  });
+
+  it("mostra mensagem padrao quando loadingPhase = session", async () => {
+    authState.value = {
+      authEnabled: true,
+      isAuthenticated: true,
+      loading: true,
+      loadingPhase: "session",
+      user: { id: "u-loading" },
+      userProfile: null,
+      authProfile: { role: "STUDENT" },
+    };
+
+    renderWithPath("/");
+
+    expect(await screen.findByText(/a validar sessao/i)).toBeInTheDocument();
+  });
+});
+
 describe("RequireAuth RBAC", () => {
   it("redireciona estudante de /parceiros para dashboard", async () => {
     authState.value = {
