@@ -119,6 +119,7 @@ export default function AppShell() {
           { to: "/", icon: "dashboard", label: t("nav.dashboard") },
           { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
           { to: "/turmas", icon: "school", label: "Turmas" },
+          { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
