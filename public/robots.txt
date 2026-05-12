@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Crawlers de busca e IA
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+Sitemap: https://giva-ipiz.vercel.app/sitemap.xml

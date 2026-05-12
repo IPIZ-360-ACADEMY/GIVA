@@ -132,7 +132,7 @@ describe("HomePage enterprise multi-profile", () => {
     expect(screen.queryByTestId("create-post-card")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /guardados/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /tendências/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/readonly/i)).toHaveLength(2);
+    expect(screen.getAllByText(/leitura/i)).toHaveLength(2);
     expect(screen.queryByText(/interactive/i)).not.toBeInTheDocument();
     expect(mocks.getBookmarkedPostIds).not.toHaveBeenCalled();
   });

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import ToolsPage, { canAccessToolsTab, resolveRequestedToolsTab, resolveVisibleToolTabs } from "../pages/ToolsPage.jsx";
 
@@ -129,7 +129,9 @@ describe("ToolsPage role tabs", () => {
     render(<ToolsPage />);
 
     const pautasTab = await screen.findByRole("button", { name: /pautas por turma/i });
-    pautasTab.click();
+    await act(async () => {
+      fireEvent.click(pautasTab);
+    });
 
     expect(mocks.navigate).toHaveBeenCalledWith("/ferramentas?tab=pautas", { replace: true });
   });

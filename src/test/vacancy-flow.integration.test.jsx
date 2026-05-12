@@ -163,7 +163,7 @@ describe("Vacancy Flow Integration", () => {
     fireEvent.change(screen.getByLabelText("Quantidade"), {
       target: { value: "1" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Publicar vagas" }));
+    fireEvent.click(screen.getByRole("button", { name: /Publicar vaga(s)?/i }));
 
     await waitFor(() => {
       expect(mocks.createPartnerVacancy).toHaveBeenCalled();

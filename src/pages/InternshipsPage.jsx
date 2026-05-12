@@ -8,6 +8,7 @@ import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { canUseInternshipsApi, listInternships } from "../services/internshipsService.js";
 import { listProfilesByType } from "../services/profilesService.js";
 import { adminListUsers } from "../services/usersAdminService.js";
+import { sanitizeAssetUrl } from "../utils/urlSafety.js";
 
 const STORAGE_KEY = "giva.internships.filters";
 const PAGE_SIZE_OPTIONS = [3, 5, 10];
@@ -36,12 +37,8 @@ function toSafeImageUrl(value) {
     return raw;
   }
 
-  // Remote URLs — encode to prevent injection via specially crafted values
-  if (raw.startsWith("https://") || raw.startsWith("http://")) {
-    return encodeURI(raw);
-  }
-
-  return "";
+  // Remote URLs are sanitized by host/protocol allow-list.
+  return sanitizeAssetUrl(raw);
 }
 
 function normalizeInternshipRow(row) {

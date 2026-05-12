@@ -2,12 +2,12 @@ export function sanitizeAssetUrl(value) {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
 
-  if (raw.startsWith("/")) {
-    return raw;
-  }
-
   if (raw.startsWith("//")) {
     return "";
+  }
+
+  if (raw.startsWith("/")) {
+    return raw;
   }
 
   const allowedHosts = new Set();

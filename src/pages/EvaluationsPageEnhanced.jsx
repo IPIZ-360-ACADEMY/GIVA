@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useAccessProfile } from "../contexts/AuthContext.jsx";
 import { resolveEvaluationView } from "../utils/evaluationViewConfig.js";
 import PageHeader from "../components/PageHeader.jsx";
+import "../styles/evaluations.css";
 import EvalDashboardAdmin from "../components/evaluations/EvalDashboardAdmin.jsx";
 import EvalDashboardCoordinator from "../components/evaluations/EvalDashboardCoordinator.jsx";
 import EvalDashboardTeacher from "../components/evaluations/EvalDashboardTeacher.jsx";
