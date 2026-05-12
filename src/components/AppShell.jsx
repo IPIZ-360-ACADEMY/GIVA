@@ -4,7 +4,7 @@ import logoImage from "../../images/logo.png";
 import fallbackAvatar from "../../images/perfil-1.jpg";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { createTranslator, resolveDateLocale } from "../utils/i18n.js";
-import { resolveAccessProfile } from "../utils/accessControl.js";
+import { getRouteAccessRules, resolveAccessProfile } from "../utils/accessControl.js";
 import { getUnreadCount, subscribeToConversations } from "../services/chatService.js";
 import NotifToastContainer from "./NotifToast.jsx";
 import TopProgressBar from "./TopProgressBar.jsx";
@@ -38,111 +38,54 @@ export default function AppShell() {
     ? String(authProfile.role).replaceAll("_", " ")
     : t("profile.role");
   const {
-    normalizedRole,
     isCompanyUser,
     isStudentUser,
     isExternalUser,
     isCoordinatorUser,
     isTeacherUser,
     isSuperAdmin,
+    isAdmin,
   } = useMemo(
     () => resolveAccessProfile({ role: authProfile?.role, type: userProfile?.type }),
     [authProfile?.role, userProfile?.type]
   );
+  const routeAccess = useMemo(
+    () => getRouteAccessRules({
+      isSuperAdmin,
+      isAdmin,
+      isCoordinatorUser,
+      isCompanyUser,
+      isExternalUser,
+      isStudentUser,
+      isTeacherUser,
+    }),
+    [isSuperAdmin, isAdmin, isCoordinatorUser, isCompanyUser, isExternalUser, isStudentUser, isTeacherUser]
+  );
 
   const navItems = useMemo(
     () => {
-      // SUPER_ADMIN: acesso total
-      if (isSuperAdmin) {
-        return [
-          { to: "/home", icon: "public", label: "Comunidade" },
-          { to: "/", icon: "dashboard", label: t("nav.dashboard") },
-          { to: "/estagios", icon: "work_history", label: t("nav.internships") },
-          { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
-          { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
-          { to: "/documentos", icon: "description", label: t("nav.documents") },
-          { to: "/empresa", icon: "business_center", label: t("nav.companyDashboard") },
-          { to: "/admin", icon: "admin_panel_settings", label: "Administração" },
-          { to: "/ferramentas", icon: "build", label: "Ferramentas" },
-          { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
-          { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
-          { to: "/config", icon: "settings", label: t("nav.settings") },
-        ];
-      }
-
-      // Coordenador: operação académica escopada à sua coordenação atribuída
-      if (isCoordinatorUser) {
-        return [
-          { to: "/home", icon: "public", label: "Comunidade" },
-          { to: "/", icon: "dashboard", label: t("nav.dashboard") },
-          { to: "/estagios", icon: "work_history", label: t("nav.internships") },
-          { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
-          { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
-          { to: "/turmas", icon: "school", label: "Turmas" },
-          { to: "/documentos", icon: "description", label: t("nav.documents") },
-          { to: "/ferramentas", icon: "build", label: "Ferramentas" },
-          { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
-          { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
-          { to: "/config", icon: "settings", label: t("nav.settings") },
-        ];
-      }
-
-      // Empresa: apenas recursos da empresa
-      if (isCompanyUser) {
-        return [
-          { to: "/empresa", icon: "business_center", label: t("nav.companyDashboard") },
-          { to: "/rbac/candidaturas", icon: "fact_check", label: "Candidaturas RBAC" },
-          { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
-          { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
-          { to: "/config", icon: "settings", label: t("nav.settings") },
-        ];
-      }
-
-      // Estudante: apenas funcionalidades próprias
-      if (isStudentUser) {
-        return [
-          { to: "/home", icon: "public", label: "Comunidade" },
-          { to: "/", icon: "dashboard", label: t("nav.dashboard") },
-          { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
-          { to: "/estagios", icon: "work_history", label: t("nav.internships") },
-          { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
-          { to: "/documentos", icon: "description", label: t("nav.documents") },
-          { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
-          { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
-          { to: "/config", icon: "settings", label: t("nav.settings") },
-        ];
-      }
-
-      if (isTeacherUser) {
-        return [
-          { to: "/home", icon: "public", label: "Comunidade" },
-          { to: "/", icon: "dashboard", label: t("nav.dashboard") },
-          { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
-          { to: "/turmas", icon: "school", label: "Turmas" },
-          { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
-          { to: "/documentos", icon: "description", label: t("nav.documents") },
-          { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
-          { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
-          { to: "/config", icon: "settings", label: t("nav.settings") },
-        ];
-      }
-
-      // Externo: acesso resumido apenas a feed e configurações
-      if (isExternalUser) {
-        return [
-          { to: "/home", icon: "public", label: "Comunidade" },
-          { to: "/config", icon: "settings", label: t("nav.settings") },
-        ];
-      }
-
-      // Visitante ou papel desconhecido: menu mínimo
-      return [
+      const allItems = [
         { to: "/home", icon: "public", label: "Comunidade" },
         { to: "/", icon: "dashboard", label: t("nav.dashboard") },
+        { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
+        { to: "/rbac/candidaturas", icon: "fact_check", label: "Candidaturas RBAC" },
+        { to: "/estagios", icon: "work_history", label: t("nav.internships") },
+        { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
+        { to: "/parceiros", icon: "apartment", label: t("nav.partners") },
+        { to: "/turmas", icon: "school", label: "Turmas" },
+        { to: "/documentos", icon: "description", label: t("nav.documents") },
+        { to: "/empresa", icon: "business_center", label: t("nav.companyDashboard") },
+        { to: "/admin", icon: "admin_panel_settings", label: "Administração" },
+        { to: "/ferramentas", icon: "build", label: "Ferramentas" },
+        { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
+        { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
         { to: "/config", icon: "settings", label: t("nav.settings") },
       ];
+
+      const visibleRoutes = new Set(routeAccess.menuRoutes);
+      return allItems.filter((item) => visibleRoutes.has(item.to));
     },
-    [t, notifCount, chatUnread, isCompanyUser, isStudentUser, isExternalUser, isCoordinatorUser, isTeacherUser, isSuperAdmin]
+    [t, notifCount, chatUnread, routeAccess.menuRoutes]
   );
 
   const navSections = useMemo(() => {

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { rpcMock, sendAccountActivationEmailMock } = vi.hoisted(() => ({
+const { rpcMock, sendAccountActivationEmailMock, getCurrentSessionMock, getAuthProfileMock } = vi.hoisted(() => ({
   rpcMock: vi.fn(),
   sendAccountActivationEmailMock: vi.fn(),
+  getCurrentSessionMock: vi.fn(),
+  getAuthProfileMock: vi.fn(),
 }));
 
 vi.mock("../lib/supabase.js", () => ({
@@ -13,6 +15,8 @@ vi.mock("../lib/supabase.js", () => ({
 
 vi.mock("../services/authService.js", () => ({
   sendAccountActivationEmail: sendAccountActivationEmailMock,
+  getCurrentSession: getCurrentSessionMock,
+  getAuthProfile: getAuthProfileMock,
 }));
 
 import { adminCreatePlatformUser, adminSendPasswordReset } from "../services/usersAdminService.js";
@@ -21,6 +25,11 @@ describe("usersAdminService", () => {
   beforeEach(() => {
     rpcMock.mockReset();
     sendAccountActivationEmailMock.mockReset();
+    getCurrentSessionMock.mockReset();
+    getAuthProfileMock.mockReset();
+
+    getCurrentSessionMock.mockResolvedValue({ user: { id: "u-super" } });
+    getAuthProfileMock.mockReturnValue({ role: "SUPER_ADMIN" });
   });
 
   it("normaliza role legado ADMIN_1 para COORDINATOR ao criar utilizador", async () => {
@@ -57,5 +66,18 @@ describe("usersAdminService", () => {
 
   it("falha quando email de reset está vazio", async () => {
     await expect(adminSendPasswordReset("   ")).rejects.toThrow("Email é obrigatório");
+  });
+
+  it("bloqueia criação de utilizador para perfil sem privilégios", async () => {
+    getAuthProfileMock.mockReturnValue({ role: "TEACHER" });
+
+    await expect(
+      adminCreatePlatformUser({
+        email: "teacher@example.com",
+        password: "12345678",
+        display_name: "Teacher",
+        type: "teacher",
+      })
+    ).rejects.toThrow("Permissão insuficiente para criar utilizador.");
   });
 });

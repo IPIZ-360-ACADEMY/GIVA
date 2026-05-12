@@ -1,7 +1,7 @@
 import { Navigate, Outlet, matchPath, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { signOut } from "../services/authService.js";
-import { resolveAccessProfile } from "../utils/accessControl.js";
+import { canAccessRoute, getRouteAccessRules, resolveAccessProfile } from "../utils/accessControl.js";
 import { useState } from "react";
 
 function PendingApprovalScreen() {
@@ -105,46 +105,28 @@ export default function RequireAuth({ children }) {
     role: authProfile?.role,
     type: userProfile?.type,
   });
+  const routeAccess = getRouteAccessRules({
+    isSuperAdmin,
+    isAdmin,
+    isCoordinatorUser,
+    isCompanyUser,
+    isExternalUser,
+    isStudentUser,
+    isTeacherUser,
+  });
 
   // SUPER_ADMIN: acesso total a todas as páginas e funcionalidades
   if (isSuperAdmin) {
     return children ?? <Outlet />;
   }
 
-  // ── Auxiliar: verifica se o pathname actual está numa allowlist ──────────
-  function canAccess(allowedRoutes) {
-    return allowedRoutes.some(
-      (base) => location.pathname === base || location.pathname.startsWith(`${base}/`)
-    );
-  }
-
   // Coordenador (inclui legado ADMIN_1): apenas escopo académico/operacional
   if (isCoordinatorUser) {
-    const coordinatorAllowedRoutes = [
-      "/",
-      "/home",
-      "/ferramentas",
-      "/estagios",
-      "/avaliacoes",
-      "/turmas",
-      "/areas-formacao",
-      "/parceiros",
-      "/documentos",
-      "/rbac/vagas",
-      "/rbac/candidaturas",
-      "/perfil",
-      "/progresso",
-      "/aluno",
-      "/chat",
-      "/notificacoes",
-      "/config",
-    ];
-    if (!canAccess(coordinatorAllowedRoutes)) {
+    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
-    const forbiddenCoordinatorRoutes = ["/admin", "/utilizadores"];
-    if (canAccess(forbiddenCoordinatorRoutes)) {
+    if (canAccessRoute(location.pathname, routeAccess.forbiddenRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
@@ -153,38 +135,21 @@ export default function RequireAuth({ children }) {
 
   // Empresa: só pode aceder às rotas de empresa
   if (isCompanyUser) {
-    const companyAllowedRoutes = ["/empresa", "/rbac/candidaturas", "/notificacoes", "/chat", "/config"];
-    if (!canAccess(companyAllowedRoutes)) {
+    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
       return <Navigate to="/empresa" replace state={{ from: location.pathname }} />;
     }
   }
 
   // Externo: apenas feed/comunidade e configurações
   if (isExternalUser && !isAdmin) {
-    const externalAllowedRoutes = ["/home", "/config"];
-    if (!canAccess(externalAllowedRoutes)) {
+    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
       return <Navigate to="/home" replace state={{ from: location.pathname }} />;
     }
   }
 
   // Estudante: somente recursos relacionados ao próprio percurso
   if (isStudentUser && !isAdmin) {
-    const studentAllowedRoutes = [
-      "/",
-      "/home",
-      "/rbac/vagas",
-      "/estagios",
-      "/avaliacoes",
-      "/documentos",
-      "/chat",
-      "/notificacoes",
-      "/config",
-      "/aluno",
-      "/perfil",
-      "/progresso",
-      "/perfil-publico",
-    ];
-    if (!canAccess(studentAllowedRoutes)) {
+    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
@@ -200,22 +165,7 @@ export default function RequireAuth({ children }) {
 
   // Professor: escopo académico próprio + vistas RBAC
   if (isTeacherUser && !isAdmin) {
-    const academicAllowedRoutes = [
-      "/",
-      "/home",
-      "/rbac/vagas",
-      "/estagios",
-      "/avaliacoes",
-      "/documentos",
-      "/chat",
-      "/notificacoes",
-      "/config",
-      "/turmas",
-      "/areas-formacao",
-      "/perfil",
-      "/progresso",
-    ];
-    if (!canAccess(academicAllowedRoutes)) {
+    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
   }
@@ -224,8 +174,7 @@ export default function RequireAuth({ children }) {
   // bloquear rotas altamente restritas
   if (isAdmin && !isCoordinatorUser) {
     // Ferramentas e painel de admin apenas para coordenação/super-admin
-    const restrictedRoutes = ["/admin", "/ferramentas", "/utilizadores", "/parceiros"];
-    if (canAccess(restrictedRoutes)) {
+    if (canAccessRoute(location.pathname, routeAccess.forbiddenRoutes)) {
       return <Navigate to="/" replace />;
     }
   }

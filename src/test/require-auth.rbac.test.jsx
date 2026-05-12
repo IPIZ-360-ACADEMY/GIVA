@@ -37,6 +37,7 @@ function renderWithPath(path) {
           <Route path="/empresa" element={<h1>Empresa</h1>} />
           <Route path="/admin" element={<h1>Admin</h1>} />
           <Route path="/ferramentas" element={<h1>Ferramentas</h1>} />
+          <Route path="/utilizadores" element={<h1>Utilizadores</h1>} />
           <Route path="/rbac/vagas" element={<h1>Vagas</h1>} />
           <Route path="/rbac/candidaturas" element={<h1>Candidaturas</h1>} />
           <Route path="/config" element={<h1>Configuracoes</h1>} />
@@ -166,6 +167,12 @@ describe("RequireAuth RBAC — SUPER_ADMIN", () => {
     expect(await screen.findByRole("heading", { name: /ferramentas/i })).toBeInTheDocument();
   });
 
+  it("permite SUPER_ADMIN em /utilizadores", async () => {
+    asSuperAdmin();
+    renderWithPath("/utilizadores");
+    expect(await screen.findByRole("heading", { name: /utilizadores/i })).toBeInTheDocument();
+  });
+
   it("permite SUPER_ADMIN em /empresa", async () => {
     asSuperAdmin();
     renderWithPath("/empresa");
@@ -243,6 +250,12 @@ describe("RequireAuth RBAC — Coordenador", () => {
   it("bloqueia coordenador em /admin", async () => {
     asCoordinator();
     renderWithPath("/admin");
+    expect(await screen.findByRole("heading", { name: /dashboard/i })).toBeInTheDocument();
+  });
+
+  it("bloqueia coordenador em /utilizadores", async () => {
+    asCoordinator();
+    renderWithPath("/utilizadores");
     expect(await screen.findByRole("heading", { name: /dashboard/i })).toBeInTheDocument();
   });
 });

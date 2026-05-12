@@ -16,7 +16,6 @@ export default function SettingsLayout() {
         title={t("settings.title")} 
         description={t("settings.description")}
       />
-
       <nav className="settings-tabs" aria-label={t("settings.title")}>
         <NavLink end to="/config/perfil" className={tabClass}>
           <span className="material-icons-sharp">badge</span>

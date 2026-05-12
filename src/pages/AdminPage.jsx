@@ -12,6 +12,14 @@ import { registerStudentUnified } from "../services/studentRegistryService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { isCoordinatorRole } from "../utils/accessControl.js";
 
+export function canAccessAdminPanel(role) {
+  return String(role ?? "").toUpperCase() === "SUPER_ADMIN";
+}
+
+export function canRunAdminSensitiveAction(role) {
+  return canAccessAdminPanel(role);
+}
+
 // ── helpers ────────────────────────────────────────────────────
 function Badge({ label, variant = "neutral" }) {
   const colors = {
@@ -683,6 +691,22 @@ export default function AdminPage() {
   const { showToast } = ctx;
   const { authProfile, user } = useAuth();
 
+  if (!canAccessAdminPanel(authProfile?.role)) {
+    return (
+      <div className="page">
+        <PageHeader
+          title="Painel de Administração"
+          subtitle="Área restrita a Super Admin."
+          icon="admin_panel_settings"
+        />
+        <div className="tools-empty" style={{ gridColumn: "1/-1" }}>
+          <span className="material-icons-sharp">lock</span>
+          <p>Não tem permissão para aceder a esta área.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [stats, setStats] = useState({ users: 0, companies: 0, posts: 0, pendingCompanies: 0, pendingPosts: 0 });
   const [pendingCompanies, setPendingCompanies] = useState([]);
   const [pendingPosts, setPendingPosts] = useState([]);
@@ -697,6 +721,15 @@ export default function AdminPage() {
   function toast(msg, type = "success") {
     if (showToast) showToast(msg, type);
     else console.info("[toast]", msg);
+  }
+
+  function allowSensitiveAction(actionLabel) {
+    if (canRunAdminSensitiveAction(authProfile?.role)) {
+      return true;
+    }
+
+    toast(`Permissão insuficiente para ${actionLabel}.`, "error");
+    return false;
   }
 
   // Load stats + pending data on mount
@@ -773,6 +806,7 @@ export default function AdminPage() {
 
   // ── Actions ────────────────────────────────────────────────
   async function approveCompany(id) {
+    if (!allowSensitiveAction("aprovar empresa")) return;
     const { error } = await supabase
       .from("user_profiles")
       .update({ moderation: "active" })
@@ -784,6 +818,7 @@ export default function AdminPage() {
   }
 
   async function rejectCompany(id) {
+    if (!allowSensitiveAction("rejeitar empresa")) return;
     const { error } = await supabase
       .from("user_profiles")
       .update({ moderation: "suspended" })
@@ -795,6 +830,7 @@ export default function AdminPage() {
   }
 
   async function approvePost(id) {
+    if (!allowSensitiveAction("aprovar publicação")) return;
     await moderatePost(id, "approved").catch(() => null);
     setPendingPosts((prev) => prev.filter((p) => p.id !== id));
     setStats((s) => ({ ...s, pendingPosts: Math.max(0, s.pendingPosts - 1) }));
@@ -802,6 +838,7 @@ export default function AdminPage() {
   }
 
   async function rejectPost(id) {
+    if (!allowSensitiveAction("rejeitar publicação")) return;
     await moderatePost(id, "rejected").catch(() => null);
     setPendingPosts((prev) => prev.filter((p) => p.id !== id));
     setStats((s) => ({ ...s, pendingPosts: Math.max(0, s.pendingPosts - 1) }));
@@ -809,6 +846,7 @@ export default function AdminPage() {
   }
 
   async function quickSetModeration(id, status) {
+    if (!allowSensitiveAction("alterar moderação de utilizador")) return;
     const { error } = await supabase.from("user_profiles").update({ moderation: status }).eq("id", id);
     if (error) { toast("Erro ao atualizar estado: " + error.message, "error"); return; }
     setAllUsers((prev) => prev.map((u) => u.id === id ? { ...u, moderation: status } : u));

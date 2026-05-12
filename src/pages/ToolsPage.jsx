@@ -110,6 +110,23 @@ const SUPER_ADMIN_TABS = [
   { id: "estrutura", icon: "account_tree", label: "Áreas e Cursos" },
 ];
 
+export function resolveVisibleToolTabs(role) {
+  const normalizedRole = String(role ?? "").toUpperCase();
+  return normalizedRole === "SUPER_ADMIN" ? [...ADMIN_TABS, ...SUPER_ADMIN_TABS] : ADMIN_TABS;
+}
+
+export function canAccessToolsTab(role, tabId) {
+  return resolveVisibleToolTabs(role).some((tab) => tab.id === tabId);
+}
+
+export function resolveRequestedToolsTab(requestedTab, visibleTabs, fallbackTab = "alunos") {
+  if (!requestedTab) {
+    return fallbackTab;
+  }
+
+  return visibleTabs.some((tab) => tab.id === requestedTab) ? requestedTab : fallbackTab;
+}
+
 // ── Secção: lista de alunos ──────────────────────────────────
 function AlunosTab({ showToast, reloadToken }) {
   const [rows, setRows] = useState([]);
@@ -2283,15 +2300,20 @@ export default function ToolsPage() {
   const _role = String(authProfile?.role ?? "").toUpperCase();
   const isSuperAdmin = _role === "SUPER_ADMIN";
   const isCoordinator = isCoordinatorRole(_role);
-  const visibleTabs = isSuperAdmin ? [...ADMIN_TABS, ...SUPER_ADMIN_TABS] : ADMIN_TABS;
+  const visibleTabs = resolveVisibleToolTabs(_role);
 
   useEffect(() => {
+    const firstTab = visibleTabs[0]?.id ?? "alunos";
     const searchParams = new URLSearchParams(location.search);
     const requestedTab = searchParams.get("tab");
-    if (!requestedTab) return;
-    if (!visibleTabs.some((tab) => tab.id === requestedTab)) return;
-    setActiveTab(requestedTab);
-  }, [location.search, visibleTabs]);
+    const nextTab = resolveRequestedToolsTab(requestedTab, visibleTabs, firstTab);
+
+    if (requestedTab && requestedTab !== nextTab) {
+      navigate(`/ferramentas?tab=${encodeURIComponent(nextTab)}`, { replace: true });
+    }
+
+    setActiveTab(nextTab);
+  }, [location.search, navigate, visibleTabs]);
 
   useEffect(() => {
     const firstTab = visibleTabs[0]?.id ?? "alunos";
@@ -2333,6 +2355,10 @@ export default function ToolsPage() {
               type="button"
               className={`tools-tab${activeTab === tab.id ? " active" : ""}`}
               onClick={() => {
+                if (!canAccessToolsTab(_role, tab.id)) {
+                  showToast("Permissão insuficiente para este separador.", "error");
+                  return;
+                }
                 setActiveTab(tab.id);
                 navigate(`/ferramentas?tab=${encodeURIComponent(tab.id)}`, { replace: true });
               }}

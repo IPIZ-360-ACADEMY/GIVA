@@ -1,11 +1,24 @@
 import { supabase } from "../lib/supabase.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
-import { sendAccountActivationEmail } from "./authService.js";
+import { getAuthProfile, getCurrentSession, sendAccountActivationEmail } from "./authService.js";
 import {
   defaultModerationForAccountType,
   defaultRoleForAccountType,
   normalizeAccountType,
 } from "../utils/accessControl.js";
+
+const ROLE_SUPER_ADMIN = "SUPER_ADMIN";
+const ROLE_ADMIN = "ADMIN";
+const ROLE_COORDINATOR = "COORDINATOR";
+
+async function requireAdminRole(allowedRoles, actionLabel) {
+  const session = await getCurrentSession();
+  const role = String(getAuthProfile(session?.user)?.role ?? "").toUpperCase();
+
+  if (!allowedRoles.includes(role)) {
+    throw new Error(`Permissão insuficiente para ${actionLabel}.`);
+  }
+}
 
 export function getStudentProcessNumberFromIdentifier(identifier) {
   const raw = String(identifier ?? "").trim();
@@ -51,6 +64,7 @@ function normalizeUserPayload(payload = {}) {
 
 /** Lista todos os utilizadores com email, bio e role JWT. Requer ADMIN_1+. */
 export async function adminListUsers() {
+  await requireAdminRole([ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_COORDINATOR], "listar utilizadores");
   const { data, error } = await supabase.rpc("admin_list_users");
   if (error) throw error;
   return data ?? [];
@@ -58,6 +72,7 @@ export async function adminListUsers() {
 
 /** Muda o JWT role (app_metadata.role). Requer SUPER_ADMIN. */
 export async function adminSetUserRole(targetUid, newRole) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "alterar role de utilizador");
   const { error } = await supabase.rpc("admin_set_user_role", {
     p_target_uid: targetUid,
     p_new_role: newRole,
@@ -67,6 +82,7 @@ export async function adminSetUserRole(targetUid, newRole) {
 
 /** Atribui area_id no app metadata (escopo de coordenador). Requer SUPER_ADMIN. */
 export async function adminSetUserArea(targetUid, areaId) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "atribuir area de utilizador");
   const { error } = await supabase.rpc("admin_set_user_area", {
     p_target_uid: targetUid,
     p_area_id: areaId,
@@ -76,6 +92,7 @@ export async function adminSetUserArea(targetUid, areaId) {
 
 /** Actualiza campos do perfil (type, moderation, display_name, bio, avatar_url). */
 export async function adminUpdateUserProfile(uid, updates) {
+  await requireAdminRole([ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_COORDINATOR], "atualizar perfil de utilizador");
   const { error } = await supabase
     .from("user_profiles")
     .update(updates)
@@ -85,6 +102,7 @@ export async function adminUpdateUserProfile(uid, updates) {
 
 /** Elimina utilizador da auth + perfil. Requer SUPER_ADMIN. */
 export async function adminDeleteUser(uid) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "eliminar utilizador");
   const { error } = await supabase.rpc("admin_delete_user", { p_uid: uid });
   if (error) throw error;
 }
@@ -94,6 +112,7 @@ export async function adminDeleteUser(uid) {
  * Útil para reenviar credenciais quando o utilizador não recebeu o email inicial.
  */
 export async function adminSendPasswordReset(email) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "reenviar ativação de conta");
   const normalized = String(email ?? "").trim().toLowerCase();
   if (!normalized) throw new Error("Email é obrigatório");
   const { error } = await sendAccountActivationEmail(normalized);
@@ -102,6 +121,7 @@ export async function adminSendPasswordReset(email) {
 
 /** Cria utilizador na plataforma via RPC. Requer SUPER_ADMIN. */
 export async function adminCreatePlatformUser(payload) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "criar utilizador");
   const normalized = normalizeUserPayload(payload);
   const { data, error } = await supabase.rpc("admin_create_platform_user", {
     p_email: normalized.email,
@@ -120,6 +140,7 @@ export async function adminCreatePlatformUser(payload) {
 
 /** Garante registos de contas específicas quando o tipo é alterado por super-admin. */
 export async function adminEnsureAccountTypeArtifacts(uid, type, displayName = "", options = {}) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "sincronizar artefactos de tipo de conta");
   if (!uid || !type) return { ensured: false, reason: "invalid-input" };
 
   const normalizedType = normalizeAccountType(type);

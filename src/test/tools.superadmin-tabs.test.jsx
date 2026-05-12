@@ -1,15 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
-import ToolsPage from "../pages/ToolsPage.jsx";
+import ToolsPage, { canAccessToolsTab, resolveRequestedToolsTab, resolveVisibleToolTabs } from "../pages/ToolsPage.jsx";
 
 const mocks = vi.hoisted(() => ({
   role: "SUPER_ADMIN",
+  search: "",
+  navigate: vi.fn(),
 }));
 
 vi.mock("react-router-dom", () => ({
   Link: ({ to, children, ...props }) => <a href={to} {...props}>{children}</a>,
-  useLocation: () => ({ search: "" }),
-  useNavigate: () => vi.fn(),
+  useLocation: () => ({ search: mocks.search }),
+  useNavigate: () => mocks.navigate,
   useOutletContext: () => ({ showToast: vi.fn() }),
 }));
 
@@ -76,6 +78,11 @@ vi.mock("../lib/supabase.js", () => ({
 }));
 
 describe("ToolsPage role tabs", () => {
+  beforeEach(() => {
+    mocks.search = "";
+    mocks.navigate.mockReset();
+  });
+
   it("mostra tabs extras para SUPER_ADMIN", async () => {
     mocks.role = "SUPER_ADMIN";
     render(<ToolsPage />);
@@ -94,5 +101,55 @@ describe("ToolsPage role tabs", () => {
       expect(screen.queryByRole("button", { name: /orquestração/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /áreas e cursos/i })).not.toBeInTheDocument();
     });
+  });
+
+  it("rejeita tab utilzadores para coordenador e normaliza para a primeira tab visível", async () => {
+    mocks.role = "COORDINATOR";
+    mocks.search = "?tab=utilizadores";
+    render(<ToolsPage />);
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith("/ferramentas?tab=alunos", { replace: true });
+    });
+
+    expect(screen.queryByRole("button", { name: /utilizadores/i })).not.toBeInTheDocument();
+  });
+
+  it("bloqueia visualização da página para role sem acesso administrativo", async () => {
+    mocks.role = "TEACHER";
+    render(<ToolsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/não tem permissão para aceder a esta área/i)).toBeInTheDocument();
+    });
+  });
+
+  it("navega para tab permitida quando coordenador interage com o separador", async () => {
+    mocks.role = "COORDINATOR";
+    render(<ToolsPage />);
+
+    const pautasTab = await screen.findByRole("button", { name: /pautas por turma/i });
+    pautasTab.click();
+
+    expect(mocks.navigate).toHaveBeenCalledWith("/ferramentas?tab=pautas", { replace: true });
+  });
+});
+
+describe("ToolsPage tab resolution helpers", () => {
+  it("inclui tabs privilegiadas apenas para SUPER_ADMIN", () => {
+    expect(resolveVisibleToolTabs("SUPER_ADMIN").map((tab) => tab.id)).toContain("utilizadores");
+    expect(resolveVisibleToolTabs("COORDINATOR").map((tab) => tab.id)).not.toContain("utilizadores");
+  });
+
+  it("normaliza tabs pedidas para fallback quando não estão visíveis", () => {
+    const visibleTabs = resolveVisibleToolTabs("COORDINATOR");
+    expect(resolveRequestedToolsTab("utilizadores", visibleTabs, "alunos")).toBe("alunos");
+    expect(resolveRequestedToolsTab("pautas", visibleTabs, "alunos")).toBe("pautas");
+  });
+
+  it("valida acesso por separador conforme role", () => {
+    expect(canAccessToolsTab("SUPER_ADMIN", "utilizadores")).toBe(true);
+    expect(canAccessToolsTab("COORDINATOR", "utilizadores")).toBe(false);
+    expect(canAccessToolsTab("COORDINATOR", "pautas")).toBe(true);
   });
 });

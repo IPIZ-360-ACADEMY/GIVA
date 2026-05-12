@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeAliasAccountType, resolveAccessProfile } from "../utils/accessControl.js";
+import { canAccessRoute, getRouteAccessRules, normalizeAliasAccountType, resolveAccessProfile } from "../utils/accessControl.js";
 
 describe("accessControl identity contract", () => {
   it("normaliza aliases administrativos e académicos para admin", () => {
@@ -22,5 +22,33 @@ describe("accessControl identity contract", () => {
     expect(profile.normalizedType).toBe("coordinator");
     expect(profile.normalizedRole).toBe("COORDINATOR");
     expect(profile.isCoordinatorUser).toBe(true);
+  });
+
+  it("avalia rotas por prefixo de forma consistente", () => {
+    expect(canAccessRoute("/avaliacoes", ["/avaliacoes", "/config"])).toBe(true);
+    expect(canAccessRoute("/avaliacoes/123", ["/avaliacoes", "/config"])).toBe(true);
+    expect(canAccessRoute("/admin", ["/avaliacoes", "/config"])).toBe(false);
+  });
+
+  it("expõe rotas de menu coerentes para professor", () => {
+    const profile = resolveAccessProfile({ role: "TEACHER", type: "teacher" });
+    const rules = getRouteAccessRules(profile);
+
+    expect(rules.menuRoutes).toContain("/avaliacoes");
+    expect(rules.menuRoutes).toContain("/turmas");
+    expect(rules.menuRoutes).not.toContain("/admin");
+  });
+
+  it("expõe rotas de menu reduzidas para empresa", () => {
+    const profile = resolveAccessProfile({ role: "COMPANY", type: "company" });
+    const rules = getRouteAccessRules(profile);
+
+    expect(rules.menuRoutes).toEqual([
+      "/empresa",
+      "/rbac/candidaturas",
+      "/chat",
+      "/notificacoes",
+      "/config",
+    ]);
   });
 });

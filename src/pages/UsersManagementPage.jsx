@@ -49,6 +49,10 @@ function normalizeRole(value) {
   return defaultRoleForAccountType("external", value);
 }
 
+export function canManageUsersSensitiveAction(role) {
+  return String(role ?? "").toUpperCase() === "SUPER_ADMIN";
+}
+
 const MODERATION_LABELS = {
   active:    { label: "Ativo",    color: "#059669" },
   pending:   { label: "Pendente",  color: "#d97706" },
@@ -152,6 +156,10 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (!isSuperAdmin) {
+      toast("Permissão insuficiente para editar utilizador.", "error");
+      return;
+    }
     setSaving(true);
     try {
       await adminUpdateUserProfile(user.id, {
@@ -664,6 +672,15 @@ export default function UsersManagementPage({ embedded = false, showToast: showT
     else console.info("[toast]", msg);
   }
 
+  function allowSensitiveUserAction(actionLabel) {
+    if (canManageUsersSensitiveAction(authProfile?.role)) {
+      return true;
+    }
+
+    toast(`Permissão insuficiente para ${actionLabel}.`, "error");
+    return false;
+  }
+
   async function loadUsers() {
     setLoading(true);
     try {
@@ -682,6 +699,7 @@ export default function UsersManagementPage({ embedded = false, showToast: showT
   }
 
   async function quickSetModeration(id, status) {
+    if (!allowSensitiveUserAction("alterar moderação")) return;
     const { error } = await (await import("../lib/supabase.js")).supabase
       .from("user_profiles").update({ moderation: status }).eq("id", id);
     if (error) { toast("Erro: " + error.message, "error"); return; }
@@ -691,6 +709,10 @@ export default function UsersManagementPage({ embedded = false, showToast: showT
 
   async function handleDeleteUser() {
     if (!deletingUser) return;
+    if (!allowSensitiveUserAction("eliminar utilizador")) {
+      setDeletingUser(null);
+      return;
+    }
     const uid = deletingUser.id;
     setDeletingUser(null);
     try {
@@ -704,6 +726,7 @@ export default function UsersManagementPage({ embedded = false, showToast: showT
 
   async function handleSendReset(email) {
     if (resettingEmail) return;
+    if (!allowSensitiveUserAction("reenviar reset de password")) return;
     setResettingEmail(email);
     try {
       await adminSendPasswordReset(email);
@@ -965,10 +988,12 @@ export default function UsersManagementPage({ embedded = false, showToast: showT
                               Reativar
                             </button>
                           )}
-                          <button type="button" className="btn ghost sm" onClick={() => setEditingUser(u)}>
-                            <span className="material-icons-sharp" style={{ fontSize: "0.85rem" }}>edit</span>
-                            Editar
-                          </button>
+                          {isSuperAdmin && (
+                            <button type="button" className="btn ghost sm" onClick={() => setEditingUser(u)}>
+                              <span className="material-icons-sharp" style={{ fontSize: "0.85rem" }}>edit</span>
+                              Editar
+                            </button>
+                          )}
                           {isSuperAdmin && (
                             <button type="button" className="btn danger sm" onClick={() => setDeletingUser(u)} title="Eliminar conta">
                               <span className="material-icons-sharp" style={{ fontSize: "0.85rem" }}>delete</span>

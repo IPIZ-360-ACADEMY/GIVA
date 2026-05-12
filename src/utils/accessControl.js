@@ -149,3 +149,160 @@ export function resolveAccessProfile({ role, type }) {
     isExternalUser,
   };
 }
+
+export function canAccessRoute(pathname, allowedRoutes) {
+  return allowedRoutes.some(
+    (base) => pathname === base || pathname.startsWith(`${base}/`)
+  );
+}
+
+export function getRouteAccessRules(accessProfile) {
+  if (accessProfile.isSuperAdmin) {
+    return {
+      allowedRoutes: null,
+      forbiddenRoutes: [],
+      menuRoutes: [
+        "/home",
+        "/",
+        "/estagios",
+        "/avaliacoes",
+        "/parceiros",
+        "/documentos",
+        "/empresa",
+        "/admin",
+        "/ferramentas",
+        "/chat",
+        "/notificacoes",
+        "/config",
+      ],
+    };
+  }
+
+  if (accessProfile.isCoordinatorUser) {
+    return {
+      allowedRoutes: [
+        "/",
+        "/home",
+        "/ferramentas",
+        "/estagios",
+        "/avaliacoes",
+        "/turmas",
+        "/areas-formacao",
+        "/parceiros",
+        "/documentos",
+        "/rbac/vagas",
+        "/rbac/candidaturas",
+        "/perfil",
+        "/progresso",
+        "/aluno",
+        "/chat",
+        "/notificacoes",
+        "/config",
+      ],
+      forbiddenRoutes: ["/admin", "/utilizadores"],
+      menuRoutes: [
+        "/home",
+        "/",
+        "/estagios",
+        "/avaliacoes",
+        "/parceiros",
+        "/turmas",
+        "/documentos",
+        "/ferramentas",
+        "/chat",
+        "/notificacoes",
+        "/config",
+      ],
+    };
+  }
+
+  if (accessProfile.isCompanyUser) {
+    return {
+      allowedRoutes: ["/empresa", "/rbac/candidaturas", "/notificacoes", "/chat", "/config"],
+      forbiddenRoutes: [],
+      menuRoutes: ["/empresa", "/rbac/candidaturas", "/chat", "/notificacoes", "/config"],
+    };
+  }
+
+  if (accessProfile.isExternalUser && !accessProfile.isAdmin) {
+    return {
+      allowedRoutes: ["/home", "/config"],
+      forbiddenRoutes: [],
+      menuRoutes: ["/home", "/config"],
+    };
+  }
+
+  if (accessProfile.isStudentUser && !accessProfile.isAdmin) {
+    return {
+      allowedRoutes: [
+        "/",
+        "/home",
+        "/rbac/vagas",
+        "/estagios",
+        "/avaliacoes",
+        "/documentos",
+        "/chat",
+        "/notificacoes",
+        "/config",
+        "/aluno",
+        "/perfil",
+        "/progresso",
+        "/perfil-publico",
+      ],
+      forbiddenRoutes: [],
+      menuRoutes: [
+        "/home",
+        "/",
+        "/rbac/vagas",
+        "/estagios",
+        "/avaliacoes",
+        "/documentos",
+        "/chat",
+        "/notificacoes",
+        "/config",
+      ],
+    };
+  }
+
+  if (accessProfile.isTeacherUser && !accessProfile.isAdmin) {
+    return {
+      allowedRoutes: [
+        "/",
+        "/home",
+        "/rbac/vagas",
+        "/estagios",
+        "/avaliacoes",
+        "/documentos",
+        "/chat",
+        "/notificacoes",
+        "/config",
+        "/turmas",
+        "/areas-formacao",
+        "/perfil",
+        "/progresso",
+      ],
+      forbiddenRoutes: [],
+      menuRoutes: [
+        "/home",
+        "/",
+        "/rbac/vagas",
+        "/turmas",
+        "/avaliacoes",
+        "/documentos",
+        "/chat",
+        "/notificacoes",
+        "/config",
+      ],
+    };
+  }
+
+  if (accessProfile.isAdmin && !accessProfile.isCoordinatorUser) {
+    return {
+      allowedRoutes: null,
+      forbiddenRoutes: ["/admin", "/ferramentas", "/utilizadores", "/parceiros"],
+      menuRoutes: ["/home", "/", "/config"],
+    };
+  }
+
+  return { allowedRoutes: null, forbiddenRoutes: [], menuRoutes: ["/home", "/", "/config"] };
+}
