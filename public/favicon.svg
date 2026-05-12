@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GIVA">
+  <defs>
+    <linearGradient id="givaGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#givaGrad)" />
+  <path d="M33.7 16C24.8 16 18 22.7 18 32s6.8 16 15.7 16c6.3 0 11.7-3.4 14.3-9h-9.2c-1.4 1.6-3.1 2.3-5.1 2.3-4.8 0-8.4-3.8-8.4-9.3 0-5.6 3.6-9.3 8.4-9.3 3.1 0 5.4 1.4 6.8 4.1h8.2C46 19.8 40.5 16 33.7 16z" fill="#ffffff"/>
+</svg>
