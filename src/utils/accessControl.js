@@ -255,7 +255,6 @@ export function getRouteAccessRules(accessProfile) {
         "/",
         "/rbac/vagas",
         "/estagios",
-        "/avaliacoes",
         "/documentos",
         "/chat",
         "/notificacoes",

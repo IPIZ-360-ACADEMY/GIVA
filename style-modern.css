@@ -3213,84 +3213,66 @@ textarea:invalid {
 
 .login-live-ticket-marquee {
   position: relative;
-  height: 36px;
+  height: 52px;
   overflow: hidden;
-  mask-image: linear-gradient(to right, transparent 0, black 8%, black 92%, transparent 100%);
 }
 
 .login-live-ticket-track {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 0;
+  height: 100%;
   display: flex;
   align-items: center;
-  gap: 1.15rem;
+  gap: clamp(1.75rem, 5vw, 3rem);
   width: max-content;
-  flex-shrink: 0;
-  min-width: max-content;
-  padding: 0 0.55rem;
-  transform: translateY(-50%);
-}
-
-.login-live-ticket-track-a {
-  animation: login-live-ticket-track-a 14s linear infinite;
-}
-
-.login-live-ticket-track-b {
-  animation: login-live-ticket-track-b 14s linear infinite;
+  padding: 0 clamp(1rem, 3vw, 2rem);
+  animation: login-live-ticket-scroll 20s linear infinite;
+  will-change: transform;
 }
 
 .login-live-ticket-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
+  height: 100%;
+  padding: 6px 0;
 }
 
 .login-live-ticket-item img {
+  height: clamp(24px, 5vw, 36px);
   width: auto;
-  height: 23px;
+  max-width: clamp(80px, 20vw, 120px);
   object-fit: contain;
   filter: saturate(1.08) contrast(1.03);
+  display: block;
 }
 
-@keyframes login-live-ticket-track-a {
-  from {
-    transform: translate3d(0, -50%, 0);
-  }
-  to {
-    transform: translate3d(-100%, -50%, 0);
-  }
-}
-
-@keyframes login-live-ticket-track-b {
-  from {
-    transform: translate3d(100%, -50%, 0);
-  }
-  to {
-    transform: translate3d(0, -50%, 0);
-  }
+@keyframes login-live-ticket-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .login-live-ticket-marquee {
     height: auto;
-    mask-image: none;
   }
 
-  .login-live-ticket-track,
-  .login-live-ticket-track-a,
-  .login-live-ticket-track-b {
+  .login-live-ticket-track {
     position: static;
     animation: none;
     transform: none;
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
-    padding: 0.25rem 0;
+    gap: 1.25rem;
+    padding: 0.5rem 0;
   }
 
-  .login-live-ticket-track-b {
-    display: none;
+  .login-live-ticket-item {
+    height: 48px;
+    padding: 4px 0;
   }
 }
 

@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { addComment, getComments, getPublicPostUrl, toggleBookmark, votePoll } from "../services/postsService.js";
+import { addComment, getComments, getPublicPostUrl, toggleBookmark, votePoll, deletePost, updatePost } from "../services/postsService.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { sanitizeAssetUrl } from "../utils/urlSafety.js";
 
@@ -17,6 +17,86 @@ const TYPE_LABELS = {
   admin:    "Equipa IPIZ",
   external: "Visitante",
 };
+
+/**
+ * Menu de ações para o dono do post (eliminar).
+ */
+function PostActionsMenu({ postId, onDeleted }) {
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm("Tem a certeza que pretende eliminar esta publicação?")) return;
+    setDeleting(true);
+    try {
+      await deletePost(postId);
+      setOpen(false);
+      onDeleted?.();
+    } catch (err) {
+      console.error("Erro ao eliminar post:", err);
+      alert("Erro ao eliminar: " + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        className="btn ghost sm"
+        onClick={() => setOpen(!open)}
+        title="Opções"
+        aria-label="Opções do post"
+      >
+        <span className="material-icons-sharp">more_vert</span>
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            background: "var(--surface-raised)",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            zIndex: 100,
+            minWidth: "160px",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "0.75rem 1rem",
+              border: "none",
+              background: "none",
+              cursor: deleting ? "not-allowed" : "pointer",
+              textAlign: "left",
+              color: "var(--danger, #dc2626)",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              transition: "background-color 0.2s",
+              opacity: deleting ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => !deleting && (e.currentTarget.style.backgroundColor = "var(--surface)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+          >
+            <span className="material-icons-sharp" style={{ fontSize: "0.9rem", marginRight: "0.5rem", verticalAlign: "middle" }}>
+              delete
+            </span>
+            {deleting ? "A eliminar..." : "Eliminar"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Avatar({ url, name, size = 44 }) {
   const initials = (name ?? "?").slice(0, 1).toUpperCase();
@@ -333,9 +413,9 @@ function CommentSection({ postId, commentsCount, sharesCount, onShare, compact =
   );
 }
 
-export default function PostCard({ post, onReaction, onShare, isBookmarked = false, onBookmark, compact = false, getAdjacentImagePost = null, readOnly = false }) {
+export default function PostCard({ post, onReaction, onShare, isBookmarked = false, onBookmark, compact = false, getAdjacentImagePost = null, readOnly = false, onDeleted }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [bookmarked, setBookmarked] = useState(isBookmarked);
   const [bookmarking, setBookmarking] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -535,17 +615,22 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
             <span className="post-time">{timeAgo}</span>
           </div>
         </Link>
-        {!readOnly && (
-        <button
-          type="button"
-          className={`post-bookmark-btn${bookmarked ? " active" : ""}`}
-          onClick={handleBookmark}
-          title={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
-          aria-label={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
-        >
-          <span className="material-icons-sharp">{bookmarked ? "bookmark" : "bookmark_border"}</span>
-        </button>
-        )}
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          {!readOnly && user?.id === author.id && (
+            <PostActionsMenu postId={post.id} onDeleted={onDeleted} />
+          )}
+          {!readOnly && (
+          <button
+            type="button"
+            className={`post-bookmark-btn${bookmarked ? " active" : ""}`}
+            onClick={handleBookmark}
+            title={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
+            aria-label={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
+          >
+            <span className="material-icons-sharp">{bookmarked ? "bookmark" : "bookmark_border"}</span>
+          </button>
+          )}
+        </div>
       </div>
 
       <div className="post-card-body">

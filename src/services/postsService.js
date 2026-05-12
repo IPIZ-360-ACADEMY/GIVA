@@ -282,3 +282,56 @@ export async function getPendingPosts() {
   if (error) throw error;
   return data ?? [];
 }
+
+/**
+ * Atualiza o conteúdo de um post (dono apenas).
+ */
+export async function updatePost(postId, content) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Verificar se o utilizador é dono do post
+  const { data: post } = await supabase
+    .from("posts")
+    .select("author_id")
+    .eq("id", postId)
+    .single();
+
+  if (!post || post.author_id !== user.id) {
+    throw new Error("Permissão insuficiente para editar este post.");
+  }
+
+  const { data, error } = await supabase
+    .from("posts")
+    .update({ content })
+    .eq("id", postId)
+    .select(POST_SELECT)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Elimina um post (dono apenas).
+ */
+export async function deletePost(postId) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Verificar se o utilizador é dono do post
+  const { data: post } = await supabase
+    .from("posts")
+    .select("author_id")
+    .eq("id", postId)
+    .single();
+
+  if (!post || post.author_id !== user.id) {
+    throw new Error("Permissão insuficiente para eliminar este post.");
+  }
+
+  const { error } = await supabase
+    .from("posts")
+    .delete()
+    .eq("id", postId);
+
+  if (error) throw error;
+}

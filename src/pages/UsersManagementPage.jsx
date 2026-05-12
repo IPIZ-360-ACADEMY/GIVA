@@ -324,6 +324,14 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     setOpenWizard(true);
   }
 
+  function openRegisterWizardForType(type) {
+    const role = defaultRoleForAccountType(type);
+    setForm({ ...BLANK_USER, type, role });
+    setStep(2); // Saltar passo 1 — o tipo já está selecionado
+    setSubmitMessage({ type: "", text: "" });
+    setOpenWizard(true);
+  }
+
   function closeRegisterWizard() {
     if (submitting) return;
     setOpenWizard(false);
@@ -483,6 +491,22 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       <p className="form-hint" style={{ marginBottom: "1rem" }}>
         Processo guiado em etapas: tipo de conta, nível de acesso, identidade e ativação.
       </p>
+      
+      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+        <button className="btn primary" type="button" onClick={() => openRegisterWizardForType("coordinator")}>
+          <span className="material-icons-sharp">supervisor_account</span>
+          Criar Coordenador
+        </button>
+        <button className="btn secondary" type="button" onClick={() => openRegisterWizardForType("company")}>
+          <span className="material-icons-sharp">business</span>
+          Criar Empresa
+        </button>
+      </div>
+      
+      <p className="form-hint" style={{ marginBottom: "1rem" }}>
+        Ou crie qualquer tipo de utilizador com o assistente completo:
+      </p>
+      
       <button className="btn primary" type="button" onClick={openRegisterWizard}>
         <span className="material-icons-sharp">person_add</span>
         Abrir Assistente de Registo

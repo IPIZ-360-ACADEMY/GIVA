@@ -259,17 +259,10 @@ export default function LoginPage() {
 
         <section className="login-live-ticket" aria-label="Empresas parceiras">
           <div className="login-live-ticket-marquee" aria-label="Logos de empresas parceiras">
-            <div className="login-live-ticket-track login-live-ticket-track-a">
-              {companyLogos.map((company, index) => (
+            <div className="login-live-ticket-track">
+              {[...companyLogos, ...companyLogos].map((company, index) => (
                 <div className="login-live-ticket-item" key={`${company.name}-${index}`}>
                   <img src={company.src} alt={company.name} loading="lazy" />
-                </div>
-              ))}
-            </div>
-            <div className="login-live-ticket-track login-live-ticket-track-b" aria-hidden="true">
-              {companyLogos.map((company, index) => (
-                <div className="login-live-ticket-item" key={`clone-${company.name}-${index}`}>
-                  <img src={company.src} alt="" loading="lazy" />
                 </div>
               ))}
             </div>
