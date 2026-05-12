@@ -97,7 +97,7 @@ function isPastSchoolYear(value) {
 // ── Tabs ─────────────────────────────────────────────────────
 const ADMIN_TABS = [
   { id: "alunos",       icon: "people",              label: "Alunos" },
-  { id: "registar",    icon: "person_add",           label: "Registar Aluno" },
+  { id: "importar",    icon: "upload_file",         label: "Importar Excel" },
   { id: "turmas",      icon: "school",               label: "Gestão de Turmas" },
   { id: "vagas",       icon: "work_outline",         label: "Vagas" },
   { id: "atribuicao",  icon: "assignment_ind",       label: "Atribuição" },
@@ -652,6 +652,399 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+// ── Secção: importar alunos via Excel ────────────────────────
+function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
+  const [rows, setRows] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [results, setResults] = useState(null);
+  const [parseError, setParseError] = useState("");
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    listTrainingAreas()
+      .then((data) => {
+        if (!active) return;
+        const areaList = data ?? [];
+        setAreas(areaList);
+        Promise.all(
+          areaList.map((a) =>
+            listCoursesByArea(a.id, { includeInactive: false })
+              .then((cs) => (cs ?? []).map((c) => ({ ...c, areaId: a.id })))
+              .catch(() => [])
+          )
+        ).then((nested) => {
+          if (active) setAllCourses(nested.flat());
+        });
+      })
+      .catch(() => { if (active) setAreas([]); });
+    return () => { active = false; };
+  }, []);
+
+  function normalizeHeader(h) {
+    return String(h ?? "").trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  const HEADER_MAP = {
+    nome:            ["nome", "nomecompleto", "fullname", "name"],
+    processo:        ["processo", "nprocesso", "numprocesso", "processno", "numerodeprocesso"],
+    email:           ["email", "emailpessoal", "correo"],
+    telefone:        ["telefone", "telm", "telemovel", "phone", "tel"],
+    turma:           ["turma", "class", "classname", "nomaturma"],
+    area:            ["area", "areadeformacao", "trainingarea"],
+    curso:           ["curso", "course", "coursecode", "codigocurso"],
+    anoletivo:       ["anoletivo", "anoletiv", "schoolyear", "ano"],
+    datanascimento:  ["datanascimento", "datanasc", "dob", "nascimento", "datadenascimento"],
+    bi:              ["bi", "bilhete", "bilheteidentidade", "bi_number"],
+    morada:          ["morada", "address", "endereco"],
+    password:        ["password", "senha", "pass"],
+  };
+
+  function mapHeaders(headerRow) {
+    const mapping = {};
+    headerRow.forEach((h, i) => {
+      const normalized = normalizeHeader(h);
+      for (const [field, aliases] of Object.entries(HEADER_MAP)) {
+        if (aliases.includes(normalized)) {
+          mapping[field] = i;
+          break;
+        }
+      }
+    });
+    return mapping;
+  }
+
+  function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setParseError("");
+    setRows([]);
+    setResults(null);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const XLSX = await import("xlsx");
+        const data = new Uint8Array(ev.target.result);
+        const workbook = XLSX.read(data, { type: "array", cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        if (rawRows.length < 2) {
+          setParseError("Ficheiro vazio ou sem dados.");
+          return;
+        }
+        const headerRow = rawRows[0];
+        const mapping = mapHeaders(headerRow);
+        if (mapping.nome === undefined && mapping.processo === undefined) {
+          setParseError(
+            "Não foi possível identificar as colunas. Verifique se o ficheiro contém as colunas 'Nome' e 'Processo'."
+          );
+          return;
+        }
+        const parsed = rawRows.slice(1)
+          .filter((r) => r.some((cell) => String(cell ?? "").trim() !== ""))
+          .map((r, idx) => ({
+            _rowNum: idx + 2,
+            nome:       String(r[mapping.nome]            ?? "").trim(),
+            processo:   String(r[mapping.processo]        ?? "").trim(),
+            email:      String(r[mapping.email]           ?? "").trim(),
+            telefone:   String(r[mapping.telefone]        ?? "").trim(),
+            turma:      String(r[mapping.turma]           ?? "").trim(),
+            area:       String(r[mapping.area]            ?? "").trim(),
+            curso:      String(r[mapping.curso]           ?? "").trim(),
+            anoLetivo:  String(r[mapping.anoletivo]       ?? "").trim(),
+            dataNasc:
+              r[mapping.datanascimento] instanceof Date
+                ? toLocalIsoDate(r[mapping.datanascimento])
+                : String(r[mapping.datanascimento] ?? "").trim(),
+            bi:         String(r[mapping.bi]              ?? "").trim(),
+            morada:     String(r[mapping.morada]          ?? "").trim(),
+            password:   String(r[mapping.password]        ?? "").trim(),
+          }));
+        if (parsed.length > 5000) {
+          setParseError("O ficheiro tem mais de 5 000 linhas. Divida-o em partes menores.");
+          return;
+        }
+        setRows(parsed);
+      } catch (err) {
+        setParseError("Erro a processar o ficheiro: " + (err?.message ?? "formato inválido"));
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function resolveIds(row) {
+    let areaId = null;
+    if (row.area) {
+      const found = areas.find(
+        (a) =>
+          a.name?.toLowerCase().trim() === row.area.toLowerCase().trim() ||
+          a.code?.toLowerCase().trim() === row.area.toLowerCase().trim()
+      );
+      areaId = found?.id ?? null;
+    }
+    if (!areaId && authProfile?.areaId) areaId = authProfile.areaId;
+    if (!areaId && fallbackAreaId)       areaId = fallbackAreaId;
+    if (!areaId && areas.length)         areaId = areas[0].id;
+
+    let courseId = null;
+    let courseCode = row.curso || null;
+    if (row.curso && areaId) {
+      const found = allCourses.find(
+        (c) =>
+          c.areaId === areaId &&
+          (c.code?.toLowerCase().trim() === row.curso.toLowerCase().trim() ||
+           c.name?.toLowerCase().trim() === row.curso.toLowerCase().trim())
+      );
+      courseId   = found?.id   ?? null;
+      courseCode = found?.code ?? row.curso;
+    }
+    return { areaId, courseId, courseCode };
+  }
+
+  async function handleImport() {
+    if (!rows.length) return;
+    setImporting(true);
+    setProgress({ current: 0, total: rows.length });
+    const created = [];
+    const skipped = [];
+    const errors  = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      setProgress({ current: i + 1, total: rows.length });
+      const row = rows[i];
+      if (!row.nome || !row.processo) {
+        skipped.push({ row: row._rowNum, nome: row.nome, reason: "Nome ou Processo em falta" });
+        continue;
+      }
+      const { areaId, courseId, courseCode } = resolveIds(row);
+      try {
+        const result = await registerStudentUnified({
+          fullName:       row.nome,
+          processNumber:  normalizeStudentProcessNumber(row.processo) || row.processo,
+          email:          row.email     || null,
+          phoneNumber:    row.telefone  || null,
+          dateOfBirth:    row.dataNasc  || null,
+          trainingAreaId: areaId,
+          courseId:       courseId,
+          address:        row.morada    || null,
+          profilePhotoUrl: null,
+          className:      row.turma     || null,
+          courseCode:     courseCode,
+          schoolYear:     row.anoLetivo || null,
+          bi:             row.bi        || null,
+          loginPassword:  row.password  || null,
+        });
+        if (result?.alreadyExists) {
+          skipped.push({ row: row._rowNum, nome: row.nome, reason: "Aluno já existe" });
+        } else {
+          created.push({ row: row._rowNum, nome: row.nome, email: result?.loginEmail });
+        }
+      } catch (err) {
+        errors.push({ row: row._rowNum, nome: row.nome, reason: err?.message ?? "Erro desconhecido" });
+      }
+    }
+
+    setImporting(false);
+    setResults({ created, skipped, errors });
+    if (created.length > 0 && onImported) onImported();
+    if (created.length > 0) {
+      showToast(`${created.length} aluno(s) importado(s) com sucesso.`, "success");
+    } else if (errors.length > 0) {
+      showToast(`Importação concluída com ${errors.length} erro(s).`, "error");
+    }
+  }
+
+  async function downloadTemplate() {
+    const XLSX = await import("xlsx");
+    const headers = [
+      "Nome", "Processo", "Email", "Telefone", "Turma",
+      "Área", "Curso", "Ano Letivo", "Data Nascimento", "BI", "Morada", "Password",
+    ];
+    const example = [
+      "João Silva", "2024001", "joao@pessoal.ao", "923 456 789",
+      "TI12BD", "TIC", "GDES", "2024/2025", "2005-03-15",
+      "005123456BA001", "Rua Principal 1, Luanda", "",
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
+    XLSX.writeFile(wb, "template_importacao_alunos.xlsx");
+  }
+
+  return (
+    <div className="tools-section">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 className="tools-section-title">Importar Alunos via Excel</h3>
+        <button className="tools-btn tools-btn-secondary" onClick={downloadTemplate} type="button">
+          <span className="material-icons-sharp" style={{ fontSize: 18 }}>download</span>
+          Template Excel
+        </button>
+      </div>
+
+      {/* Upload zone */}
+      <div
+        className="tools-upload-zone"
+        role="button"
+        tabIndex={0}
+        onClick={() => fileRef.current?.click()}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileRef.current?.click(); }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const files = e.dataTransfer.files;
+          if (files?.[0]) handleFile({ target: { files } });
+        }}
+        style={{
+          border: "2px dashed var(--color-border, #ccc)",
+          borderRadius: 8,
+          padding: "32px 24px",
+          textAlign: "center",
+          cursor: "pointer",
+          marginBottom: 16,
+        }}
+      >
+        <span className="material-icons-sharp" style={{ fontSize: 40, color: "var(--color-primary, #2563eb)", display: "block", marginBottom: 8 }}>
+          upload_file
+        </span>
+        <p style={{ margin: 0, fontWeight: 600 }}>Clique ou arraste um ficheiro .xlsx / .xls</p>
+        <p style={{ margin: "4px 0 0", fontSize: "0.85em", color: "var(--color-text-secondary, #666)" }}>
+          Máx. 5 000 linhas — primeira linha deve ser o cabeçalho
+        </p>
+        <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleFile} />
+      </div>
+
+      {parseError && (
+        <div className="tools-alert tools-alert-error" style={{ marginBottom: 16 }}>{parseError}</div>
+      )}
+
+      {/* Preview */}
+      {rows.length > 0 && !results && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <p style={{ margin: 0 }}>
+              <strong>{rows.length}</strong> linha(s) encontrada(s). Reveja antes de importar.
+            </p>
+            <button
+              className="tools-btn tools-btn-primary"
+              onClick={handleImport}
+              disabled={importing}
+              type="button"
+            >
+              {importing
+                ? `A importar… ${progress.current}/${progress.total}`
+                : `Importar ${rows.length} aluno(s)`}
+            </button>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table className="tools-table" style={{ fontSize: "0.85em" }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nome</th>
+                  <th>Processo</th>
+                  <th>Email</th>
+                  <th>Turma</th>
+                  <th>Área</th>
+                  <th>Curso</th>
+                  <th>Ano Letivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r._rowNum}>
+                    <td>{r._rowNum}</td>
+                    <td>{r.nome      || <span style={{ color: "red" }}>Em falta</span>}</td>
+                    <td>{r.processo  || <span style={{ color: "red" }}>Em falta</span>}</td>
+                    <td>{r.email     || "—"}</td>
+                    <td>{r.turma     || "—"}</td>
+                    <td>{r.area      || "—"}</td>
+                    <td>{r.curso     || "—"}</td>
+                    <td>{r.anoLetivo || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {results && (
+        <div>
+          <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+            <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-success-bg, #dcfce7)", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#16a34a" }}>{results.created.length}</div>
+              <div style={{ fontSize: "0.85em" }}>Criados</div>
+            </div>
+            <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-warning-bg, #fef9c3)", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#ca8a04" }}>{results.skipped.length}</div>
+              <div style={{ fontSize: "0.85em" }}>Ignorados</div>
+            </div>
+            <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-error-bg, #fee2e2)", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#dc2626" }}>{results.errors.length}</div>
+              <div style={{ fontSize: "0.85em" }}>Erros</div>
+            </div>
+          </div>
+
+          {results.errors.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <h4 style={{ marginBottom: 6 }}>Erros</h4>
+              <table className="tools-table" style={{ fontSize: "0.85em" }}>
+                <thead><tr><th>Linha</th><th>Nome</th><th>Motivo</th></tr></thead>
+                <tbody>
+                  {results.errors.map((e, i) => (
+                    <tr key={i}>
+                      <td>{e.row}</td>
+                      <td>{e.nome ?? "—"}</td>
+                      <td style={{ color: "#dc2626" }}>{e.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {results.skipped.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <h4 style={{ marginBottom: 6 }}>Ignorados</h4>
+              <table className="tools-table" style={{ fontSize: "0.85em" }}>
+                <thead><tr><th>Linha</th><th>Nome</th><th>Motivo</th></tr></thead>
+                <tbody>
+                  {results.skipped.map((s, i) => (
+                    <tr key={i}>
+                      <td>{s.row}</td>
+                      <td>{s.nome ?? "—"}</td>
+                      <td>{s.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <button
+            className="tools-btn tools-btn-secondary"
+            onClick={() => {
+              setRows([]);
+              setResults(null);
+              if (fileRef.current) fileRef.current.value = "";
+            }}
+            type="button"
+          >
+            Nova Importação
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2374,6 +2767,7 @@ export default function ToolsPage() {
       <div className="tools-content" style={{ gridColumn: "1/-1" }}>
         {activeTab === "alunos"      && <AlunosTab showToast={showToast} reloadToken={reloadToken} />}
         {activeTab === "registar"   && <RegistarTab showToast={showToast} authProfile={authProfile} fallbackAreaId={fallbackAreaId} onRegistered={handleStudentRegistered} />}
+        {activeTab === "importar"   && <ImportarTab showToast={showToast} authProfile={authProfile} fallbackAreaId={fallbackAreaId} onImported={handleStudentRegistered} />}
         {activeTab === "turmas"     && <TurmasTab showToast={showToast} areaId={authProfile?.areaId ?? null} />}
         {activeTab === "vagas"      && <VagasTab showToast={showToast} />}
         {activeTab === "atribuicao" && <AtribuicaoTab showToast={showToast} reloadToken={reloadToken} />}

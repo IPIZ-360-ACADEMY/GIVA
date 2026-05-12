@@ -113,12 +113,18 @@ export async function registerStudentUnified(input) {
     }
   }
 
-  const loginEmail = normalizeAuthIdentifier(processNumber);
+  const loginEmail = nullableTrim(input?.email) || normalizeAuthIdentifier(processNumber);
   let authCreated = false;
   let authAlreadyExists = false;
 
   if (loginPassword) {
-    const { error: signUpError } = await signUpStudent(processNumber, loginPassword, fullName, studentRow.id);
+    const { error: signUpError } = await signUpStudent(
+      processNumber,
+      loginPassword,
+      fullName,
+      studentRow.id,
+      nullableTrim(input?.email)
+    );
     if (signUpError) {
       const signUpMessage = String(signUpError.message ?? "");
       authAlreadyExists = /already/i.test(signUpMessage) || /registered/i.test(signUpMessage);

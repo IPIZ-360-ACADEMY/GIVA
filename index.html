@@ -81,10 +81,19 @@
     <link rel="dns-prefetch" href="%VITE_SUPABASE_URL%" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts carregadas de forma assíncrona — não bloqueiam o render inicial -->
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Icons+Sharp&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Icons+Sharp&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <!-- GitHub Pages SPA redirect: restore path encoded by 404.html -->
     <script>
       (function (l) {

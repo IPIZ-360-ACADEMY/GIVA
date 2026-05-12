@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import cimertexLogo from "../../images/Empresas/cimertex-removebg-preview.png";
 import downloadLogo from "../../images/Empresas/download-removebg-preview.png";
@@ -7,6 +7,7 @@ import fabrimetalLogo from "../../images/Empresas/fabrimetal-removebg-preview.pn
 import refriangoLogo from "../../images/Empresas/refriango-removebg-preview.png";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
+  requiresEmailConfirmation,
   resolveAuthLoginEmail,
   signInWithOAuth,
   signUpStudent,
@@ -17,11 +18,13 @@ import { createTranslator } from "../utils/i18n.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { authEnabled, isAuthenticated, loading, signInWithPassword } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [infoMessage, setInfoMessage] = useState(() => String(location.state?.signupMessage ?? ""));
   const [autoRegisterInProgress, setAutoRegisterInProgress] = useState(false);
   const companyLogos = useMemo(
     () => [
@@ -54,6 +57,10 @@ export default function LoginPage() {
     navigate("/", { replace: true });
   }, [authEnabled, isAuthenticated, loading, navigate]);
 
+  useEffect(() => {
+    setInfoMessage(String(location.state?.signupMessage ?? ""));
+  }, [location.state]);
+
   function resolveAuthErrorMessage(error) {
     const rawMessage = String(error?.message ?? "").trim();
     const message = rawMessage.toLowerCase();
@@ -81,6 +88,7 @@ export default function LoginPage() {
     event.preventDefault();
 
     setFormError("");
+    setInfoMessage("");
 
     if (!authEnabled) {
       navigate("/");
@@ -115,14 +123,21 @@ export default function LoginPage() {
         if (processNumber) {
           const { data: verifyData, error: verifyError } = await verifyStudentProcessNumber(processNumber);
           if (!verifyError && verifyData?.found) {
-            const { error: signUpError } = await signUpStudent(
+            const { data: signUpData, error: signUpError } = await signUpStudent(
               processNumber,
               password,
               verifyData.full_name ?? "Aluno",
-              verifyData.student_id ?? null
+              verifyData.student_id ?? null,
+              verifyData.email ?? null
             );
 
             if (!signUpError) {
+              if (requiresEmailConfirmation(signUpData)) {
+                setAutoRegisterInProgress(false);
+                setInfoMessage("Conta criada. Confirma o e-mail enviado pelo sistema antes de entrar.");
+                return;
+              }
+
               const { error: retryError } = await signInWithPassword({ email: normalizedIdentifier, password });
               setAutoRegisterInProgress(false);
               if (!retryError) {
@@ -209,6 +224,7 @@ export default function LoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </div>
+            {infoMessage ? <p className="meta">{infoMessage}</p> : null}
             {formError ? <p className="meta">{formError}</p> : null}
             <button className="btn primary" type="submit">
               {submitting ? t("login.signingIn") : t("login.submit")}

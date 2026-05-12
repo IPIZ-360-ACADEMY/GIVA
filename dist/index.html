@@ -81,10 +81,19 @@
     <link rel="dns-prefetch" href="https://pniwewlldopizfwrvneo.supabase.co" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts carregadas de forma assíncrona — não bloqueiam o render inicial -->
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Icons+Sharp&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Icons+Sharp&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <!-- GitHub Pages SPA redirect: restore path encoded by 404.html -->
     <script>
       (function (l) {
@@ -104,7 +113,7 @@
         }
       })(window.location);
     </script>
-    <script type="module" crossorigin src="/assets/index-CbVceY8o.js"></script>
+    <script type="module" crossorigin src="/assets/index-Bk52w3AC.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-ChiVEssY.js">
     <link rel="modulepreload" crossorigin href="/assets/supabase-BQEU2DLB.js">
     <link rel="stylesheet" crossorigin href="/assets/index-DJDbwWHJ.css">

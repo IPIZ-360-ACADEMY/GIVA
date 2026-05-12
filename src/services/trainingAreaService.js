@@ -1,5 +1,30 @@
 import { supabase } from "../lib/supabase.js";
 
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const queryCache = new Map();
+
+function getCached(key) {
+  const hit = queryCache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > CACHE_TTL_MS) {
+    queryCache.delete(key);
+    return null;
+  }
+  return hit.value;
+}
+
+function setCached(key, value) {
+  queryCache.set(key, { at: Date.now(), value });
+}
+
+function clearCacheByPrefix(prefix) {
+  for (const key of queryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      queryCache.delete(key);
+    }
+  }
+}
+
 export function canUseTrainingAreaApi() {
   return typeof supabase !== "undefined" && supabase !== null;
 }
@@ -9,6 +34,10 @@ export function canUseTrainingAreaApi() {
  */
 export async function listTrainingAreas() {
   if (!canUseTrainingAreaApi()) return [];
+
+  const cacheKey = "training_areas:active";
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
 
   const { data, error } = await supabase
     .from("training_area")
@@ -20,7 +49,9 @@ export async function listTrainingAreas() {
     console.error("[trainingAreaService] listTrainingAreas error:", error);
     return [];
   }
-  return data || [];
+  const rows = data || [];
+  setCached(cacheKey, rows);
+  return rows;
 }
 
 export async function updateTrainingArea(areaId, payload) {
@@ -37,6 +68,9 @@ export async function updateTrainingArea(areaId, payload) {
     console.error("[trainingAreaService] updateTrainingArea error:", error);
     return null;
   }
+
+  clearCacheByPrefix("training_areas:");
+  clearCacheByPrefix("courses:");
 
   return data;
 }
@@ -76,6 +110,7 @@ export async function createTrainingArea(payload) {
     console.error("[trainingAreaService] createTrainingArea error:", error);
     return null;
   }
+  clearCacheByPrefix("training_areas:");
   return data;
 }
 
@@ -86,6 +121,9 @@ export async function listCoursesByArea(areaId, options = {}) {
   if (!canUseTrainingAreaApi()) return [];
 
   const includeInactive = Boolean(options.includeInactive);
+  const cacheKey = `courses:${String(areaId)}:${includeInactive ? "all" : "active"}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
 
   let query = supabase
     .from("courses")
@@ -103,7 +141,9 @@ export async function listCoursesByArea(areaId, options = {}) {
     console.error("[trainingAreaService] listCoursesByArea error:", error);
     return [];
   }
-  return data || [];
+  const rows = data || [];
+  setCached(cacheKey, rows);
+  return rows;
 }
 
 /**
@@ -122,6 +162,7 @@ export async function createCourse(areaId, courseData) {
     console.error("[trainingAreaService] createCourse error:", error);
     return null;
   }
+  clearCacheByPrefix("courses:");
   return data;
 }
 
@@ -139,6 +180,8 @@ export async function updateCourse(courseId, payload) {
     console.error("[trainingAreaService] updateCourse error:", error);
     return null;
   }
+
+  clearCacheByPrefix("courses:");
 
   return data;
 }

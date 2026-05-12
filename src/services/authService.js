@@ -63,6 +63,24 @@ export function isAuthEnabled() {
   return isSupabaseConfigured && Boolean(supabase);
 }
 
+function getAuthRedirectBase() {
+  const appUrl = String(import.meta.env.VITE_APP_URL ?? "").trim().replace(/\/$/, "");
+  return import.meta.env.DEV ? window.location.origin : (appUrl || window.location.origin);
+}
+
+function getAuthEmailRedirectTo() {
+  return `${getAuthRedirectBase()}/login`;
+}
+
+function normalizeEmailAddress(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return normalized.includes("@") ? normalized : "";
+}
+
+export function requiresEmailConfirmation(signUpData) {
+  return Boolean(signUpData?.user) && !signUpData?.session;
+}
+
 export function getAuthProfile(user) {
   if (!user) {
     return {
@@ -225,9 +243,7 @@ export async function getRequiredSession() {
 
 export async function signInWithOAuth(provider) {
   if (!isAuthEnabled()) return;
-  // Em dev, forca origem local para evitar redirecionar para URL de producao.
-  const appUrl = String(import.meta.env.VITE_APP_URL ?? "").trim().replace(/\/$/, "");
-  const redirectTo = import.meta.env.DEV ? window.location.origin : (appUrl || window.location.origin);
+  const redirectTo = getAuthRedirectBase();
   return supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo },
@@ -345,13 +361,63 @@ export async function sendAccountActivationEmail(email) {
     return { error: new Error("Email is required") };
   }
 
-  const appUrl = String(import.meta.env.VITE_APP_URL ?? "").trim().replace(/\/$/, "");
-  const redirectBase = import.meta.env.DEV ? window.location.origin : (appUrl || window.location.origin);
-  const redirectTo = `${redirectBase}/login`;
+  const redirectTo = getAuthEmailRedirectTo();
 
   return supabase.auth.resetPasswordForEmail(normalizedEmail, {
     redirectTo,
   });
+}
+
+export async function getMfaAuthenticatorAssuranceLevel() {
+  if (!isAuthEnabled()) {
+    return { data: null, error: new Error("Supabase Auth is not configured") };
+  }
+
+  return supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+}
+
+export async function listMfaFactors() {
+  if (!isAuthEnabled()) {
+    return { data: null, error: new Error("Supabase Auth is not configured") };
+  }
+
+  return supabase.auth.mfa.listFactors();
+}
+
+export async function enrollMfaTotp(friendlyName = "Authenticator") {
+  if (!isAuthEnabled()) {
+    return { data: null, error: new Error("Supabase Auth is not configured") };
+  }
+
+  return supabase.auth.mfa.enroll({
+    factorType: "totp",
+    friendlyName,
+  });
+}
+
+export async function verifyMfaTotpCode({ factorId, code }) {
+  if (!isAuthEnabled()) {
+    return { data: null, error: new Error("Supabase Auth is not configured") };
+  }
+
+  const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+  if (challengeError) {
+    return { data: null, error: challengeError };
+  }
+
+  return supabase.auth.mfa.verify({
+    factorId,
+    challengeId: challengeData.id,
+    code: String(code ?? "").trim(),
+  });
+}
+
+export async function unenrollMfaFactor(factorId) {
+  if (!isAuthEnabled()) {
+    return { data: null, error: new Error("Supabase Auth is not configured") };
+  }
+
+  return supabase.auth.mfa.unenroll({ factorId });
 }
 
 export function onAuthStateChange(listener) {
@@ -377,7 +443,7 @@ export function onAuthStateChange(listener) {
  * @param {string} displayName - Nome completo (obtido da verificação)
  * @param {string} studentDbId  - UUID do registo em public.students
  */
-export async function signUpStudent(processNumber, password, displayName, studentDbId) {
+export async function signUpStudent(processNumber, password, displayName, studentDbId, emailAddress = null) {
   if (!isAuthEnabled()) {
     return { data: null, error: new Error("Supabase Auth is not configured") };
   }
@@ -392,30 +458,49 @@ export async function signUpStudent(processNumber, password, displayName, studen
   const domain = configuredDomain || DEFAULT_EMAIL_DOMAIN;
   const localPart = normalizedProcessNumber.toLowerCase();
   const syntheticEmail = `aluno.${localPart}@${domain}`;
+  const authEmail = normalizeEmailAddress(emailAddress) || syntheticEmail;
 
   // Guardar sessão do admin ANTES do signUp, pois supabase.auth.signUp()
   // faz auto-login com o novo utilizador e destrói a sessão activa
   const { data: sessionData } = await supabase.auth.getSession();
   const adminSession = sessionData?.session ?? null;
-
-  const { data, error } = await supabase.auth.signUp({
-    email: syntheticEmail,
-    password,
-    // Passar full_name E display_name para que o trigger handle_new_user_oauth
-    // use o nome correcto (em vez de fazer fallback para o email/processo)
-    options: { data: { display_name: displayName, full_name: displayName } },
-  });
-
-  // Restaurar sessão do admin imediatamente após o signUp
-  if (adminSession) {
+  const restoreAdminSession = async () => {
+    if (!adminSession) return;
     await supabase.auth.setSession({
       access_token: adminSession.access_token,
       refresh_token: adminSession.refresh_token,
     });
+  };
+
+  const { data, error } = await supabase.auth.signUp({
+    email: authEmail,
+    password,
+    options: {
+      emailRedirectTo: getAuthEmailRedirectTo(),
+      data: {
+        display_name: displayName,
+        full_name: displayName,
+        user_type: "student",
+        process_number: normalizedProcessNumber,
+        student_id: studentDbId ?? undefined,
+      },
+    },
+  });
+
+  if (error) {
+    await restoreAdminSession();
+    return { data: null, error };
+  }
+  if (!data.user) {
+    await restoreAdminSession();
+    return { data: null, error: new Error("Utilizador não criado") };
   }
 
-  if (error) return { data: null, error };
-  if (!data.user) return { data: null, error: new Error("Utilizador não criado") };
+  const hasSession = Boolean(data.session);
+  if (!hasSession) {
+    await restoreAdminSession();
+    return { data, error: null };
+  }
 
   const userId = data.user.id;
 
@@ -423,7 +508,10 @@ export async function signUpStudent(processNumber, password, displayName, studen
     .from("user_profiles")
     .upsert({ id: userId, type: "student", display_name: displayName }, { onConflict: "id" });
 
-  if (profileError) return { data, error: profileError };
+  if (profileError) {
+    await restoreAdminSession();
+    return { data, error: profileError };
+  }
 
   // Nota: student_id é opcional — depends on student_accounts schema
   const studentPayload = { id: userId, process_number: normalizedProcessNumber };
@@ -435,32 +523,42 @@ export async function signUpStudent(processNumber, password, displayName, studen
 
   // Ignorar erros de coluna desconhecida (student_id pode não existir no schema)
   const isMissingColumn = studentError?.message?.includes("column") && studentError?.message?.includes("student_id");
-  if (studentError && !isMissingColumn) return { data, error: studentError };
+  if (studentError && !isMissingColumn) {
+    await restoreAdminSession();
+    return { data, error: studentError };
+  }
 
   // Tentar de novo sem student_id se a coluna não existir
   if (isMissingColumn) {
     const { error: retryError } = await supabase
       .from("student_accounts")
       .insert({ id: userId, process_number: normalizedProcessNumber });
-    if (retryError) return { data, error: retryError };
+    if (retryError) {
+      await restoreAdminSession();
+      return { data, error: retryError };
+    }
   }
 
   const { error: aliasError } = await upsertLoginAliases([
     {
       user_id: userId,
       alias: normalizedProcessNumber,
-      login_email: syntheticEmail,
+      login_email: authEmail,
       account_type: "student",
     },
     {
       user_id: userId,
-      alias: syntheticEmail,
-      login_email: syntheticEmail,
+      alias: authEmail,
+      login_email: authEmail,
       account_type: "student",
     },
   ]);
-  if (aliasError) return { data, error: aliasError };
+  if (aliasError) {
+    await restoreAdminSession();
+    return { data, error: aliasError };
+  }
 
+  await restoreAdminSession();
   return { data, error: null };
 }
 
@@ -513,6 +611,13 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   // Guardar sessão activa (ex: admin a criar conta) antes do signUp para restaurar depois
   const { data: sessionData } = await supabase.auth.getSession();
   const prevSession = sessionData?.session ?? null;
+  const restorePrevSession = async () => {
+    if (!prevSession) return;
+    await supabase.auth.setSession({
+      access_token: prevSession.access_token,
+      refresh_token: prevSession.refresh_token,
+    });
+  };
 
   // Metadados passados ao signUp: o trigger handle_new_user_oauth lê user_type
   // para criar user_profiles com o tipo e moderation correctos, mesmo sem sessão.
@@ -531,19 +636,20 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
     password,
-    options: { data: signUpMetadata },
+    options: {
+      emailRedirectTo: getAuthEmailRedirectTo(),
+      data: signUpMetadata,
+    },
   });
 
-  // Restaurar sessão anterior imediatamente (quando chamado por admin)
-  if (prevSession) {
-    await supabase.auth.setSession({
-      access_token: prevSession.access_token,
-      refresh_token: prevSession.refresh_token,
-    });
+  if (error) {
+    await restorePrevSession();
+    return { data: null, error };
   }
-
-  if (error) return { data: null, error };
-  if (!data.user) return { data: null, error: new Error("Utilizador não criado") };
+  if (!data.user) {
+    await restorePrevSession();
+    return { data: null, error: new Error("Utilizador não criado") };
+  }
 
   const userId = data.user.id;
   const moderation = type === "company" ? "pending" : "active";
@@ -551,7 +657,7 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   // Verificar se temos sessão (confirmação de email desativada → sessão imediata).
   // Sem sessão, o fluxo depende exclusivamente do trigger handle_new_user_oauth
   // para manter backend como fonte única de verdade.
-  const hasSession = Boolean(data.session) || Boolean(prevSession);
+  const hasSession = Boolean(data.session);
 
   if (hasSession) {
     // Com sessão: upsert direto — garante dados correctos mesmo que trigger tenha corrido
@@ -561,6 +667,7 @@ export async function signUpWithType(email, password, displayName, type, typeDat
 
     if (profileError) {
       // Falha crítica: trigger não criou o perfil e upsert direto também falhou
+      await restorePrevSession();
       return { data, error: profileError };
     }
 
@@ -573,6 +680,7 @@ export async function signUpWithType(email, password, displayName, type, typeDat
       const isNifConflict = companyError?.message?.includes("company_nif_unique");
       const isDuplicateKey = companyError?.code === "23505"; // unique_violation
       if (companyError && !isNifConflict && !isDuplicateKey) {
+        await restorePrevSession();
         return { data, error: companyError };
       }
     }
@@ -595,6 +703,7 @@ export async function signUpWithType(email, password, displayName, type, typeDat
     ]).catch(() => null);
   }
 
+  await restorePrevSession();
   return { data, error: null };
 }
 

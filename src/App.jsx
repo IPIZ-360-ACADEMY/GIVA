@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
@@ -43,6 +43,28 @@ function PageLoader() {
       {isCompanyRoute ? "Painel da empresa" : null}
     </div>
   );
+}
+
+// Pré-carrega os chunks das páginas mais visitadas quando o browser está sem actividade.
+// Não afecta o tempo de carregamento inicial — só melhora navegações subsequentes.
+function PrefetchOnIdle() {
+  useEffect(() => {
+    const PREFETCH = [
+      () => import("./pages/DashboardPage.jsx"),
+      () => import("./pages/InternshipsPage.jsx"),
+      () => import("./pages/DocumentsPage.jsx"),
+      () => import("./pages/NotificationsPage.jsx"),
+      () => import("./pages/ChatPage.jsx"),
+    ];
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => { PREFETCH.forEach((fn) => fn()); }, { timeout: 4000 });
+      return () => cancelIdleCallback(id);
+    }
+    // Fallback para browsers sem requestIdleCallback (Safari < 16)
+    const t = setTimeout(() => { PREFETCH.forEach((fn) => fn()); }, 2000);
+    return () => clearTimeout(t);
+  }, []);
+  return null;
 }
 
 const APP_ROUTES = [
@@ -95,6 +117,7 @@ function LegacyRedirect({ to }) {
 export default function App() {
   return (
     <AuthProvider>
+      <PrefetchOnIdle />
       <Routes>
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>

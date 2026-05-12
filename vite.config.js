@@ -11,9 +11,19 @@ export default defineConfig({
     target: "es2020",
     // Aviso apenas para chunks > 600KB (o padrão 500 gera falso alarme)
     chunkSizeWarningLimit: 600,
+    // Não calcular tamanhos gzip durante build (mais rápido)
+    reportCompressedSize: false,
+    // Browsers ES2020 suportam modulepreload nativamente — polyfill desnecessário (~1.5 kB)
+    modulePreload: { polyfill: false },
+    // Minificar CSS separado de cada chunk
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // xlsx em chunk isolado — carregado apenas quando o utilizador usa "Importar Excel"
+          if (id.includes("node_modules/xlsx")) {
+            return "xlsx";
+          }
           // Supabase em chunk separado — carrega só quando precisa de auth/db
           if (id.includes("node_modules/@supabase")) {
             return "supabase";

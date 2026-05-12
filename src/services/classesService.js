@@ -2,7 +2,11 @@ import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
 const TABLE = "manual_classes";
 const STORAGE_KEY = "giva.classes.registry";
+const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+const STORAGE_MAX_ITEMS = 500;
 const isTestMode = import.meta.env.MODE === "test";
+let memoryCache = null;
+let memoryCacheAt = 0;
 
 function canUseClassesApi() {
   return !isTestMode && isSupabaseConfigured && Boolean(supabase);
@@ -25,19 +29,59 @@ function normalizeRow(row) {
 }
 
 function readFromStorage() {
+  if (memoryCache && Date.now() - memoryCacheAt <= STORAGE_TTL_MS) {
+    return memoryCache;
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((item) => item && typeof item === "object") : [];
+
+    if (Array.isArray(parsed)) {
+      const legacyItems = parsed.filter((item) => item && typeof item === "object").slice(0, STORAGE_MAX_ITEMS);
+      memoryCache = legacyItems;
+      memoryCacheAt = Date.now();
+      return legacyItems;
+    }
+
+    const savedAt = Number(parsed?.savedAt ?? 0);
+    const items = Array.isArray(parsed?.items) ? parsed.items : [];
+    if (!savedAt || Date.now() - savedAt > STORAGE_TTL_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      memoryCache = [];
+      memoryCacheAt = Date.now();
+      return [];
+    }
+
+    const safeItems = items.filter((item) => item && typeof item === "object").slice(0, STORAGE_MAX_ITEMS);
+    memoryCache = safeItems;
+    memoryCacheAt = Date.now();
+    return safeItems;
   } catch {
+    memoryCache = [];
+    memoryCacheAt = Date.now();
     return [];
   }
 }
 
 function writeToStorage(items) {
+  const safeItems = Array.isArray(items)
+    ? items.filter((item) => item && typeof item === "object").slice(0, STORAGE_MAX_ITEMS)
+    : [];
+
+  memoryCache = safeItems;
+  memoryCacheAt = Date.now();
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        savedAt: Date.now(),
+        items: safeItems,
+      })
+    );
   } catch {
     // storage full or unavailable — silently ignore
   }
@@ -51,7 +95,9 @@ export async function listManualClasses() {
       .order("created_at", { ascending: false });
 
     if (!error) {
-      return (data ?? []).map(normalizeRow);
+      const rows = (data ?? []).map(normalizeRow).slice(0, STORAGE_MAX_ITEMS);
+      writeToStorage(rows);
+      return rows;
     }
     // fall through to localStorage on error
   }

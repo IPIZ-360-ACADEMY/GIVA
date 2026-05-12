@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import {
   PENDING_STUDENT_OAUTH_STORAGE,
+  requiresEmailConfirmation,
   signInWithOAuth,
   signUpStudent,
   signUpWithType,
@@ -87,6 +88,7 @@ export default function SignupPage() {
     confirm_password: "",
   });
   const [submittingOther, setSubmittingOther] = useState(false);
+  const [emailConfirmationNotice, setEmailConfirmationNotice] = useState("");
 
   function handleTypeNext() {
     if (!selectedType) { setError("Escolhe o tipo de conta"); return; }
@@ -139,11 +141,12 @@ export default function SignupPage() {
     setSubmittingStudent(true);
     const normalizedProcessNumber = normalizeStudentProcessNumber(processNumber);
 
-    const { error: signUpError } = await signUpStudent(
+    const { data: signUpData, error: signUpError } = await signUpStudent(
       normalizedProcessNumber,
       studentPassword,
       verifiedStudent.full_name,
-      verifiedStudent.student_id ?? null
+      verifiedStudent.student_id ?? null,
+      verifiedStudent.email ?? null
     );
 
     setSubmittingStudent(false);
@@ -155,6 +158,16 @@ export default function SignupPage() {
       } else {
         setError(msg || "Erro ao criar conta. Tenta novamente.");
       }
+      return;
+    }
+
+    if (requiresEmailConfirmation(signUpData)) {
+      navigate("/login", {
+        replace: true,
+        state: {
+          signupMessage: "Conta criada. Confirma o e-mail enviado pelo sistema antes de entrar.",
+        },
+      });
       return;
     }
 
@@ -237,7 +250,7 @@ export default function SignupPage() {
       };
     }
 
-    const { error: signUpError } = await signUpWithType(
+    const { data: signUpData, error: signUpError } = await signUpWithType(
       companyForm.email.trim(),
       companyForm.password,
       companyForm.display_name.trim(),
@@ -260,7 +273,19 @@ export default function SignupPage() {
     }
 
     if (selectedType === "company") {
+      setEmailConfirmationNotice(
+        requiresEmailConfirmation(signUpData)
+          ? "Antes do primeiro login, confirma o e-mail enviado pelo sistema."
+          : ""
+      );
       setStep(4);
+    } else if (requiresEmailConfirmation(signUpData)) {
+      navigate("/login", {
+        replace: true,
+        state: {
+          signupMessage: "Conta criada. Confirma o e-mail enviado pelo sistema antes de entrar.",
+        },
+      });
     } else {
       navigate("/home", { replace: true });
     }
@@ -354,6 +379,7 @@ export default function SignupPage() {
                   <InfoRow label="Data de nascimento" value={new Date(verifiedStudent.date_of_birth).toLocaleDateString("pt-AO")} />
                 )}
                 <InfoRow label="Telefone" value={verifiedStudent.phone_number} />
+                <InfoRow label="E-mail" value={verifiedStudent.email} />
                 <InfoRow label="Curso" value={verifiedStudent.course_name} />
                 <InfoRow label="Área de formação" value={verifiedStudent.training_area_name} />
                 {verifiedStudent.guardian_name && (
@@ -502,6 +528,7 @@ export default function SignupPage() {
             </div>
             <div className="company-pending-card">
               <p>Um administrador IPIZ irá rever o registo em breve.</p>
+              {emailConfirmationNotice ? <p>{emailConfirmationNotice}</p> : null}
               <ul className="company-pending-list">
                 <li><span className="material-icons-sharp">check_circle</span> Dados submetidos com sucesso</li>
                 <li><span className="material-icons-sharp">pending</span> Aguarda aprovação do administrador</li>
