@@ -3158,8 +3158,15 @@ textarea:invalid {
   background: var(--bg);
 }
 
-.login-box {
+.login-stack {
   width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.login-box {
+  width: 100%;
   padding: 2rem 1.75rem 1.75rem;
   display: flex;
   flex-direction: column;
@@ -3197,6 +3204,94 @@ textarea:invalid {
 .login-box-demo {
   width: 100%;
   justify-content: center;
+}
+
+.login-live-ticket {
+  width: 100%;
+  padding: 0;
+}
+
+.login-live-ticket-marquee {
+  position: relative;
+  height: 36px;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent 0, black 8%, black 92%, transparent 100%);
+}
+
+.login-live-ticket-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  width: max-content;
+  flex-shrink: 0;
+  min-width: max-content;
+  padding: 0 0.55rem;
+  transform: translateY(-50%);
+}
+
+.login-live-ticket-track-a {
+  animation: login-live-ticket-track-a 14s linear infinite;
+}
+
+.login-live-ticket-track-b {
+  animation: login-live-ticket-track-b 14s linear infinite;
+}
+
+.login-live-ticket-item {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.login-live-ticket-item img {
+  width: auto;
+  height: 23px;
+  object-fit: contain;
+  filter: saturate(1.08) contrast(1.03);
+}
+
+@keyframes login-live-ticket-track-a {
+  from {
+    transform: translate3d(0, -50%, 0);
+  }
+  to {
+    transform: translate3d(-100%, -50%, 0);
+  }
+}
+
+@keyframes login-live-ticket-track-b {
+  from {
+    transform: translate3d(100%, -50%, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-live-ticket-marquee {
+    height: auto;
+    mask-image: none;
+  }
+
+  .login-live-ticket-track,
+  .login-live-ticket-track-a,
+  .login-live-ticket-track-b {
+    position: static;
+    animation: none;
+    transform: none;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0.25rem 0;
+  }
+
+  .login-live-ticket-track-b {
+    display: none;
+  }
 }
 
 /* Toast */
