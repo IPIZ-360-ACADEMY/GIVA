@@ -64,6 +64,7 @@ export default function PedidosPage() {
   const { authProfile, userProfile, user } = useAuth();
   const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [formState, setFormState] = useState(initialFormState);
 
   const { isStudentUser } = useMemo(
@@ -92,6 +93,7 @@ export default function PedidosPage() {
   const handleCardClick = (id) => {
     if (id === "nova-peticao") {
       setShowCreateForm(true);
+      setShowTemplates(false);
       return;
     }
 
@@ -101,7 +103,8 @@ export default function PedidosPage() {
     }
 
     if (id === "modelos-cartas") {
-      showToast("A ver modelos de cartas em breve", "info");
+      setShowTemplates(true);
+      setShowCreateForm(false);
       return;
     }
   };
@@ -147,6 +150,114 @@ export default function PedidosPage() {
 
   const handleCancel = () => {
     setShowCreateForm(false);
+    setShowTemplates(false);
+  };
+
+  const getTemplatePreview = (typeId) => {
+    const templates = {
+      "estagio-profissional": (
+        <div className="template-letter">
+          <div className="template-header">
+            <p><strong>Instituto Politécnico de Portalegre</strong></p>
+            <p>Escola Superior de Tecnologia e Gestão</p>
+            <p>Portalegre, [DATA ATUAL]</p>
+          </div>
+          <div className="template-body">
+            <p><strong>Carta de Estágio Profissional</strong></p>
+            <br />
+            <p>Ao responsável pela entidade [NOME DA ENTIDADE],</p>
+            <br />
+            <p>Venho por este meio certificar que [NOME DO ALUNO], estudante do curso de [CURSO], número [NÚMERO], se encontra inscrito no [ANO] ano do curso de [CURSO] da Escola Superior de Tecnologia e Gestão do Instituto Politécnico de Portalegre.</p>
+            <br />
+            <p>O aluno manifesta o interesse em realizar um estágio profissional na área de [ÁREA PRETENDIDA], com início previsto para [DATA INÍCIO] e término em [DATA FIM].</p>
+            <br />
+            <p>Para os devidos efeitos, solicita-se a emissão da respetiva carta de estágio profissional.</p>
+            <br />
+            <p>Atenciosamente,</p>
+            <br />
+            <p>[COORDENADOR DO CURSO]</p>
+            <p>Coordenador do Curso de [CURSO]</p>
+          </div>
+        </div>
+      ),
+      "estagio-curricular": (
+        <div className="template-letter">
+          <div className="template-header">
+            <p><strong>Instituto Politécnico de Portalegre</strong></p>
+            <p>Escola Superior de Tecnologia e Gestão</p>
+            <p>Portalegre, [DATA ATUAL]</p>
+          </div>
+          <div className="template-body">
+            <p><strong>Carta de Estágio Curricular</strong></p>
+            <br />
+            <p>Ao responsável pela entidade [NOME DA ENTIDADE],</p>
+            <br />
+            <p>Venho por este meio certificar que [NOME DO ALUNO], estudante do curso de [CURSO], número [NÚMERO], se encontra inscrito no [ANO] ano do curso de [CURSO] da Escola Superior de Tecnologia e Gestão do Instituto Politécnico de Portalegre.</p>
+            <br />
+            <p>O aluno necessita de realizar um estágio curricular obrigatório no âmbito do seu plano curricular, na área de [ÁREA PRETENDIDA], com duração prevista de [DURAÇÃO] meses, com início em [DATA INÍCIO] e término em [DATA FIM].</p>
+            <br />
+            <p>Para os devidos efeitos, solicita-se a emissão da respetiva carta de estágio curricular.</p>
+            <br />
+            <p>Atenciosamente,</p>
+            <br />
+            <p>[COORDENADOR DO CURSO]</p>
+            <p>Coordenador do Curso de [CURSO]</p>
+          </div>
+        </div>
+      ),
+      "recomendacao": (
+        <div className="template-letter">
+          <div className="template-header">
+            <p><strong>Instituto Politécnico de Portalegre</strong></p>
+            <p>Escola Superior de Tecnologia e Gestão</p>
+            <p>Portalegre, [DATA ATUAL]</p>
+          </div>
+          <div className="template-body">
+            <p><strong>Carta de Recomendação</strong></p>
+            <br />
+            <p>Ao responsável pela entidade [NOME DA ENTIDADE],</p>
+            <br />
+            <p>Venho por este meio recomendar [NOME DO ALUNO], estudante do curso de [CURSO], número [NÚMERO], da Escola Superior de Tecnologia e Gestão do Instituto Politécnico de Portalegre.</p>
+            <br />
+            <p>O aluno demonstrou excelentes capacidades na área de [ÁREA PRETENDIDA], destacando-se pelo seu desempenho académico e profissional.</p>
+            <br />
+            <p>Para os devidos efeitos, solicita-se a emissão da respetiva carta de recomendação.</p>
+            <br />
+            <p>Atenciosamente,</p>
+            <br />
+            <p>[COORDENADOR DO CURSO]</p>
+            <p>Coordenador do Curso de [CURSO]</p>
+          </div>
+        </div>
+      ),
+      "emprego": (
+        <div className="template-letter">
+          <div className="template-header">
+            <p><strong>Instituto Politécnico de Portalegre</strong></p>
+            <p>Escola Superior de Tecnologia e Gestão</p>
+            <p>Portalegre, [DATA ATUAL]</p>
+          </div>
+          <div className="template-body">
+            <p><strong>Carta de Emprego</strong></p>
+            <br />
+            <p>Ao responsável pela entidade [NOME DA ENTIDADE],</p>
+            <br />
+            <p>Venho por este meio certificar que [NOME DO ALUNO], estudante do curso de [CURSO], número [NÚMERO], se encontra inscrito no [ANO] ano do curso de [CURSO] da Escola Superior de Tecnologia e Gestão do Instituto Politécnico de Portalegre.</p>
+            <br />
+            <p>O aluno manifesta o interesse em candidatar-se a uma oportunidade de emprego na área de [ÁREA PRETENDIDA].</p>
+            <br />
+            <p>Para os devidos efeitos, solicita-se a emissão da respetiva carta de emprego.</p>
+            <br />
+            <p>Atenciosamente,</p>
+            <br />
+            <p>[COORDENADOR DO CURSO]</p>
+            <p>Coordenador do Curso de [CURSO]</p>
+          </div>
+        </div>
+      ),
+    };
+
+    return templates[typeId] || <p>Modelo não disponível</p>;
   };
 
   return (
@@ -154,8 +265,16 @@ export default function PedidosPage() {
       <section className="pedidos-hero">
         <div className="pedidos-hero-copy">
           <span className="pedidos-hero-label">Carta</span>
-          <h1>{showCreateForm ? "Nova Petição de Carta" : "Petição de Cartas"}</h1>
-          <p>{showCreateForm ? "Preencha os dados abaixo para gerar a sua carta." : "Solicite cartas de forma simples e rápida."}</p>
+          <h1>
+            {showCreateForm ? "Nova Petição de Carta" : showTemplates ? "Modelos de Cartas" : "Petição de Cartas"}
+          </h1>
+          <p>
+            {showCreateForm
+              ? "Preencha os dados abaixo para gerar a sua carta."
+              : showTemplates
+              ? "Veja os modelos de cartas disponíveis para referência."
+              : "Solicite cartas de forma simples e rápida."}
+          </p>
         </div>
         <div className="pedidos-hero-grid">
           {menuCards.map((card) => (
@@ -313,6 +432,52 @@ export default function PedidosPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </section>
+      )}
+
+      {showTemplates && (
+        <section className="pedidos-templates">
+          <div className="pedidos-templates-header">
+            <div>
+              <span className="pedidos-hero-label">Modelos</span>
+              <h2>Modelos de Cartas Disponíveis</h2>
+              <p>Estes são os modelos de cartas que podem ser gerados através do sistema.</p>
+            </div>
+            <button type="button" className="btn ghost" onClick={handleCancel}>
+              Voltar
+            </button>
+          </div>
+
+          <div className="templates-grid">
+            {petitionTypes.map((type) => (
+              <div key={type.id} className="template-card">
+                <div className="template-card-header">
+                  <div className="template-card-icon">
+                    <span className="material-icons-sharp">{type.icon}</span>
+                  </div>
+                  <h3>{type.label}</h3>
+                </div>
+                <div className="template-card-content">
+                  <div className="template-preview">
+                    {getTemplatePreview(type.id)}
+                  </div>
+                </div>
+                <div className="template-card-actions">
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    onClick={() => {
+                      setFormState(prev => ({ ...prev, type: type.id }));
+                      setShowTemplates(false);
+                      setShowCreateForm(true);
+                    }}
+                  >
+                    Usar Modelo
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
