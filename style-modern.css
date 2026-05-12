@@ -2675,6 +2675,473 @@ textarea:invalid {
   .student-hero-name { font-size: 1.3rem; }
   .student-body-grid { grid-template-columns: 1fr; }
   .student-card--wide { grid-column: 1; }
+  .student-menu-grid { grid-template-columns: 1fr; }
+  .student-menu-card { grid-column: auto; }
+}
+
+/* ============================================================
+   Student Menu Section (New design with cards grid)
+   ============================================================ */
+.student-menu-section {
+  margin: var(--space-xl) 0;
+  text-align: center;
+}
+.student-menu-title {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+.student-menu-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-lg);
+}
+
+.student-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.student-menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.student-menu-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+  transition: height 0.3s ease;
+}
+
+.student-menu-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.student-menu-card:hover::before {
+  height: 6px;
+}
+
+/* Color variants */
+.student-menu-card--blue::before { background: #0284c7; }
+.student-menu-card--blue:hover { border-color: #0284c7; }
+.student-menu-card--blue .student-menu-icon-box { background: rgba(2, 132, 199, 0.1); color: #0284c7; }
+
+.student-menu-card--emerald::before { background: #059669; }
+.student-menu-card--emerald:hover { border-color: #059669; }
+.student-menu-card--emerald .student-menu-icon-box { background: rgba(5, 150, 105, 0.1); color: #059669; }
+
+.student-menu-card--purple::before { background: #7c3aed; }
+.student-menu-card--purple:hover { border-color: #7c3aed; }
+.student-menu-card--purple .student-menu-icon-box { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+
+.student-menu-card--orange::before { background: #ea580c; }
+.student-menu-card--orange:hover { border-color: #ea580c; }
+.student-menu-card--orange .student-menu-icon-box { background: rgba(234, 88, 12, 0.1); color: #ea580c; }
+
+.student-menu-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.student-menu-icon-box .material-icons-sharp {
+  font-size: 1.6rem;
+}
+
+.student-menu-content {
+  flex: 1;
+  text-align: left;
+}
+
+.student-menu-item-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.student-menu-item-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.student-menu-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.student-menu-arrow .material-icons-sharp {
+  font-size: 1.2rem;
+}
+
+.student-menu-card:hover .student-menu-arrow {
+  background: var(--primary);
+  color: var(--text-inverted);
+}
+
+.student-menu-card--blue:hover .student-menu-arrow {
+  background: #0284c7;
+}
+
+.student-menu-card--emerald:hover .student-menu-arrow {
+  background: #059669;
+}
+
+.student-menu-card--purple:hover .student-menu-arrow {
+  background: #7c3aed;
+}
+
+.student-menu-card--orange:hover .student-menu-arrow {
+  background: #ea580c;
+}
+
+/* Details Section */
+.student-details-section {
+  margin: var(--space-xl) 0;
+}
+
+.student-details-title {
+  font-family: var(--font-title);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 var(--space-lg);
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   Pedidos Page (Orders/Requests)
+   ============================================================ */
+.page-pedidos {
+  padding: var(--space-lg);
+}
+
+.page-pedidos {
+  padding: var(--space-2xl) var(--space-lg) var(--space-4xl);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.pedidos-hero {
+  display: grid;
+  gap: var(--space-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4xl) var(--space-3xl);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+}
+
+.pedidos-hero-copy {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--text);
+}
+
+.pedidos-hero-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-md);
+}
+
+.pedidos-hero-copy h1 {
+  font-family: var(--font-title);
+  font-size: clamp(2.2rem, 2.4vw, 3rem);
+  line-height: 1.05;
+  margin: 0;
+}
+
+.pedidos-hero-copy p {
+  margin: var(--space-md) auto 0;
+  font-size: 1rem;
+  color: var(--text-muted);
+  max-width: 520px;
+}
+
+.pedidos-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-lg);
+}
+
+.pedidos-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pedidos-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(2, 132, 199, 0.24);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.pedidos-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+.pedidos-card-icon .material-icons-sharp {
+  font-size: 1.35rem;
+}
+
+.pedidos-card-copy h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pedidos-card-copy p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.pedidos-card-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-soft);
+  color: var(--primary);
+}
+
+.pedidos-card-action .material-icons-sharp {
+  font-size: 1.1rem;
+}
+
+.pedidos-footer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-lg);
+  align-items: center;
+  padding: var(--space-lg) var(--space-3xl);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.pedidos-footer-illustration {
+  width: 96px;
+  height: 96px;
+  border-radius: 28px;
+  background: rgba(15, 23, 42, 0.05);
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+}
+
+.pedidos-footer-illustration .material-icons-sharp {
+  font-size: 2.2rem;
+}
+
+.pedidos-footer-copy h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pedidos-footer-copy p {
+  margin: 0.6rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  max-width: 620px;
+}
+
+.pedidos-form {
+  margin-top: var(--space-4xl);
+}
+
+.pedidos-create-card {
+  padding: var(--space-3xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.pedidos-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.pedidos-form-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.petition-type-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.petition-type-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  text-align: left;
+}
+
+.petition-type-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(2, 132, 199, 0.24);
+}
+
+.petition-type-card.--active {
+  border-color: var(--primary);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  background: rgba(2, 132, 199, 0.06);
+}
+
+.petition-type-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+.petition-type-copy h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.petition-type-radio {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  color: var(--primary);
+}
+
+.pedidos-request-form {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.pedidos-request-form .form-field {
+  grid-column: span 6;
+}
+
+.pedidos-full-width {
+  grid-column: 1 / -1;
+}
+
+.pedidos-form-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--space-md);
+}
+
+@media (max-width: 1024px) {
+  .pedidos-hero-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .page-pedidos {
+    padding: var(--space-xl) var(--space-md) var(--space-3xl);
+  }
+
+  .pedidos-hero {
+    padding: var(--space-3xl) var(--space-lg);
+  }
+
+  .pedidos-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pedidos-footer {
+    grid-template-columns: 1fr;
+    padding: var(--space-lg);
+  }
 }
 
 /* ============================================================
@@ -6304,6 +6771,19 @@ html[data-ui="neo"] .login-box {
   display: block;
   text-align: center;
 }
+
+/* Import results */
+.tools-import-results { margin-top: 1.5rem; }
+.tools-import-results h4 { margin: 0 0 1rem; font-size: 1rem; font-weight: 700; }
+.tools-import-results .stats-grid { margin-bottom: 1.5rem; }
+.tools-errors, .tools-warnings { margin-top: 1rem; }
+.tools-errors h5, .tools-warnings h5 { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 700; }
+.tools-errors h5 { color: var(--danger); }
+.tools-warnings h5 { color: var(--warning); }
+.tools-errors ul, .tools-warnings ul { margin: 0; padding-left: 1.2rem; }
+.tools-errors li, .tools-warnings li { margin-bottom: 0.3rem; font-size: 0.85rem; }
+.tools-errors li { color: var(--danger); }
+.tools-warnings li { color: var(--warning); }
 
 /* ============================================================
    FEED MODERNO — melhorias visuais para PostCard / HomePage

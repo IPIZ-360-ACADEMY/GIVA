@@ -14,6 +14,7 @@ Cada ficheiro é idempotente (`CREATE IF NOT EXISTS`, `DROP IF EXISTS`, etc.) �
 | 3 | `supabase-user-profiles.sql` | Perfis de utilizador + RLS | Run se não existir |
 | 4 | `supabase-signup-upgrade.sql` | ⚠️ **CRÍTICO** — `student_accounts`, `company_accounts`, `verify_student_process_number` RPC | **Necessário para signup de alunos** |
 | 5 | `supabase-phase1-structure.sql` | `training_area`, `courses`, `students` base, `internships` | Run se não existir |
+| 5a | `supabase-student-petitions.sql` | Pedidos de carta de alunos e RLS de escopo por área | Run se não existir |
 | 6 | `supabase-company-rls-hardening.sql` | 🔒 **CRÍTICO** — reforço RLS para `job_applications`, `company_progress`, `company_accounts` | **Necessário para isolamento de empresa** |
 | 7 | `supabase-chat.sql` | `conversations`, `messages`, `follows` + Realtime | **Necessário para o chat** |
 | 8 | `supabase-notifications-v2.sql` | `user_notifications`, triggers de reação/comentário | **Necessário para notificações** |

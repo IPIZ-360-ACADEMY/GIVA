@@ -77,6 +77,45 @@ export default function StudentPage() {
 
   const studentName = authProfile?.full_name || user?.email || "";
 
+  // Menu actions
+  const menuActions = useMemo(() => {
+    if (!user?.id) return [];
+    return [
+      {
+        id: "profile",
+        icon: "person",
+        title: t("student.viewProfile") || "Ver Perfil",
+        description: t("student.viewProfile.desc") || "Gerencie seus dados pessoais e profissionais",
+        path: `/perfil/${user.id}`,
+        color: "blue",
+      },
+      {
+        id: "progress",
+        icon: "trending_up",
+        title: t("student.viewProgress") || "Ver Progresso",
+        description: t("student.viewProgress.desc") || "Acompanhe sua trajetória e estágios",
+        path: `/progresso/${user.id}`,
+        color: "emerald",
+      },
+      {
+        id: "applications",
+        icon: "assignment_ind",
+        title: t("student.applications") || "Minhas Candidaturas",
+        description: t("student.applications.desc") || `${myApplications.length} candidatura(s) pendente(s)`,
+        path: `/parceiros`,
+        color: "purple",
+      },
+      {
+        id: "evaluations",
+        icon: "assignment",
+        title: t("student.evaluations") || "Avaliações",
+        description: t("student.evaluations.desc") || "Consulte suas notas e feedback",
+        path: `/avaliacoes`,
+        color: "orange",
+      },
+    ];
+  }, [user?.id, myApplications.length, t]);
+
   return (
     <main className="page page-student">
 
@@ -93,23 +132,39 @@ export default function StudentPage() {
           <h1 className="student-hero-name">{studentName || t("student.title")}</h1>
           <p className="student-hero-sub">{t("student.description")}</p>
         </div>
-        <div className="student-hero-actions">
-          {user?.id && (
-            <>
-              <Link className="student-hero-btn student-hero-btn--ghost" to={`/perfil/${user.id}`}>
-                <span className="material-icons-sharp">person</span>
-                {t("student.viewProfile") || "Ver perfil"}
-              </Link>
-              <Link className="student-hero-btn" to={`/progresso/${user.id}`}>
-                <span className="material-icons-sharp">trending_up</span>
-                {t("student.viewProgress") || "Ver progresso"}
-              </Link>
-            </>
-          )}
+      </div>
+
+      {/* Menu Section */}
+      <div className="student-menu-section">
+        <h2 className="student-menu-title">{t("student.whatWouldYouLikeToDo") || "O que você deseja fazer?"}</h2>
+        <p className="student-menu-subtitle">{t("student.selectOption") || "Escolha uma das opções abaixo para começar."}</p>
+        
+        <div className="student-menu-grid">
+          {menuActions.map((action) => (
+            <Link
+              key={action.id}
+              to={action.path}
+              className={`student-menu-card student-menu-card--${action.color}`}
+            >
+              <div className="student-menu-icon-box">
+                <span className="material-icons-sharp">{action.icon}</span>
+              </div>
+              <div className="student-menu-content">
+                <h3 className="student-menu-item-title">{action.title}</h3>
+                <p className="student-menu-item-desc">{action.description}</p>
+              </div>
+              <div className="student-menu-arrow">
+                <span className="material-icons-sharp">arrow_forward</span>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
-      <div className="student-body-grid">
+      {/* Details Section */}
+      <div className="student-details-section">
+        <h2 className="student-details-title">{t("student.moreInfo") || "Mais Informações"}</h2>
+        <div className="student-body-grid">
 
         {/* Competencies card */}
         <div className="student-card">
@@ -196,6 +251,7 @@ export default function StudentPage() {
           </div>
         </div>
 
+        </div>
       </div>
     </main>
   );

@@ -36,7 +36,7 @@
 
 ### STUDENT / authenticated (não-admin)
 
-- Pode aceder a: /, /home, /estagios, /parceiros, /avaliacoes, /documentos, /chat, /notificacoes, /config
+- Pode aceder a: /, /home, /estagios, /parceiros, /avaliacoes, /documentos, /pedidos, /chat, /notificacoes, /config
 - Pode aceder também a: /aluno, /perfil/:studentId, /progresso/:studentId, /perfil-publico/:userId
 - Não pode aceder a: /admin, /ferramentas, /utilizadores
 
