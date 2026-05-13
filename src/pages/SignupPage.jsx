@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import {
@@ -7,6 +7,7 @@ import {
   signInWithOAuth,
   signUpStudent,
   signUpWithType,
+  uploadAvatar,
   verifyStudentProcessNumber,
 } from "../services/authService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
@@ -77,18 +78,34 @@ export default function SignupPage() {
 
   // ── Empresa / Externo ─────────────────────────────────────────────────────
   const [companyForm, setCompanyForm] = useState({
-    empresa: "",
-    nif: "",
-    localizacao: "",
-    responsible_name: "",
-    responsible_contact: "",
     display_name: "",
     email: "",
     password: "",
     confirm_password: "",
   });
   const [submittingOther, setSubmittingOther] = useState(false);
-  const [emailConfirmationNotice, setEmailConfirmationNotice] = useState("");
+
+  // ── Avatar ────────────────────────────────────────────────────────────────
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [studentAvatarFile, setStudentAvatarFile] = useState(null);
+  const [studentAvatarPreview, setStudentAvatarPreview] = useState(null);
+  const avatarInputRef = useRef(null);
+  const studentAvatarInputRef = useRef(null);
+
+  function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
+
+  function handleStudentAvatarChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setStudentAvatarFile(file);
+    setStudentAvatarPreview(URL.createObjectURL(file));
+  }
 
   function handleTypeNext() {
     if (!selectedType) { setError("Escolhe o tipo de conta"); return; }
@@ -161,17 +178,19 @@ export default function SignupPage() {
       return;
     }
 
-    if (requiresEmailConfirmation(signUpData)) {
-      navigate("/login", {
-        replace: true,
-        state: {
-          signupMessage: "Conta criada. Confirma o e-mail enviado pelo sistema antes de entrar.",
-        },
-      });
-      return;
+    // Faz upload do avatar (em background, não bloqueia)
+    if (studentAvatarFile) {
+      uploadAvatar(studentAvatarFile, "students").catch(() => null);
     }
 
-    navigate("/home", { replace: true });
+    navigate("/login", {
+      replace: true,
+      state: {
+        signupMessage: requiresEmailConfirmation(signUpData)
+          ? "Conta criada. Confirma o e-mail enviado antes de entrar."
+          : "Conta criada com sucesso. Podes entrar agora.",
+      },
+    });
   }
 
   async function handleStudentOAuthSignup(provider) {
@@ -232,23 +251,17 @@ export default function SignupPage() {
       setError("As senhas não coincidem");
       return;
     }
-    if (selectedType === "company" && !companyForm.nif.trim()) {
-      setError("O NIF é obrigatório");
-      return;
-    }
     setError("");
     setSubmittingOther(true);
 
-    let typeData = {};
-    if (selectedType === "company") {
-      typeData = {
-        empresa:             companyForm.empresa.trim() || companyForm.display_name.trim(),
-        nif:                 companyForm.nif.trim(),
-        localizacao:         companyForm.localizacao.trim() || null,
-        responsible_name:    companyForm.responsible_name.trim() || null,
-        responsible_contact: companyForm.responsible_contact.trim() || null,
-      };
+    let avatarUrl = null;
+    if (avatarFile) {
+      const prefix = selectedType === "company" ? "companies" : "visitors";
+      const { url } = await uploadAvatar(avatarFile, prefix);
+      avatarUrl = url;
     }
+
+    const typeData = avatarUrl ? { avatar_url: avatarUrl } : {};
 
     const { data: signUpData, error: signUpError } = await signUpWithType(
       companyForm.email.trim(),
@@ -264,31 +277,22 @@ export default function SignupPage() {
       const msg = signUpError.message ?? "";
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este e-mail já está registado. Tenta fazer login.");
-      } else if (msg.includes("company_nif_unique")) {
-        setError("Este NIF já está registado.");
       } else {
         setError(msg || "Erro ao criar conta. Tenta novamente.");
       }
       return;
     }
 
-    if (selectedType === "company") {
-      setEmailConfirmationNotice(
-        requiresEmailConfirmation(signUpData)
-          ? "Antes do primeiro login, confirma o e-mail enviado pelo sistema."
-          : ""
-      );
-      setStep(4);
-    } else if (requiresEmailConfirmation(signUpData)) {
-      navigate("/login", {
-        replace: true,
-        state: {
-          signupMessage: "Conta criada. Confirma o e-mail enviado pelo sistema antes de entrar.",
-        },
-      });
-    } else {
-      navigate("/home", { replace: true });
-    }
+    navigate("/login", {
+      replace: true,
+      state: {
+        signupMessage: selectedType === "company"
+          ? "Pedido submetido. Confirma o e-mail e aguarda aprovação do administrador."
+          : requiresEmailConfirmation(signUpData)
+            ? "Conta criada. Confirma o e-mail enviado antes de entrar."
+            : "Conta criada com sucesso. Podes entrar agora.",
+      },
+    });
   }
 
   return (
@@ -390,6 +394,18 @@ export default function SignupPage() {
                 )}
               </div>
 
+              {/* Foto de perfil (opcional) */}
+              <div className="form-field" style={{ alignItems: "center", marginTop: "1.2rem" }}>
+                <label>Foto de perfil <small style={{ fontWeight: 400 }}>(opcional)</small></label>
+                <div className="avatar-upload-wrapper" onClick={() => studentAvatarInputRef.current?.click()}>
+                  {studentAvatarPreview
+                    ? <img src={studentAvatarPreview} className="avatar-upload-preview" alt="preview" />
+                    : <div className="avatar-upload-placeholder"><span className="material-icons-sharp">add_a_photo</span></div>
+                  }
+                </div>
+                <input ref={studentAvatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleStudentAvatarChange} />
+              </div>
+
               <div className="form-field" style={{ marginTop: "1.2rem" }}>
                 <label htmlFor="s-pass">Escolher senha</label>
                 <input
@@ -461,18 +477,29 @@ export default function SignupPage() {
             <div className="login-box-head">
               <h1>{selectedType === "company" ? "Registar empresa" : "Criar conta visitante"}</h1>
               <p>{selectedType === "company"
-                ? "A conta ficará pendente de aprovação pelo administrador"
+                ? "Confirma o e-mail e aguarda aprovação do administrador"
                 : "Acesso público à comunidade IPIZ"}
               </p>
             </div>
             <form className="login-box-form" onSubmit={handleOtherSignup}>
+              {/* Avatar / Logo */}
+              <div className="form-field" style={{ alignItems: "center" }}>
+                <label>{selectedType === "company" ? "Logo da empresa" : "Foto de perfil"} <small style={{ fontWeight: 400 }}>(opcional)</small></label>
+                <div className="avatar-upload-wrapper" onClick={() => avatarInputRef.current?.click()}>
+                  {avatarPreview
+                    ? <img src={avatarPreview} className="avatar-upload-preview" alt="preview" />
+                    : <div className="avatar-upload-placeholder"><span className="material-icons-sharp">add_a_photo</span></div>
+                  }
+                </div>
+                <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
+              </div>
               <div className="form-field">
                 <label htmlFor="o-name">{selectedType === "company" ? "Nome da empresa" : "Nome completo"}</label>
-                <input id="o-name" name="display_name" type="text" required value={companyForm.display_name} onChange={handleCompanyChange} placeholder={selectedType === "company" ? "Nome institucional" : "O teu nome"} />
+                <input id="o-name" name="display_name" type="text" required autoFocus value={companyForm.display_name} onChange={handleCompanyChange} placeholder={selectedType === "company" ? "Nome institucional" : "O teu nome"} />
               </div>
               <div className="form-field">
                 <label htmlFor="o-email">E-mail</label>
-                <input id="o-email" name="email" type="email" required value={companyForm.email} onChange={handleCompanyChange} placeholder="email@empresa.co.ao" />
+                <input id="o-email" name="email" type="email" required value={companyForm.email} onChange={handleCompanyChange} placeholder="email@exemplo.com" />
               </div>
               <div className="form-field">
                 <label htmlFor="o-pass">Senha</label>
@@ -482,34 +509,9 @@ export default function SignupPage() {
                 <label htmlFor="o-confirm">Confirmar senha</label>
                 <input id="o-confirm" name="confirm_password" type="password" required value={companyForm.confirm_password} onChange={handleCompanyChange} placeholder="Repete a senha" />
               </div>
-
-              {selectedType === "company" && (
-                <>
-                  <div className="form-field">
-                    <label htmlFor="o-nif">NIF <span className="required-mark">*</span></label>
-                    <input id="o-nif" name="nif" type="text" required value={companyForm.nif} onChange={handleCompanyChange} placeholder="Número de Identificação Fiscal" />
-                  </div>
-                  <div className="form-field">
-                    <label htmlFor="o-loc">Localização</label>
-                    <input id="o-loc" name="localizacao" type="text" value={companyForm.localizacao} onChange={handleCompanyChange} placeholder="Ex: Luanda, Vila do Porto" />
-                  </div>
-                  <div className="form-field">
-                    <label htmlFor="o-resp">Nome do responsável</label>
-                    <input id="o-resp" name="responsible_name" type="text" value={companyForm.responsible_name} onChange={handleCompanyChange} placeholder="Pessoa de contacto" />
-                  </div>
-                  <div className="form-field">
-                    <label htmlFor="o-rcontact">Telefone do responsável</label>
-                    <input id="o-rcontact" name="responsible_contact" type="tel" value={companyForm.responsible_contact} onChange={handleCompanyChange} placeholder="+244 9XX XXX XXX" />
-                  </div>
-                </>
-              )}
-
               {error && <p className="form-error">{error}</p>}
-
               <button type="submit" className="btn primary" disabled={submittingOther}>
-                {submittingOther
-                  ? "A criar conta..."
-                  : selectedType === "company" ? "Submeter pedido" : "Criar conta"}
+                {submittingOther ? "A criar conta..." : selectedType === "company" ? "Submeter pedido" : "Criar conta"}
               </button>
               <button type="button" className="btn ghost" onClick={goBackToType} style={{ marginTop: "0.5rem" }}>
                 ← Voltar
@@ -518,37 +520,12 @@ export default function SignupPage() {
           </>
         )}
 
-        {/* ── STEP 4 (EMPRESA): Conta pendente de aprovação ───────────── */}
-        {step === 4 && (
-          <>
-            <div className="login-box-head" style={{ textAlign: "center" }}>
-              <span className="material-icons-sharp pending-icon">hourglass_top</span>
-              <h1>Pedido enviado</h1>
-              <p>A conta de empresa está <strong>pendente de aprovação</strong></p>
-            </div>
-            <div className="company-pending-card">
-              <p>Um administrador IPIZ irá rever o registo em breve.</p>
-              {emailConfirmationNotice ? <p>{emailConfirmationNotice}</p> : null}
-              <ul className="company-pending-list">
-                <li><span className="material-icons-sharp">check_circle</span> Dados submetidos com sucesso</li>
-                <li><span className="material-icons-sharp">pending</span> Aguarda aprovação do administrador</li>
-                <li><span className="material-icons-sharp">mail</span> Notificação por e-mail após aprovação</li>
-              </ul>
-            </div>
-            <Link to="/login" className="btn primary" style={{ display: "block", textAlign: "center", marginTop: "1rem", textDecoration: "none" }}>
-              Ir para o login
-            </Link>
-          </>
-        )}
-
-        {step !== 4 && (
-          <p className="login-box-footer" style={{ marginTop: "1rem" }}>
-            Já tens conta?{" "}
-            <Link to="/login" style={{ color: "var(--primary)", textDecoration: "none", fontWeight: 600 }}>
-              Entrar
-            </Link>
-          </p>
-        )}
+        <p className="login-box-footer" style={{ marginTop: "1rem" }}>
+          Já tens conta?{" "}
+          <Link to="/login" style={{ color: "var(--primary)", textDecoration: "none", fontWeight: 600 }}>
+            Entrar
+          </Link>
+        </p>
       </div>
     </main>
   );

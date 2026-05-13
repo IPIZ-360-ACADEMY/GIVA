@@ -8147,3 +8147,35 @@ html[data-ui="neo"] .login-box {
 
 
 
+
+/* ── Avatar Upload Picker ──────────────────────────────────────────── */
+.avatar-upload-wrapper {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px dashed var(--border, #cbd5e1);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+  background: var(--bg-secondary, #f8fafc);
+}
+.avatar-upload-wrapper:hover {
+  border-color: var(--primary, #3b82f6);
+}
+.avatar-upload-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-upload-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #94a3b8);
+}
+.avatar-upload-placeholder .material-icons-sharp {
+  font-size: 2rem;
+}

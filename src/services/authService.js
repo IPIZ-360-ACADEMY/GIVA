@@ -1,4 +1,25 @@
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
+/**
+ * Faz upload de um ficheiro de imagem para o bucket `avatars` e devolve a URL pública.
+ * Funciona sem sessão autenticada (bucket com insert público).
+ * @param {File} file - Ficheiro de imagem
+ * @param {string} [prefix] - Prefixo da pasta (ex: userId ou "pending")
+ * @returns {Promise<{url: string|null, error: any}>}
+ */
+export async function uploadAvatar(file, prefix = "pending") {
+  if (!isSupabaseConfigured || !supabase || !file) return { url: null, error: null };
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${prefix}/${Date.now()}.${ext}`;
+  const { error: upError } = await supabase.storage.from("avatars").upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: file.type,
+  });
+  if (upError) return { url: null, error: upError };
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return { url: data?.publicUrl ?? null, error: null };
+}
+
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { normalizeAliasAccountType } from "../utils/accessControl.js";
 
