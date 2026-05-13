@@ -9,3 +9,5 @@ export const isSupabaseConfigured = !isTestMode && Boolean(supabaseUrl) && Boole
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
+
+  //
