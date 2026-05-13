@@ -31,7 +31,7 @@ export default function CreatePostCard({ onCreated }) {
   // Poll state
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
-  const [pollDuration, setPollDuration] = useState(24);
+  const [pollDuration, setPollDuration] = useState(0.5);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef(null);
@@ -216,6 +216,8 @@ export default function CreatePostCard({ onCreated }) {
                   <span className="material-icons-sharp">schedule</span>
                   <label>Duração:</label>
                   <select value={pollDuration} onChange={(e) => setPollDuration(Number(e.target.value))}>
+                    <option value={0.01666667}>1 minuto</option>
+                    <option value={0.5}>30 minutos</option>
                     <option value={6}>6 horas</option>
                     <option value={24}>1 dia</option>
                     <option value={72}>3 dias</option>

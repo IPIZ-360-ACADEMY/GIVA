@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logoImage from "../../images/logo.png";
 import {
   PENDING_STUDENT_OAUTH_STORAGE,
+   isValidEmail,
   requiresEmailConfirmation,
   signInWithOAuth,
   signUpStudent,
@@ -243,6 +244,10 @@ export default function SignupPage() {
 
   async function handleOtherSignup(e) {
     e.preventDefault();
+     if (!isValidEmail(companyForm.email)) {
+       setError("Por favor, introduz um e-mail válido com domínio real (ex: nome@empresa.com)");
+       return;
+     }
     if (companyForm.password.length < 8) {
       setError("A senha deve ter pelo menos 8 caracteres");
       return;
@@ -413,9 +418,10 @@ export default function SignupPage() {
                   type="password"
                   required
                   minLength={8}
+                  maxLength={12}
                   value={studentPassword}
                   onChange={(e) => setStudentPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="8-12 caracteres"
                 />
               </div>
               <div className="form-field">
@@ -424,6 +430,7 @@ export default function SignupPage() {
                   id="s-confirm"
                   type="password"
                   required
+                  maxLength={12}
                   value={studentConfirm}
                   onChange={(e) => setStudentConfirm(e.target.value)}
                   placeholder="Repete a senha"
@@ -503,11 +510,11 @@ export default function SignupPage() {
               </div>
               <div className="form-field">
                 <label htmlFor="o-pass">Senha</label>
-                <input id="o-pass" name="password" type="password" required minLength={8} value={companyForm.password} onChange={handleCompanyChange} placeholder="Mínimo 8 caracteres" />
+                 <input id="o-pass" name="password" type="password" required minLength={8} maxLength={12} value={companyForm.password} onChange={handleCompanyChange} placeholder="8-12 caracteres" />
               </div>
               <div className="form-field">
                 <label htmlFor="o-confirm">Confirmar senha</label>
-                <input id="o-confirm" name="confirm_password" type="password" required value={companyForm.confirm_password} onChange={handleCompanyChange} placeholder="Repete a senha" />
+                 <input id="o-confirm" name="confirm_password" type="password" required maxLength={12} value={companyForm.confirm_password} onChange={handleCompanyChange} placeholder="Repete a senha" />
               </div>
               {error && <p className="form-error">{error}</p>}
               <button type="submit" className="btn primary" disabled={submittingOther}>

@@ -20,6 +20,42 @@ export async function uploadAvatar(file, prefix = "pending") {
   return { url: data?.publicUrl ?? null, error: null };
 }
 
+/**
+ * Valida se um email tem formato válido com domínio real
+ * @param {string} email - Email a validar
+ * @returns {boolean}
+ */
+export function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const trimmed = email.trim().toLowerCase();
+  
+  // Regex básica RFC 5322 simplificada para domínios reais
+  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+  
+  if (!emailRegex.test(trimmed)) return false;
+  
+  // Validações adicionais
+  const [localPart, domain] = trimmed.split('@');
+  
+  // Email deve ter entre 5 e 254 caracteres
+  if (trimmed.length < 5 || trimmed.length > 254) return false;
+  
+  // Local part deve ter entre 1 e 64 caracteres
+  if (localPart.length < 1 || localPart.length > 64) return false;
+  
+  // Domain deve ter pelo menos um ponto (ex: example.com)
+  if (!domain.includes('.')) return false;
+  
+  // Domain deve ter TLD com 2-6 caracteres
+  const tld = domain.split('.').pop();
+  if (tld.length < 2 || tld.length > 6) return false;
+  
+  // TLD não pode ser só números
+  if (/^\d+$/.test(tld)) return false;
+  
+  return true;
+}
+
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { normalizeAliasAccountType } from "../utils/accessControl.js";
 
