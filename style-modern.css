@@ -8026,5 +8026,124 @@ html[data-ui="neo"] .login-box {
   }
 }
 
+/* Templates Section */
+.pedidos-templates {
+  margin-bottom: var(--space-xl);
+}
+
+.pedidos-templates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-lg);
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-lg);
+}
+
+.template-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.template-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.template-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.template-card-icon .material-icons-sharp {
+  color: var(--primary);
+  font-size: 1.5rem;
+}
+
+.template-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--font-title);
+}
+
+.template-card-content {
+  padding: var(--space-lg);
+}
+
+.template-preview {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-family: 'Times New Roman', serif;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.template-letter {
+  max-width: none;
+}
+
+.template-letter .template-header {
+  text-align: center;
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-sm);
+}
+
+.template-letter .template-header p {
+  margin: 0.2rem 0;
+  font-weight: 600;
+}
+
+.template-letter .template-body p {
+  margin: 0.4rem 0;
+  text-align: justify;
+}
+
+.template-card-actions {
+  padding: var(--space-lg);
+  padding-top: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pedidos-templates-header {
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: stretch;
+  }
+
+  .template-preview {
+    font-size: 0.8rem;
+  }
+}
+
 
 

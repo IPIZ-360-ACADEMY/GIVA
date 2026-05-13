@@ -482,15 +482,17 @@ export default function PedidosPage() {
         </section>
       )}
 
-      <section className="pedidos-footer">
-        <div className="pedidos-footer-illustration">
-          <span className="material-icons-sharp">mail_outline</span>
-        </div>
-        <div className="pedidos-footer-copy">
-          <h2>Solicite suas cartas de forma fácil e segura.</h2>
-          <p>Escolha uma das opções acima para começar.</p>
-        </div>
-      </section>
+      {!showCreateForm && !showTemplates && (
+        <section className="pedidos-footer">
+          <div className="pedidos-footer-illustration">
+            <span className="material-icons-sharp">mail_outline</span>
+          </div>
+          <div className="pedidos-footer-copy">
+            <h2>Solicite suas cartas de forma fácil e segura.</h2>
+            <p>Escolha uma das opções acima para começar.</p>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
