@@ -18,6 +18,7 @@ import {
 import { acceptJobApplication, rejectJobApplication } from "../services/jobApplicationService.js";
 import { listPartners } from "../services/partnersService.js";
 import { registerStudentUnified } from "../services/studentRegistryService.js";
+import { importExcelData } from "../services/excelImportService.js";
 import { createTranslator } from "../utils/i18n.js";
 import { normalizeStudentProcessNumber, validateIpizProcessNumber } from "../utils/processNumber.js";
 import { matchesSearch } from "../utils/search.js";
@@ -108,6 +109,7 @@ const SUPER_ADMIN_TABS = [
   { id: "utilizadores", icon: "manage_accounts", label: "Utilizadores" },
   { id: "orquestracao", icon: "hub", label: "Orquestração" },
   { id: "estrutura", icon: "account_tree", label: "Áreas e Cursos" },
+  { id: "importacao", icon: "upload_file", label: "Importação Excel" },
 ];
 
 export function resolveVisibleToolTabs(role) {
@@ -2452,6 +2454,136 @@ function EstruturaAcademicaTab({ showToast }) {
   );
 }
 
+function ImportacaoExcelTab({ showToast }) {
+  const [file, setFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [results, setResults] = useState(null);
+  const fileRef = useRef(null);
+
+  const handleFileSelect = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      if (!selectedFile.name.toLowerCase().endsWith('.xlsx') && !selectedFile.name.toLowerCase().endsWith('.xls')) {
+        showToast('Por favor, selecione um ficheiro Excel (.xlsx ou .xls).', 'error');
+        return;
+      }
+      setFile(selectedFile);
+      setResults(null);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!file) {
+      showToast('Por favor, selecione um ficheiro Excel primeiro.', 'error');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const importResults = await importExcelData(file);
+      setResults(importResults);
+      showToast('Importação concluída. Verifique os resultados abaixo.', 'success');
+    } catch (err) {
+      showToast(`Erro na importação: ${err.message}`, 'error');
+    }
+    setImporting(false);
+  };
+
+  const clearResults = () => {
+    setResults(null);
+    setFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  return (
+    <div className="tools-section">
+      <div className="tools-card">
+        <h3 className="tools-card-title">
+          <span className="material-icons-sharp">upload_file</span>
+          Importação Automática de Turmas via Excel
+        </h3>
+        <p className="tools-card-desc">
+          Carregue um ficheiro Excel com as colunas: area_codigo, area_nome, curso_codigo, curso_nome, turma_nome, processo, nome_completo, email, telefone, data_nascimento, bi, morada.
+        </p>
+
+        <div className="form-field">
+          <label>Ficheiro Excel</label>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileSelect}
+            disabled={importing}
+          />
+          {file && <small>Ficheiro selecionado: {file.name}</small>}
+        </div>
+
+        <div className="tools-form-actions">
+          <button
+            type="button"
+            className="btn primary"
+            onClick={handleImport}
+            disabled={!file || importing}
+          >
+            {importing ? 'A importar...' : 'Importar Dados'}
+          </button>
+          {results && (
+            <button type="button" className="btn ghost" onClick={clearResults}>
+              Limpar Resultados
+            </button>
+          )}
+        </div>
+
+        {results && (
+          <div className="tools-import-results">
+            <h4>Resultados da Importação</h4>
+            <div className="stats-grid">
+              <article className="stat-card">
+                <div className="stat-head"><span>Áreas Criadas</span><span className="material-icons-sharp">domain</span></div>
+                <h3>{results.areasCreated}</h3>
+              </article>
+              <article className="stat-card">
+                <div className="stat-head"><span>Cursos Criados</span><span className="material-icons-sharp">menu_book</span></div>
+                <h3>{results.coursesCreated}</h3>
+              </article>
+              <article className="stat-card">
+                <div className="stat-head"><span>Turmas Criadas</span><span className="material-icons-sharp">school</span></div>
+                <h3>{results.classesCreated}</h3>
+              </article>
+              <article className="stat-card">
+                <div className="stat-head"><span>Alunos Registados</span><span className="material-icons-sharp">people</span></div>
+                <h3>{results.studentsRegistered}</h3>
+              </article>
+            </div>
+
+            {results.errors.length > 0 && (
+              <div className="tools-errors">
+                <h5>Erros ({results.errors.length})</h5>
+                <ul>
+                  {results.errors.map((error, index) => (
+                    <li key={index} className="error-item">{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {results.warnings.length > 0 && (
+              <div className="tools-warnings">
+                <h5>Avisos ({results.warnings.length})</h5>
+                <ul>
+                  {results.warnings.map((warning, index) => (
+                    <li key={index} className="warning-item">{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OrquestracaoSuperAdminTab({ showToast }) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
@@ -2775,6 +2907,7 @@ export default function ToolsPage() {
         {activeTab === "utilizadores" && isSuperAdmin && <UsersManagementPage embedded showToast={showToast} />}
         {activeTab === "orquestracao" && isSuperAdmin && <OrquestracaoSuperAdminTab showToast={showToast} />}
         {activeTab === "estrutura"  && isSuperAdmin && <EstruturaAcademicaTab showToast={showToast} />}
+        {activeTab === "importacao" && isSuperAdmin && <ImportacaoExcelTab showToast={showToast} />}
       </div>
     </div>
   );

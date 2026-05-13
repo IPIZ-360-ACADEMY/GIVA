@@ -33,6 +33,7 @@ const PublicPostPage = lazy(() => import("./pages/PublicPostPage.jsx"));
 const LoginPage = lazy(() => import("./pages/LoginPage.jsx"));
 const AdminPage = lazy(() => import("./pages/AdminPage.jsx"));
 const ToolsPage = lazy(() => import("./pages/ToolsPage.jsx"));
+const PedidosPage = lazy(() => import("./pages/PedidosPage.jsx"));
 
 function PageLoader() {
   const location = useLocation();
@@ -86,6 +87,7 @@ const APP_ROUTES = [
   { path: "/rbac/candidaturas", element: <RbacCompanyApplicationsPage /> },
   { path: "/admin", element: <AdminPage /> },
   { path: "/ferramentas", element: <ToolsPage /> },
+  { path: "/pedidos", element: <PedidosPage /> },
   { path: "/utilizadores", element: <LegacyRedirect to="/ferramentas?tab=utilizadores" /> },
   { path: "/chat", element: <ChatPage /> },
 ];

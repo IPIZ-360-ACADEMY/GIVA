@@ -1,8 +1,8 @@
 import { Navigate, Outlet, matchPath, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { getMfaAuthenticatorAssuranceLevel, listMfaFactors, signOut, verifyMfaTotpCode } from "../services/authService.js";
-import { canAccessRoute, getRouteAccessRules, resolveAccessProfile } from "../utils/accessControl.js";
-import { useEffect, useState } from "react";
+import { signOut } from "../services/authService.js";
+import { resolveAccessProfile } from "../utils/accessControl.js";
+import { useState } from "react";
 
 function PendingApprovalScreen() {
   const { refreshProfile } = useAuth();
@@ -55,126 +55,19 @@ function PendingApprovalScreen() {
   );
 }
 
-function MfaChallengeScreen({ onVerified }) {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-    setSubmitting(true);
-
-    const { data: factorsData, error: listError } = await listMfaFactors();
-    if (listError) {
-      setSubmitting(false);
-      setError(listError.message || "Não foi possível obter os fatores MFA.");
-      return;
-    }
-
-    const totpFactors = Array.isArray(factorsData?.totp) ? factorsData.totp : [];
-    const factor = totpFactors.find((item) => item?.status === "verified") || totpFactors[0] || null;
-    if (!factor?.id) {
-      setSubmitting(false);
-      setError("Nenhum autenticador TOTP ativo foi encontrado para esta conta.");
-      return;
-    }
-
-    const { error: verifyError } = await verifyMfaTotpCode({ factorId: factor.id, code });
-    setSubmitting(false);
-
-    if (verifyError) {
-      setError(verifyError.message || "Código inválido. Tenta novamente.");
-      return;
-    }
-
-    setCode("");
-    onVerified();
-  }
-
-  return (
-    <main className="login-shell">
-      <div className="login-box" style={{ textAlign: "center", padding: "2.5rem 2rem" }}>
-        <span className="material-icons-sharp pending-icon" style={{ fontSize: "3rem", color: "var(--primary)", display: "block", marginBottom: "0.75rem" }}>
-          verified_user
-        </span>
-        <h2 style={{ marginBottom: "0.5rem" }}>Verificação de dois fatores</h2>
-        <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-          Introduz o código gerado na tua aplicação autenticadora para concluir o acesso.
-        </p>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="Código de 6 dígitos"
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\s+/g, ""))}
-            style={{ textAlign: "center", letterSpacing: "0.2rem" }}
-          />
-          {error ? <p className="form-error">{error}</p> : null}
-          <button className="btn primary" type="submit" disabled={submitting || code.trim().length < 6}>
-            {submitting ? "A verificar..." : "Confirmar código"}
-          </button>
-          <button className="btn ghost" type="button" onClick={() => signOut()}>
-            Terminar sessão
-          </button>
-        </form>
-      </div>
-    </main>
-  );
-}
-
 export default function RequireAuth({ children }) {
-  const { authEnabled, isAuthenticated, loading, loadingPhase, userProfile, authProfile, user } = useAuth();
+  const { authEnabled, isAuthenticated, loading, userProfile, authProfile, user } = useAuth();
   const location = useLocation();
-  const [mfaState, setMfaState] = useState({ loading: true, required: false });
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadMfaState() {
-      if (!authEnabled || !isAuthenticated) {
-        if (active) {
-          setMfaState({ loading: false, required: false });
-        }
-        return;
-      }
-
-      setMfaState((prev) => ({ ...prev, loading: true }));
-      const { data, error } = await getMfaAuthenticatorAssuranceLevel();
-
-      if (!active) return;
-
-      if (error) {
-        setMfaState({ loading: false, required: false });
-        return;
-      }
-
-      const required = data?.currentLevel === "aal1" && data?.nextLevel === "aal2";
-      setMfaState({ loading: false, required });
-    }
-
-    void loadMfaState();
-
-    return () => {
-      active = false;
-    };
-  }, [authEnabled, isAuthenticated, user?.id]);
 
   if (!authEnabled) {
     return children ?? <Outlet />;
   }
 
   if (loading) {
-    const loadingLabel = loadingPhase === "profile"
-      ? "A carregar perfil e permissoes..."
-      : "A validar sessao...";
-
     return (
       <main className="page" aria-busy="true">
         <section className="panel">
-          <p>{loadingLabel}</p>
+          <p>A validar sessao...</p>
         </section>
       </main>
     );
@@ -182,20 +75,6 @@ export default function RequireAuth({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-
-  if (mfaState.loading) {
-    return (
-      <main className="page" aria-busy="true">
-        <section className="panel">
-          <p>A validar segundo fator...</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (mfaState.required) {
-    return <MfaChallengeScreen onVerified={() => setMfaState({ loading: false, required: false })} />;
   }
 
   if (authProfile?.mustChangePassword) {
@@ -222,28 +101,46 @@ export default function RequireAuth({ children }) {
     role: authProfile?.role,
     type: userProfile?.type,
   });
-  const routeAccess = getRouteAccessRules({
-    isSuperAdmin,
-    isAdmin,
-    isCoordinatorUser,
-    isCompanyUser,
-    isExternalUser,
-    isStudentUser,
-    isTeacherUser,
-  });
 
   // SUPER_ADMIN: acesso total a todas as páginas e funcionalidades
   if (isSuperAdmin) {
     return children ?? <Outlet />;
   }
 
+  // ── Auxiliar: verifica se o pathname actual está numa allowlist ──────────
+  function canAccess(allowedRoutes) {
+    return allowedRoutes.some(
+      (base) => location.pathname === base || location.pathname.startsWith(`${base}/`)
+    );
+  }
+
   // Coordenador (inclui legado ADMIN_1): apenas escopo académico/operacional
   if (isCoordinatorUser) {
-    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
+    const coordinatorAllowedRoutes = [
+      "/",
+      "/home",
+      "/ferramentas",
+      "/estagios",
+      "/avaliacoes",
+      "/turmas",
+      "/areas-formacao",
+      "/parceiros",
+      "/documentos",
+      "/rbac/vagas",
+      "/rbac/candidaturas",
+      "/perfil",
+      "/progresso",
+      "/aluno",
+      "/chat",
+      "/notificacoes",
+      "/config",
+    ];
+    if (!canAccess(coordinatorAllowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
-    if (canAccessRoute(location.pathname, routeAccess.forbiddenRoutes)) {
+    const forbiddenCoordinatorRoutes = ["/admin", "/utilizadores"];
+    if (canAccess(forbiddenCoordinatorRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
@@ -252,21 +149,39 @@ export default function RequireAuth({ children }) {
 
   // Empresa: só pode aceder às rotas de empresa
   if (isCompanyUser) {
-    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
+    const companyAllowedRoutes = ["/empresa", "/rbac/candidaturas", "/notificacoes", "/chat", "/config"];
+    if (!canAccess(companyAllowedRoutes)) {
       return <Navigate to="/empresa" replace state={{ from: location.pathname }} />;
     }
   }
 
   // Externo: apenas feed/comunidade e configurações
   if (isExternalUser && !isAdmin) {
-    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
+    const externalAllowedRoutes = ["/home", "/config"];
+    if (!canAccess(externalAllowedRoutes)) {
       return <Navigate to="/home" replace state={{ from: location.pathname }} />;
     }
   }
 
   // Estudante: somente recursos relacionados ao próprio percurso
   if (isStudentUser && !isAdmin) {
-    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
+    const studentAllowedRoutes = [
+      "/",
+      "/home",
+      "/rbac/vagas",
+      "/estagios",
+      "/avaliacoes",
+      "/documentos",
+      "/pedidos",
+      "/chat",
+      "/notificacoes",
+      "/config",
+      "/aluno",
+      "/perfil",
+      "/progresso",
+      "/perfil-publico",
+    ];
+    if (!canAccess(studentAllowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
 
@@ -282,7 +197,22 @@ export default function RequireAuth({ children }) {
 
   // Professor: escopo académico próprio + vistas RBAC
   if (isTeacherUser && !isAdmin) {
-    if (!canAccessRoute(location.pathname, routeAccess.allowedRoutes)) {
+    const academicAllowedRoutes = [
+      "/",
+      "/home",
+      "/rbac/vagas",
+      "/estagios",
+      "/avaliacoes",
+      "/documentos",
+      "/chat",
+      "/notificacoes",
+      "/config",
+      "/turmas",
+      "/areas-formacao",
+      "/perfil",
+      "/progresso",
+    ];
+    if (!canAccess(academicAllowedRoutes)) {
       return <Navigate to="/" replace state={{ from: location.pathname }} />;
     }
   }
@@ -291,7 +221,8 @@ export default function RequireAuth({ children }) {
   // bloquear rotas altamente restritas
   if (isAdmin && !isCoordinatorUser) {
     // Ferramentas e painel de admin apenas para coordenação/super-admin
-    if (canAccessRoute(location.pathname, routeAccess.forbiddenRoutes)) {
+    const restrictedRoutes = ["/admin", "/ferramentas", "/utilizadores", "/parceiros"];
+    if (canAccess(restrictedRoutes)) {
       return <Navigate to="/" replace />;
     }
   }
