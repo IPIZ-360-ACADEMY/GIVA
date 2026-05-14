@@ -18,7 +18,7 @@ import {
 import { acceptJobApplication, rejectJobApplication } from "../services/jobApplicationService.js";
 import { listPartners } from "../services/partnersService.js";
 import { registerStudentUnified } from "../services/studentRegistryService.js";
-import { importExcelData } from "../services/excelImportService.js";
+import { importExcelData, parseExcelImportRows } from "../services/excelImportService.js";
 import { createTranslator } from "../utils/i18n.js";
 import { normalizeStudentProcessNumber, validateIpizProcessNumber } from "../utils/processNumber.js";
 import { matchesSearch } from "../utils/search.js";
@@ -668,34 +668,6 @@ function ImportarTab({ showToast, onImported }) {
   const [parseError, setParseError] = useState("");
   const fileRef = useRef(null);
 
-  function normalizeHeader(value) {
-    return String(value ?? "")
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "");
-  }
-
-  const HEADER_ALIASES = {
-    processNumber: ["processo", "nprocesso", "numprocesso", "numeroprocesso", "numerodeprocesso", "processnumber"],
-    fullName: ["nome", "nomecompleto", "fullname", "name"],
-    className: ["turma", "class", "classname", "nomedaturma", "turmanome"],
-  };
-
-  function mapHeaders(headerRow) {
-    const mapped = {};
-    headerRow.forEach((headerValue, index) => {
-      const normalized = normalizeHeader(headerValue);
-      for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
-        if (aliases.includes(normalized) && mapped[field] === undefined) {
-          mapped[field] = index;
-        }
-      }
-    });
-    return mapped;
-  }
-
   async function handleFileSelect(e) {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -712,37 +684,8 @@ function ImportarTab({ showToast, onImported }) {
     setParseError("");
 
     try {
-      const XLSX = await import("xlsx");
-      const buffer = await selectedFile.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-
-      if (rawRows.length < 2) {
-        setParseError("O ficheiro deve conter cabeçalho e pelo menos uma linha de dados.");
-        return;
-      }
-
-      const mapping = mapHeaders(rawRows[0]);
-      if (
-        mapping.processNumber === undefined
-        || mapping.fullName === undefined
-        || mapping.className === undefined
-      ) {
-        setParseError("Colunas obrigatórias: Processo, Nome Completo e Turma.");
-        return;
-      }
-
-      const previewRows = rawRows
-        .slice(1)
-        .filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""))
-        .map((row, index) => ({
-          _rowNum: index + 2,
-          processNumber: String(row[mapping.processNumber] ?? "").trim(),
-          fullName: String(row[mapping.fullName] ?? "").trim(),
-          className: String(row[mapping.className] ?? "").trim(),
-        }));
+      const parsed = await parseExcelImportRows(selectedFile);
+      const previewRows = parsed.rows;
 
       setRows(previewRows);
     } catch (err) {
@@ -769,10 +712,10 @@ function ImportarTab({ showToast, onImported }) {
 
   async function downloadTemplate() {
     const XLSX = await import("xlsx");
-    const headers = ["Processo", "Nome Completo", "Turma"];
+    const headers = ["Processo", "Nome Completo", "Email", "Telemóvel"];
     const exampleRows = [
-      ["IPIZ-2026-0001", "João Manuel Silva", "11-TI-A"],
-      ["IPIZ-2026-0002", "Maria da Costa", "11-TI-A"],
+      ["IPIZ-2026-0001", "João Manuel Silva", "joao.silva@email.com", "923 000 111"],
+      ["IPIZ-2026-0002", "Maria da Costa", "", ""],
     ];
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...exampleRows]);
     const workbook = XLSX.utils.book_new();
@@ -790,17 +733,20 @@ function ImportarTab({ showToast, onImported }) {
 
   return (
     <div className="tools-section">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <div className="tools-import-head">
         <h3 className="tools-section-title">Importar Alunos via Excel</h3>
-        <button className="tools-btn tools-btn-secondary" onClick={downloadTemplate} type="button">
-          <span className="material-icons-sharp" style={{ fontSize: 18 }}>download</span>
-          Template (Processo, Nome, Turma)
+        <button className="tools-import-template-btn" onClick={downloadTemplate} type="button" aria-label="Descarregar template de importação">
+          <span className="material-icons-sharp tools-import-template-icon">download</span>
+          <span className="tools-import-template-copy">
+            <strong>Descarregar Template</strong>
+            <small>Processo, Nome Completo, Email e Telemóvel</small>
+          </span>
         </button>
       </div>
 
       <div className="tools-alert" style={{ marginBottom: 16 }}>
-        O ficheiro deve conter apenas 3 colunas: <strong>Processo</strong>, <strong>Nome Completo</strong> e <strong>Turma</strong>.
-        As turmas em falta são criadas automaticamente e os restantes dados podem ser editados depois pelo admin ou pelo aluno.
+        O ficheiro deve conter <strong>Processo</strong> e <strong>Nome Completo</strong>.
+        As colunas <strong>Email</strong> e <strong>Telemóvel</strong> são opcionais.
       </div>
 
       <div
@@ -829,7 +775,7 @@ function ImportarTab({ showToast, onImported }) {
         </span>
         <p style={{ margin: 0, fontWeight: 600 }}>Clique ou arraste um ficheiro .xlsx / .xls</p>
         <p style={{ margin: "4px 0 0", fontSize: "0.85em", color: "var(--color-text-secondary, #666)" }}>
-          Primeira linha deve conter os cabeçalhos Processo, Nome Completo e Turma
+          Cabeçalhos esperados: Processo, Nome Completo, Email, Telemóvel
         </p>
         <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleFileSelect} />
       </div>
@@ -855,7 +801,8 @@ function ImportarTab({ showToast, onImported }) {
                   <th>#</th>
                   <th>Processo</th>
                   <th>Nome Completo</th>
-                  <th>Turma</th>
+                  <th>Email</th>
+                  <th>Telemóvel</th>
                 </tr>
               </thead>
               <tbody>
@@ -864,7 +811,8 @@ function ImportarTab({ showToast, onImported }) {
                     <td>{row._rowNum}</td>
                     <td>{row.processNumber || <span style={{ color: "red" }}>Em falta</span>}</td>
                     <td>{row.fullName || <span style={{ color: "red" }}>Em falta</span>}</td>
-                    <td>{row.className || <span style={{ color: "red" }}>Em falta</span>}</td>
+                    <td>{row.email || <span style={{ color: "var(--color-text-secondary, #666)" }}>Opcional</span>}</td>
+                    <td>{row.phoneNumber || <span style={{ color: "var(--color-text-secondary, #666)" }}>Opcional</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -881,13 +829,17 @@ function ImportarTab({ showToast, onImported }) {
               <div style={{ fontSize: "0.85em" }}>Processos Pré-registados</div>
             </div>
             <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-info-bg, #dbeafe)", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#2563eb" }}>{results.classesCreated ?? 0}</div>
-              <div style={{ fontSize: "0.85em" }}>Turmas Criadas</div>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#2563eb" }}>{results.withEmail ?? 0}</div>
+              <div style={{ fontSize: "0.85em" }}>Com Email</div>
             </div>
             <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-warning-bg, #fef9c3)", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#ca8a04" }}>{results.skipped ?? 0}</div>
-              <div style={{ fontSize: "0.85em" }}>Linhas Ignoradas</div>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#ca8a04" }}>{results.withPhoneNumber ?? 0}</div>
+              <div style={{ fontSize: "0.85em" }}>Com Telemóvel</div>
             </div>
+          </div>
+
+          <div style={{ marginBottom: 12, color: "var(--color-text-secondary, #666)", fontSize: "0.9em" }}>
+            Linhas ignoradas: <strong>{results.skipped ?? 0}</strong>
           </div>
 
           {results.errors?.length > 0 && (
