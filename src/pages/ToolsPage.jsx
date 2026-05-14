@@ -877,8 +877,8 @@ function ImportarTab({ showToast, onImported }) {
         <div>
           <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
             <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-success-bg, #dcfce7)", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#16a34a" }}>{results.studentsRegistered ?? 0}</div>
-              <div style={{ fontSize: "0.85em" }}>Alunos Registados</div>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#16a34a" }}>{results.processNumbersRegistered ?? results.studentsRegistered ?? 0}</div>
+              <div style={{ fontSize: "0.85em" }}>Processos Pré-registados</div>
             </div>
             <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-info-bg, #dbeafe)", borderRadius: 8, textAlign: "center" }}>
               <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#2563eb" }}>{results.classesCreated ?? 0}</div>
@@ -2416,8 +2416,8 @@ function ImportacaoExcelTab({ showToast }) {
                 <h3>{results.rowsProcessed ?? 0}</h3>
               </article>
               <article className="stat-card">
-                <div className="stat-head"><span>Alunos Registados</span><span className="material-icons-sharp">people</span></div>
-                <h3>{results.studentsRegistered}</h3>
+                <div className="stat-head"><span>Processos Pré-registados</span><span className="material-icons-sharp">badge</span></div>
+                <h3>{results.processNumbersRegistered ?? results.studentsRegistered}</h3>
               </article>
               <article className="stat-card">
                 <div className="stat-head"><span>Turmas Criadas</span><span className="material-icons-sharp">school</span></div>

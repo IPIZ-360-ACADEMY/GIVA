@@ -66,10 +66,10 @@ export async function importExcelData(file) {
   }
 
   const results = {
-    areasCreated: 0,
-    coursesCreated: 0,
     classesCreated: 0,
+    processNumbersRegistered: 0,
     studentsRegistered: 0,
+    accountsAlreadyLinked: 0,
     rowsProcessed: 0,
     skipped: 0,
     errors: [],
@@ -77,6 +77,8 @@ export async function importExcelData(file) {
   };
 
   const classCache = new Set();
+  const seenProcessesInFile = new Set();
+  const accountExistsCache = new Map();
   const schoolYear = currentSchoolYear();
 
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
@@ -88,13 +90,20 @@ export async function importExcelData(file) {
     try {
       const processNumber = normalizeStudentProcessNumber(row[headerMap.processNumber]);
       const fullName = normalizeString(row[headerMap.fullName]);
-      const className = normalizeString(row[headerMap.className]);
+      const className = normalizeString(row[headerMap.className]).toUpperCase();
 
       if (!processNumber || !fullName || !className) {
         results.skipped++;
         results.errors.push(`Linha ${rowIndex + 2}: Processo, Nome Completo e Turma são obrigatórios.`);
         continue;
       }
+
+      if (seenProcessesInFile.has(processNumber)) {
+        results.skipped++;
+        results.warnings.push(`Linha ${rowIndex + 2}: processo ${processNumber} duplicado no ficheiro (linha ignorada).`);
+        continue;
+      }
+      seenProcessesInFile.add(processNumber);
 
       const classKey = `${schoolYear}|GERAL|${className.toUpperCase()}`;
       if (!classCache.has(classKey)) {
@@ -133,12 +142,26 @@ export async function importExcelData(file) {
         internshipStatus: 'active',
       };
 
-      const registerResult = await registerStudentUnified(studentInput);
-      if (registerResult?.authAlreadyExists) {
-        results.warnings.push(`Linha ${rowIndex + 2}: conta de acesso já existente para ${processNumber}.`);
+      if (!accountExistsCache.has(processNumber)) {
+        const { data: accountRow } = await supabase
+          .from('student_accounts')
+          .select('id')
+          .eq('process_number', processNumber)
+          .limit(1)
+          .maybeSingle();
+        accountExistsCache.set(processNumber, Boolean(accountRow?.id));
       }
 
+      const hasLinkedAccount = accountExistsCache.get(processNumber) === true;
+      if (hasLinkedAccount) {
+        results.accountsAlreadyLinked++;
+        results.warnings.push(`Linha ${rowIndex + 2}: processo ${processNumber} já tem conta criada; foi atualizado apenas o pré-registo académico.`);
+      }
+
+      await registerStudentUnified(studentInput);
+
       results.studentsRegistered++;
+      results.processNumbersRegistered++;
 
     } catch (err) {
       results.errors.push(`Linha ${rowIndex + 2}: ${err.message}`);
