@@ -659,228 +659,132 @@ function RegistarTab({ showToast, authProfile, fallbackAreaId, onRegistered }) {
 }
 
 // ── Secção: importar alunos via Excel ────────────────────────
-function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
+function ImportarTab({ showToast, onImported }) {
+  const [file, setFile] = useState(null);
   const [rows, setRows] = useState([]);
-  const [areas, setAreas] = useState([]);
-  const [allCourses, setAllCourses] = useState([]);
   const [importing, setImporting] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [results, setResults] = useState(null);
   const [parseError, setParseError] = useState("");
   const fileRef = useRef(null);
 
-  useEffect(() => {
-    let active = true;
-    listTrainingAreas()
-      .then((data) => {
-        if (!active) return;
-        const areaList = data ?? [];
-        setAreas(areaList);
-        Promise.all(
-          areaList.map((a) =>
-            listCoursesByArea(a.id, { includeInactive: false })
-              .then((cs) => (cs ?? []).map((c) => ({ ...c, areaId: a.id })))
-              .catch(() => [])
-          )
-        ).then((nested) => {
-          if (active) setAllCourses(nested.flat());
-        });
-      })
-      .catch(() => { if (active) setAreas([]); });
-    return () => { active = false; };
-  }, []);
-
-  function normalizeHeader(h) {
-    return String(h ?? "").trim().toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  function normalizeHeader(value) {
+    return String(value ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]/g, "");
   }
 
-  const HEADER_MAP = {
-    nome:            ["nome", "nomecompleto", "fullname", "name"],
-    processo:        ["processo", "nprocesso", "numprocesso", "processno", "numerodeprocesso"],
-    email:           ["email", "emailpessoal", "correo"],
-    telefone:        ["telefone", "telm", "telemovel", "phone", "tel"],
-    turma:           ["turma", "class", "classname", "nomaturma"],
-    area:            ["area", "areadeformacao", "trainingarea"],
-    curso:           ["curso", "course", "coursecode", "codigocurso"],
-    anoletivo:       ["anoletivo", "anoletiv", "schoolyear", "ano"],
-    datanascimento:  ["datanascimento", "datanasc", "dob", "nascimento", "datadenascimento"],
-    bi:              ["bi", "bilhete", "bilheteidentidade", "bi_number"],
-    morada:          ["morada", "address", "endereco"],
-    password:        ["password", "senha", "pass"],
+  const HEADER_ALIASES = {
+    processNumber: ["processo", "nprocesso", "numprocesso", "numeroprocesso", "numerodeprocesso", "processnumber"],
+    fullName: ["nome", "nomecompleto", "fullname", "name"],
+    className: ["turma", "class", "classname", "nomedaturma", "turmanome"],
   };
 
   function mapHeaders(headerRow) {
-    const mapping = {};
-    headerRow.forEach((h, i) => {
-      const normalized = normalizeHeader(h);
-      for (const [field, aliases] of Object.entries(HEADER_MAP)) {
-        if (aliases.includes(normalized)) {
-          mapping[field] = i;
-          break;
+    const mapped = {};
+    headerRow.forEach((headerValue, index) => {
+      const normalized = normalizeHeader(headerValue);
+      for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
+        if (aliases.includes(normalized) && mapped[field] === undefined) {
+          mapped[field] = index;
         }
       }
     });
-    return mapping;
+    return mapped;
   }
 
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setParseError("");
+  async function handleFileSelect(e) {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    const fileName = String(selectedFile.name ?? "").toLowerCase();
+    if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+      showToast("Selecione um ficheiro Excel (.xlsx ou .xls).", "error");
+      return;
+    }
+
+    setFile(selectedFile);
     setRows([]);
     setResults(null);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const XLSX = await import("xlsx");
-        const data = new Uint8Array(ev.target.result);
-        const workbook = XLSX.read(data, { type: "array", cellDates: true });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        if (rawRows.length < 2) {
-          setParseError("Ficheiro vazio ou sem dados.");
-          return;
-        }
-        const headerRow = rawRows[0];
-        const mapping = mapHeaders(headerRow);
-        if (mapping.nome === undefined && mapping.processo === undefined) {
-          setParseError(
-            "Não foi possível identificar as colunas. Verifique se o ficheiro contém as colunas 'Nome' e 'Processo'."
-          );
-          return;
-        }
-        const parsed = rawRows.slice(1)
-          .filter((r) => r.some((cell) => String(cell ?? "").trim() !== ""))
-          .map((r, idx) => ({
-            _rowNum: idx + 2,
-            nome:       String(r[mapping.nome]            ?? "").trim(),
-            processo:   String(r[mapping.processo]        ?? "").trim(),
-            email:      String(r[mapping.email]           ?? "").trim(),
-            telefone:   String(r[mapping.telefone]        ?? "").trim(),
-            turma:      String(r[mapping.turma]           ?? "").trim(),
-            area:       String(r[mapping.area]            ?? "").trim(),
-            curso:      String(r[mapping.curso]           ?? "").trim(),
-            anoLetivo:  String(r[mapping.anoletivo]       ?? "").trim(),
-            dataNasc:
-              r[mapping.datanascimento] instanceof Date
-                ? toLocalIsoDate(r[mapping.datanascimento])
-                : String(r[mapping.datanascimento] ?? "").trim(),
-            bi:         String(r[mapping.bi]              ?? "").trim(),
-            morada:     String(r[mapping.morada]          ?? "").trim(),
-            password:   String(r[mapping.password]        ?? "").trim(),
-          }));
-        if (parsed.length > 5000) {
-          setParseError("O ficheiro tem mais de 5 000 linhas. Divida-o em partes menores.");
-          return;
-        }
-        setRows(parsed);
-      } catch (err) {
-        setParseError("Erro a processar o ficheiro: " + (err?.message ?? "formato inválido"));
+    setParseError("");
+
+    try {
+      const XLSX = await import("xlsx");
+      const buffer = await selectedFile.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+      if (rawRows.length < 2) {
+        setParseError("O ficheiro deve conter cabeçalho e pelo menos uma linha de dados.");
+        return;
       }
-    };
-    reader.readAsArrayBuffer(file);
-  }
 
-  function resolveIds(row) {
-    let areaId = null;
-    if (row.area) {
-      const found = areas.find(
-        (a) =>
-          a.name?.toLowerCase().trim() === row.area.toLowerCase().trim() ||
-          a.code?.toLowerCase().trim() === row.area.toLowerCase().trim()
-      );
-      areaId = found?.id ?? null;
-    }
-    if (!areaId && authProfile?.areaId) areaId = authProfile.areaId;
-    if (!areaId && fallbackAreaId)       areaId = fallbackAreaId;
-    if (!areaId && areas.length)         areaId = areas[0].id;
+      const mapping = mapHeaders(rawRows[0]);
+      if (
+        mapping.processNumber === undefined
+        || mapping.fullName === undefined
+        || mapping.className === undefined
+      ) {
+        setParseError("Colunas obrigatórias: Processo, Nome Completo e Turma.");
+        return;
+      }
 
-    let courseId = null;
-    let courseCode = row.curso || null;
-    if (row.curso && areaId) {
-      const found = allCourses.find(
-        (c) =>
-          c.areaId === areaId &&
-          (c.code?.toLowerCase().trim() === row.curso.toLowerCase().trim() ||
-           c.name?.toLowerCase().trim() === row.curso.toLowerCase().trim())
-      );
-      courseId   = found?.id   ?? null;
-      courseCode = found?.code ?? row.curso;
+      const previewRows = rawRows
+        .slice(1)
+        .filter((row) => row.some((cell) => String(cell ?? "").trim() !== ""))
+        .map((row, index) => ({
+          _rowNum: index + 2,
+          processNumber: String(row[mapping.processNumber] ?? "").trim(),
+          fullName: String(row[mapping.fullName] ?? "").trim(),
+          className: String(row[mapping.className] ?? "").trim(),
+        }));
+
+      setRows(previewRows);
+    } catch (err) {
+      setParseError(`Erro a processar o ficheiro: ${err?.message ?? "formato inválido"}`);
     }
-    return { areaId, courseId, courseCode };
   }
 
   async function handleImport() {
-    if (!rows.length) return;
+    if (!file) return;
+
     setImporting(true);
-    setProgress({ current: 0, total: rows.length });
-    const created = [];
-    const skipped = [];
-    const errors  = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      setProgress({ current: i + 1, total: rows.length });
-      const row = rows[i];
-      if (!row.nome || !row.processo) {
-        skipped.push({ row: row._rowNum, nome: row.nome, reason: "Nome ou Processo em falta" });
-        continue;
+    try {
+      const importResults = await importExcelData(file);
+      setResults(importResults);
+      if ((importResults?.studentsRegistered ?? 0) > 0) {
+        onImported?.();
       }
-      const { areaId, courseId, courseCode } = resolveIds(row);
-      try {
-        const result = await registerStudentUnified({
-          fullName:       row.nome,
-          processNumber:  normalizeStudentProcessNumber(row.processo) || row.processo,
-          email:          row.email     || null,
-          phoneNumber:    row.telefone  || null,
-          dateOfBirth:    row.dataNasc  || null,
-          trainingAreaId: areaId,
-          courseId:       courseId,
-          address:        row.morada    || null,
-          profilePhotoUrl: null,
-          className:      row.turma     || null,
-          courseCode:     courseCode,
-          schoolYear:     row.anoLetivo || null,
-          bi:             row.bi        || null,
-          loginPassword:  row.password  || null,
-        });
-        if (result?.alreadyExists) {
-          skipped.push({ row: row._rowNum, nome: row.nome, reason: "Aluno já existe" });
-        } else {
-          created.push({ row: row._rowNum, nome: row.nome, email: result?.loginEmail });
-        }
-      } catch (err) {
-        errors.push({ row: row._rowNum, nome: row.nome, reason: err?.message ?? "Erro desconhecido" });
-      }
+      showToast("Importação concluída. Verifique os resultados abaixo.", "success");
+    } catch (err) {
+      showToast(err, "error");
     }
-
     setImporting(false);
-    setResults({ created, skipped, errors });
-    if (created.length > 0 && onImported) onImported();
-    if (created.length > 0) {
-      showToast(`${created.length} aluno(s) importado(s) com sucesso.`, "success");
-    } else if (errors.length > 0) {
-      showToast(`Importação concluída com ${errors.length} erro(s).`, "error");
-    }
   }
 
   async function downloadTemplate() {
     const XLSX = await import("xlsx");
-    const headers = [
-      "Nome", "Processo", "Email", "Telefone", "Turma",
-      "Área", "Curso", "Ano Letivo", "Data Nascimento", "BI", "Morada", "Password",
+    const headers = ["Processo", "Nome Completo", "Turma"];
+    const exampleRows = [
+      ["IPIZ-2026-0001", "João Manuel Silva", "11-TI-A"],
+      ["IPIZ-2026-0002", "Maria da Costa", "11-TI-A"],
     ];
-    const example = [
-      "João Silva", "2024001", "joao@pessoal.ao", "923 456 789",
-      "TI12BD", "TIC", "GDES", "2024/2025", "2005-03-15",
-      "005123456BA001", "Rua Principal 1, Luanda", "",
-    ];
-    const ws = XLSX.utils.aoa_to_sheet([headers, example]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Alunos");
-    XLSX.writeFile(wb, "template_importacao_alunos.xlsx");
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...exampleRows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Alunos");
+    XLSX.writeFile(workbook, "template_importacao_alunos_minimo.xlsx");
+  }
+
+  function resetImport() {
+    setFile(null);
+    setRows([]);
+    setResults(null);
+    setParseError("");
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
@@ -889,11 +793,15 @@ function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
         <h3 className="tools-section-title">Importar Alunos via Excel</h3>
         <button className="tools-btn tools-btn-secondary" onClick={downloadTemplate} type="button">
           <span className="material-icons-sharp" style={{ fontSize: 18 }}>download</span>
-          Template Excel
+          Template (Processo, Nome, Turma)
         </button>
       </div>
 
-      {/* Upload zone */}
+      <div className="tools-alert" style={{ marginBottom: 16 }}>
+        O ficheiro deve conter apenas 3 colunas: <strong>Processo</strong>, <strong>Nome Completo</strong> e <strong>Turma</strong>.
+        As turmas em falta são criadas automaticamente e os restantes dados podem ser editados depois pelo admin ou pelo aluno.
+      </div>
+
       <div
         className="tools-upload-zone"
         role="button"
@@ -904,7 +812,7 @@ function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
         onDrop={(e) => {
           e.preventDefault();
           const files = e.dataTransfer.files;
-          if (files?.[0]) handleFile({ target: { files } });
+          if (files?.[0]) handleFileSelect({ target: { files } });
         }}
         style={{
           border: "2px dashed var(--color-border, #ccc)",
@@ -920,31 +828,23 @@ function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
         </span>
         <p style={{ margin: 0, fontWeight: 600 }}>Clique ou arraste um ficheiro .xlsx / .xls</p>
         <p style={{ margin: "4px 0 0", fontSize: "0.85em", color: "var(--color-text-secondary, #666)" }}>
-          Máx. 5 000 linhas — primeira linha deve ser o cabeçalho
+          Primeira linha deve conter os cabeçalhos Processo, Nome Completo e Turma
         </p>
-        <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleFile} />
+        <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleFileSelect} />
       </div>
 
       {parseError && (
         <div className="tools-alert tools-alert-error" style={{ marginBottom: 16 }}>{parseError}</div>
       )}
 
-      {/* Preview */}
       {rows.length > 0 && !results && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <p style={{ margin: 0 }}>
-              <strong>{rows.length}</strong> linha(s) encontrada(s). Reveja antes de importar.
+              <strong>{rows.length}</strong> linha(s) pronta(s) para importação automática.
             </p>
-            <button
-              className="tools-btn tools-btn-primary"
-              onClick={handleImport}
-              disabled={importing}
-              type="button"
-            >
-              {importing
-                ? `A importar… ${progress.current}/${progress.total}`
-                : `Importar ${rows.length} aluno(s)`}
+            <button className="tools-btn tools-btn-primary" onClick={handleImport} disabled={importing} type="button">
+              {importing ? "A importar..." : `Importar ${rows.length} aluno(s)`}
             </button>
           </div>
           <div style={{ overflowX: "auto" }}>
@@ -952,26 +852,18 @@ function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Nome</th>
                   <th>Processo</th>
-                  <th>Email</th>
+                  <th>Nome Completo</th>
                   <th>Turma</th>
-                  <th>Área</th>
-                  <th>Curso</th>
-                  <th>Ano Letivo</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r._rowNum}>
-                    <td>{r._rowNum}</td>
-                    <td>{r.nome      || <span style={{ color: "red" }}>Em falta</span>}</td>
-                    <td>{r.processo  || <span style={{ color: "red" }}>Em falta</span>}</td>
-                    <td>{r.email     || "—"}</td>
-                    <td>{r.turma     || "—"}</td>
-                    <td>{r.area      || "—"}</td>
-                    <td>{r.curso     || "—"}</td>
-                    <td>{r.anoLetivo || "—"}</td>
+                {rows.map((row) => (
+                  <tr key={row._rowNum}>
+                    <td>{row._rowNum}</td>
+                    <td>{row.processNumber || <span style={{ color: "red" }}>Em falta</span>}</td>
+                    <td>{row.fullName || <span style={{ color: "red" }}>Em falta</span>}</td>
+                    <td>{row.className || <span style={{ color: "red" }}>Em falta</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -980,69 +872,46 @@ function ImportarTab({ showToast, authProfile, fallbackAreaId, onImported }) {
         </div>
       )}
 
-      {/* Results */}
       {results && (
         <div>
           <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
             <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-success-bg, #dcfce7)", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#16a34a" }}>{results.created.length}</div>
-              <div style={{ fontSize: "0.85em" }}>Criados</div>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#16a34a" }}>{results.studentsRegistered ?? 0}</div>
+              <div style={{ fontSize: "0.85em" }}>Alunos Registados</div>
+            </div>
+            <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-info-bg, #dbeafe)", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#2563eb" }}>{results.classesCreated ?? 0}</div>
+              <div style={{ fontSize: "0.85em" }}>Turmas Criadas</div>
             </div>
             <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-warning-bg, #fef9c3)", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#ca8a04" }}>{results.skipped.length}</div>
-              <div style={{ fontSize: "0.85em" }}>Ignorados</div>
-            </div>
-            <div style={{ flex: 1, padding: "12px 16px", background: "var(--color-error-bg, #fee2e2)", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#dc2626" }}>{results.errors.length}</div>
-              <div style={{ fontSize: "0.85em" }}>Erros</div>
+              <div style={{ fontSize: "1.6em", fontWeight: 700, color: "#ca8a04" }}>{results.skipped ?? 0}</div>
+              <div style={{ fontSize: "0.85em" }}>Linhas Ignoradas</div>
             </div>
           </div>
 
-          {results.errors.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <h4 style={{ marginBottom: 6 }}>Erros</h4>
-              <table className="tools-table" style={{ fontSize: "0.85em" }}>
-                <thead><tr><th>Linha</th><th>Nome</th><th>Motivo</th></tr></thead>
-                <tbody>
-                  {results.errors.map((e, i) => (
-                    <tr key={i}>
-                      <td>{e.row}</td>
-                      <td>{e.nome ?? "—"}</td>
-                      <td style={{ color: "#dc2626" }}>{e.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {results.errors?.length > 0 && (
+            <div className="tools-errors" style={{ marginBottom: 12 }}>
+              <h4 style={{ marginBottom: 6 }}>Erros ({results.errors.length})</h4>
+              <ul>
+                {results.errors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
             </div>
           )}
 
-          {results.skipped.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <h4 style={{ marginBottom: 6 }}>Ignorados</h4>
-              <table className="tools-table" style={{ fontSize: "0.85em" }}>
-                <thead><tr><th>Linha</th><th>Nome</th><th>Motivo</th></tr></thead>
-                <tbody>
-                  {results.skipped.map((s, i) => (
-                    <tr key={i}>
-                      <td>{s.row}</td>
-                      <td>{s.nome ?? "—"}</td>
-                      <td>{s.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {results.warnings?.length > 0 && (
+            <div className="tools-warnings" style={{ marginBottom: 12 }}>
+              <h4 style={{ marginBottom: 6 }}>Avisos ({results.warnings.length})</h4>
+              <ul>
+                {results.warnings.map((warning, index) => (
+                  <li key={index}>{warning}</li>
+                ))}
+              </ul>
             </div>
           )}
 
-          <button
-            className="tools-btn tools-btn-secondary"
-            onClick={() => {
-              setRows([]);
-              setResults(null);
-              if (fileRef.current) fileRef.current.value = "";
-            }}
-            type="button"
-          >
+          <button className="tools-btn tools-btn-secondary" onClick={resetImport} type="button">
             Nova Importação
           </button>
         </div>
@@ -2505,7 +2374,8 @@ function ImportacaoExcelTab({ showToast }) {
           Importação Automática de Turmas via Excel
         </h3>
         <p className="tools-card-desc">
-          Carregue um ficheiro Excel com as colunas: area_codigo, area_nome, curso_codigo, curso_nome, turma_nome, processo, nome_completo, email, telefone, data_nascimento, bi, morada.
+          Carregue um ficheiro Excel com apenas 3 colunas: Processo, Nome Completo e Turma.
+          O sistema cria automaticamente a turma (quando não existir) e regista os alunos.
         </p>
 
         <div className="form-field">
@@ -2541,20 +2411,20 @@ function ImportacaoExcelTab({ showToast }) {
             <h4>Resultados da Importação</h4>
             <div className="stats-grid">
               <article className="stat-card">
-                <div className="stat-head"><span>Áreas Criadas</span><span className="material-icons-sharp">domain</span></div>
-                <h3>{results.areasCreated}</h3>
+                <div className="stat-head"><span>Linhas Processadas</span><span className="material-icons-sharp">table_rows</span></div>
+                <h3>{results.rowsProcessed ?? 0}</h3>
               </article>
               <article className="stat-card">
-                <div className="stat-head"><span>Cursos Criados</span><span className="material-icons-sharp">menu_book</span></div>
-                <h3>{results.coursesCreated}</h3>
+                <div className="stat-head"><span>Alunos Registados</span><span className="material-icons-sharp">people</span></div>
+                <h3>{results.studentsRegistered}</h3>
               </article>
               <article className="stat-card">
                 <div className="stat-head"><span>Turmas Criadas</span><span className="material-icons-sharp">school</span></div>
                 <h3>{results.classesCreated}</h3>
               </article>
               <article className="stat-card">
-                <div className="stat-head"><span>Alunos Registados</span><span className="material-icons-sharp">people</span></div>
-                <h3>{results.studentsRegistered}</h3>
+                <div className="stat-head"><span>Linhas Ignoradas</span><span className="material-icons-sharp">do_not_disturb</span></div>
+                <h3>{results.skipped ?? 0}</h3>
               </article>
             </div>
 
