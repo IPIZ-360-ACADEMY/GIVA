@@ -109,7 +109,6 @@ const SUPER_ADMIN_TABS = [
   { id: "utilizadores", icon: "manage_accounts", label: "Utilizadores" },
   { id: "orquestracao", icon: "hub", label: "Orquestração" },
   { id: "estrutura", icon: "account_tree", label: "Áreas e Cursos" },
-  { id: "importacao", icon: "upload_file", label: "Importação Excel" },
 ];
 
 export function resolveVisibleToolTabs(role) {
@@ -122,11 +121,13 @@ export function canAccessToolsTab(role, tabId) {
 }
 
 export function resolveRequestedToolsTab(requestedTab, visibleTabs, fallbackTab = "alunos") {
-  if (!requestedTab) {
+  const normalizedRequestedTab = requestedTab === "importacao" ? "importar" : requestedTab;
+
+  if (!normalizedRequestedTab) {
     return fallbackTab;
   }
 
-  return visibleTabs.some((tab) => tab.id === requestedTab) ? requestedTab : fallbackTab;
+  return visibleTabs.some((tab) => tab.id === normalizedRequestedTab) ? normalizedRequestedTab : fallbackTab;
 }
 
 // ── Secção: lista de alunos ──────────────────────────────────
@@ -2771,7 +2772,7 @@ export default function ToolsPage() {
       <div className="tools-content" style={{ gridColumn: "1/-1" }}>
         {activeTab === "alunos"      && <AlunosTab showToast={showToast} reloadToken={reloadToken} />}
         {activeTab === "registar"   && <RegistarTab showToast={showToast} authProfile={authProfile} fallbackAreaId={fallbackAreaId} onRegistered={handleStudentRegistered} />}
-        {activeTab === "importar"   && <ImportarTab showToast={showToast} authProfile={authProfile} fallbackAreaId={fallbackAreaId} onImported={handleStudentRegistered} />}
+        {activeTab === "importar"   && <ImportarTab showToast={showToast} onImported={handleStudentRegistered} />}
         {activeTab === "turmas"     && <TurmasTab showToast={showToast} areaId={authProfile?.areaId ?? null} />}
         {activeTab === "vagas"      && <VagasTab showToast={showToast} />}
         {activeTab === "atribuicao" && <AtribuicaoTab showToast={showToast} reloadToken={reloadToken} />}
@@ -2779,7 +2780,6 @@ export default function ToolsPage() {
         {activeTab === "utilizadores" && isSuperAdmin && <UsersManagementPage embedded showToast={showToast} />}
         {activeTab === "orquestracao" && isSuperAdmin && <OrquestracaoSuperAdminTab showToast={showToast} />}
         {activeTab === "estrutura"  && isSuperAdmin && <EstruturaAcademicaTab showToast={showToast} />}
-        {activeTab === "importacao" && isSuperAdmin && <ImportacaoExcelTab showToast={showToast} />}
       </div>
     </div>
   );
