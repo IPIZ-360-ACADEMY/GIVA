@@ -9,6 +9,7 @@ import { getPendingPosts, moderatePost } from "../services/postsService.js";
 import { broadcastAnnouncement, sendNotification } from "../services/notificationsService.js";
 import { listManualClasses, createManualClass } from "../services/classesService.js";
 import { registerStudentUnified } from "../services/studentRegistryService.js";
+import { adminUpdateUserProfile } from "../services/usersAdminService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { isCoordinatorRole } from "../utils/accessControl.js";
 
@@ -541,13 +542,18 @@ function UserEditModal({ user, onClose, onSaved, toast }) {
   async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("user_profiles").update({
-      display_name: form.display_name.trim(),
-      bio: form.bio.trim() || null,
-      avatar_url: form.avatar_url.trim() || null,
-      type: form.type,
-      moderation: form.moderation,
-    }).eq("id", user.id);
+    let error = null;
+    try {
+      await adminUpdateUserProfile(user.id, {
+        display_name: form.display_name.trim(),
+        bio: form.bio.trim() || null,
+        avatar_url: form.avatar_url.trim() || null,
+        type: form.type,
+        moderation: form.moderation,
+      });
+    } catch (err) {
+      error = err;
+    }
     setSaving(false);
     if (error) { toast("Erro ao guardar: " + error.message, "error"); return; }
     toast("Perfil atualizado.");

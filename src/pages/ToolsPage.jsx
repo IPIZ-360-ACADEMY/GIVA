@@ -1924,12 +1924,14 @@ function TurmasTab({ showToast, areaId }) {
     const exists = rows.some((r) => `${r.anoLetivo}|${r.curso}|${r.turma}` === key) ||
       registeredClasses.some((r) => `${r.anoLetivo}|${r.curso}|${r.turma}` === key);
     if (exists) { showToast("Esta turma/curso já está registada.", "error"); return false; }
-    const tempId = `manual-${Date.now()}`;
-    setRegisteredClasses((prev) => [{ ...payloadWithScope, id: tempId }, ...prev]);
-    showToast("Turma registada com sucesso!");
+
     createManualClass(payloadWithScope)
-      .then((created) => setRegisteredClasses((prev) => prev.map((r) => r.id === tempId ? created : r)))
-      .catch(() => showToast("Guardada localmente — falha na sincronização remota.", "error"));
+      .then((created) => {
+        setRegisteredClasses((prev) => [created, ...prev]);
+        showToast("Turma registada com sucesso!");
+      })
+      .catch((err) => showToast(err?.message ?? "Falha ao sincronizar turma na base de dados.", "error"));
+
     setShowModal(false);
     return true;
   }

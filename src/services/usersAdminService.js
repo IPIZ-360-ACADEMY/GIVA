@@ -93,11 +93,44 @@ export async function adminSetUserArea(targetUid, areaId) {
 /** Actualiza campos do perfil (type, moderation, display_name, bio, avatar_url). */
 export async function adminUpdateUserProfile(uid, updates) {
   await requireAdminRole([ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_COORDINATOR], "atualizar perfil de utilizador");
+  const nextDisplayName = String(updates?.display_name ?? "").trim();
+  const nextAvatarUrl = String(updates?.avatar_url ?? "").trim();
+
   const { error } = await supabase
     .from("user_profiles")
     .update(updates)
     .eq("id", uid);
   if (error) throw error;
+
+  // Sincroniza campos denormalizados da tabela operacional de estágios
+  // para que a interface reflita de imediato alterações no perfil.
+  if (nextDisplayName || nextAvatarUrl) {
+    const { data: studentAccount } = await supabase
+      .from("student_accounts")
+      .select("process_number")
+      .eq("id", uid)
+      .maybeSingle();
+
+    const processNumber = normalizeStudentProcessNumber(studentAccount?.process_number);
+    if (processNumber) {
+      const internshipPatch = {};
+      if (nextDisplayName) internshipPatch.aluno = nextDisplayName;
+      if (nextAvatarUrl) internshipPatch.photo = nextAvatarUrl;
+
+      if (Object.keys(internshipPatch).length > 0) {
+        internshipPatch.ultima_atualizacao = new Date().toLocaleDateString("pt-PT");
+        const { error: internshipSyncError } = await supabase
+          .from("internships")
+          .update(internshipPatch)
+          .eq("processo", processNumber);
+
+        if (internshipSyncError) {
+          // Não bloquear a edição do perfil por falha de sincronização secundária.
+          console.warn("[usersAdminService] internships sync warning:", internshipSyncError.message);
+        }
+      }
+    }
+  }
 }
 
 /** Elimina utilizador da auth + perfil. Requer SUPER_ADMIN. */
