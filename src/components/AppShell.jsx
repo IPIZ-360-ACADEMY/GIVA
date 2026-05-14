@@ -4,6 +4,7 @@ import logoImage from "../../images/logo.png";
 import fallbackAvatar from "../../images/perfil-1.jpg";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { createTranslator, resolveDateLocale } from "../utils/i18n.js";
+import { toUserErrorMessage } from "../utils/errorMessages.js";
 import { resolveAccessProfile } from "../utils/accessControl.js";
 import { getUnreadCount, subscribeToConversations } from "../services/chatService.js";
 import NotifToastContainer from "./NotifToast.jsx";
@@ -285,7 +286,10 @@ export default function AppShell() {
       if (!preferences.uiNotifications) {
         return;
       }
-      setToast({ message, type, id: Date.now() });
+      const normalizedMessage = type === "error"
+        ? toUserErrorMessage(message)
+        : String(message ?? "Operação concluída com sucesso.");
+      setToast({ message: normalizedMessage, type, id: Date.now() });
     },
     [preferences.uiNotifications]
   );

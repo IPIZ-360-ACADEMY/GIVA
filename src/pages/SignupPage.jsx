@@ -11,6 +11,7 @@ import {
   uploadAvatar,
   verifyStudentProcessNumber,
 } from "../services/authService.js";
+import { toUserErrorMessage } from "../utils/errorMessages.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 
 const TYPES = [
@@ -174,7 +175,7 @@ export default function SignupPage() {
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este número de processo já tem conta. Faz login.");
       } else {
-        setError(msg || "Erro ao criar conta. Tenta novamente.");
+        setError(toUserErrorMessage(signUpError, "Não foi possível criar a conta agora. Tente novamente."));
       }
       return;
     }
@@ -283,7 +284,7 @@ export default function SignupPage() {
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este e-mail já está registado. Tenta fazer login.");
       } else {
-        setError(msg || "Erro ao criar conta. Tenta novamente.");
+        setError(toUserErrorMessage(signUpError, "Não foi possível criar a conta agora. Tente novamente."));
       }
       return;
     }

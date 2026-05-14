@@ -7,6 +7,7 @@ import PostCard from "../components/PostCard.jsx";
 import "../styles/community-feed.css";
 import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { getBookmarkedPostIds, getBookmarkedPosts, getFeedPosts, sharePost, subscribeToFeed, toggleReaction } from "../services/postsService.js";
+import { toUserErrorMessage } from "../utils/errorMessages.js";
 export default function HomePage() {
   const { t } = useOutletContext();
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export default function HomePage() {
     getBookmarkedPostIds()
       .then((ids) => setBookmarkedIds(new Set(ids)))
       .catch((err) => {
-        setError(err?.message ?? "Não foi possível carregar os itens guardados.");
+        setError(toUserErrorMessage(err, "Não foi possível carregar os itens guardados."));
       });
   }, [isExternal, user]);
 
@@ -62,7 +63,7 @@ export default function HomePage() {
         setPosts((prev) => reset ? data : [...prev, ...data]);
       }
     } catch (err) {
-      setError(err.message ?? "Erro ao carregar publicações!");
+      setError(toUserErrorMessage(err, "Não foi possível carregar as publicações agora."));
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -83,7 +84,7 @@ export default function HomePage() {
           cursorRef.current = fresh[fresh.length - 1]?.created_at ?? null;
           setError("");
         } catch (err) {
-          setError(err?.message ?? "Não foi possível atualizar o feed em tempo real, Verifique sua conecção.");
+          setError(toUserErrorMessage(err, "Não foi possível atualizar o feed em tempo real. Verifique a ligação e tente novamente."));
         }
       });
     }
@@ -106,7 +107,7 @@ export default function HomePage() {
       );
       setError("");
     } catch (err) {
-      setError(err?.message ?? "Não foi possível registar a reação.");
+      setError(toUserErrorMessage(err, "Não foi possível registar a reação agora."));
     }
   }
 
@@ -125,7 +126,7 @@ export default function HomePage() {
       }
       setError("");
     } catch (err) {
-      setError(err?.message ?? "Não foi possível partilhar a publicação.");
+      setError(toUserErrorMessage(err, "Não foi possível partilhar a publicação agora."));
     }
   }
 

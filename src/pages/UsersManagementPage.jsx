@@ -23,6 +23,7 @@ import {
   adminSendPasswordReset,
   getStudentProcessNumberFromIdentifier,
 } from "../services/usersAdminService.js";
+import { toUserErrorMessage } from "../utils/errorMessages.js";
 
 // ── helpers ───────────────────────────────────────────────────
 const TYPE_LABELS = {
@@ -467,8 +468,9 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       setStep(1);
       if (onCreated) onCreated();
     } catch (err) {
-      setSubmitMessage({ type: "error", text: err.message || "Erro ao criar utilizador." });
-      toast("Erro ao criar utilizador: " + err.message, "error");
+      const friendlyError = toUserErrorMessage(err, "Não foi possível criar o utilizador agora.");
+      setSubmitMessage({ type: "error", text: friendlyError });
+      toast(err, "error");
     } finally {
       setSubmitting(false);
     }

@@ -10,6 +10,7 @@ import {
   updateUserPassword,
   verifyMfaTotpCode,
 } from "../services/authService.js";
+import { toUserErrorMessage } from "../utils/errorMessages.js";
 
 function normalizeTimeout(value) {
   if (value === "15" || value === "15 minutos") {
@@ -87,7 +88,7 @@ export default function SettingsSecurityPage() {
     setMfaLoading(false);
 
     if (aalError || factorsError) {
-      setMfaError(aalError?.message || factorsError?.message || "Não foi possível carregar o estado do MFA.");
+      setMfaError(toUserErrorMessage(aalError || factorsError, "Não foi possível carregar o estado da autenticação em dois fatores."));
       return;
     }
 
@@ -117,7 +118,7 @@ export default function SettingsSecurityPage() {
     setMfaBusy(false);
 
     if (error) {
-      setMfaError(error.message || "Não foi possível iniciar o MFA.");
+      setMfaError(toUserErrorMessage(error, "Não foi possível iniciar a autenticação em dois fatores."));
       return;
     }
 
@@ -140,7 +141,7 @@ export default function SettingsSecurityPage() {
     setMfaBusy(false);
 
     if (error) {
-      setMfaError(error.message || "Não foi possível validar o código MFA.");
+      setMfaError(toUserErrorMessage(error, "Não foi possível validar o código da autenticação em dois fatores."));
       return;
     }
 
@@ -159,7 +160,7 @@ export default function SettingsSecurityPage() {
     setMfaBusy(false);
 
     if (error) {
-      setMfaError(error.message || "Não foi possível desativar o MFA.");
+      setMfaError(toUserErrorMessage(error, "Não foi possível desativar a autenticação em dois fatores."));
       return;
     }
 
