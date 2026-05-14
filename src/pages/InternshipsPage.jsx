@@ -41,6 +41,60 @@ function toSafeImageUrl(value) {
   return sanitizeAssetUrl(raw);
 }
 
+function getStudentAccount(profile) {
+  if (Array.isArray(profile?.student_accounts)) {
+    return profile.student_accounts[0] ?? null;
+  }
+  return profile?.student_accounts ?? null;
+}
+
+function buildStudentProfileIndexes(studentProfiles) {
+  const byProcess = new Map();
+  const byName = new Map();
+
+  for (const profile of studentProfiles ?? []) {
+    const processNumber = toSafeText(getStudentAccount(profile)?.process_number).toLowerCase();
+    const name = toSafeText(profile?.display_name).toLowerCase();
+
+    if (processNumber && !byProcess.has(processNumber)) {
+      byProcess.set(processNumber, profile);
+    }
+    if (name && !byName.has(name)) {
+      byName.set(name, profile);
+    }
+  }
+
+  return { byProcess, byName };
+}
+
+function applyCurrentStudentProfileData(internshipRows, studentProfiles) {
+  if (!Array.isArray(internshipRows) || internshipRows.length === 0) {
+    return [];
+  }
+
+  if (!Array.isArray(studentProfiles) || studentProfiles.length === 0) {
+    return internshipRows;
+  }
+
+  const { byProcess, byName } = buildStudentProfileIndexes(studentProfiles);
+
+  return internshipRows.map((row) => {
+    const processKey = toSafeText(row?.processo).toLowerCase();
+    const nameKey = toSafeText(row?.aluno).toLowerCase();
+
+    const matchedProfile = (processKey && byProcess.get(processKey)) || (nameKey && byName.get(nameKey));
+    if (!matchedProfile) {
+      return row;
+    }
+
+    return {
+      ...row,
+      aluno: toSafeText(matchedProfile.display_name) || row.aluno,
+      photo: toSafeImageUrl(matchedProfile.avatar_url) || row.photo,
+    };
+  });
+}
+
 function normalizeInternshipRow(row) {
   const status = toSafeText(row?.status);
 
@@ -277,13 +331,14 @@ export default function InternshipsPage() {
           return;
         }
 
-        let scopedRows = remoteRows;
+        const rowsWithCurrentStudentProfiles = applyCurrentStudentProfileData(remoteRows, studentProfiles);
+        let scopedRows = rowsWithCurrentStudentProfiles;
 
         if (isStudentView) {
           const profileName = toSafeText(userProfile?.display_name).toLowerCase();
           const processNumber = toSafeText(userProfile?.student_accounts?.process_number).toLowerCase();
 
-          scopedRows = remoteRows.filter((row) => {
+          scopedRows = rowsWithCurrentStudentProfiles.filter((row) => {
             const rowName = toSafeText(row.aluno).toLowerCase();
             const rowProcess = toSafeText(row.processo).toLowerCase();
             if (processNumber && rowProcess && rowProcess === processNumber) {
@@ -291,6 +346,14 @@ export default function InternshipsPage() {
             }
             return profileName && rowName === profileName;
           });
+
+          if (scopedRows.length > 0) {
+            scopedRows = scopedRows.map((row) => ({
+              ...row,
+              aluno: toSafeText(userProfile?.display_name) || row.aluno,
+              photo: toSafeImageUrl(userProfile?.avatar_url) || row.photo,
+            }));
+          }
 
           if (scopedRows.length === 0 && userProfile) {
             scopedRows = [normalizeInternshipRow(buildPlaceholderStudentRow(userProfile))];
@@ -304,7 +367,7 @@ export default function InternshipsPage() {
             (row) => companyName && toSafeText(row.empresa).toLowerCase() === companyName
           );
         } else if (isAdminView) {
-          scopedRows = mergeWithStudentsWithoutInternship(remoteRows, studentProfiles);
+          scopedRows = mergeWithStudentsWithoutInternship(rowsWithCurrentStudentProfiles, studentProfiles);
         }
 
         setRows(scopedRows);
