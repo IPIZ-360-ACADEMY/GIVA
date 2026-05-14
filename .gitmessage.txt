@@ -1,0 +1,20 @@
+<tipo>(<escopo>): <resumo curto>
+
+Contexto:
+- 
+
+O que foi feito:
+- 
+- 
+
+Arquivos alterados:
+- 
+
+Validação executada:
+- 
+
+Impacto esperado:
+- 
+
+Observações:
+- 

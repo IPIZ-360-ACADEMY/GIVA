@@ -21,6 +21,14 @@ export function toUserErrorMessage(input, fallback = DEFAULT_USER_ERROR) {
   const lower = raw.toLowerCase();
 
   if (
+    lower.includes("error sending confirmation email")
+    || lower.includes("sending confirmation email")
+    || lower.includes("confirmation email")
+  ) {
+    return "A conta não pôde ser criada porque o serviço de confirmação por email está indisponível. Configure o SMTP do Supabase e tente novamente.";
+  }
+
+  if (
     lower.includes("failed to fetch")
     || lower.includes("networkerror")
     || lower.includes("network request failed")

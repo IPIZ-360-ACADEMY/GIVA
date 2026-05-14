@@ -30,6 +30,118 @@ export async function getFeedPosts(cursor = null, limit = 20) {
 }
 
 /**
+ * Agrega métricas reais para a sidebar da comunidade.
+ */
+export async function getCommunitySidebarData({ onlineWindowMinutes = 20, upcomingLimit = 3 } = {}) {
+  const now = new Date();
+  const recentThresholdIso = new Date(now.getTime() - onlineWindowMinutes * 60 * 1000).toISOString();
+
+  const [
+    membersCountRes,
+    postsCountRes,
+    commentsCountRes,
+    reactionsCountRes,
+    recentProfilesRes,
+    presenceRes,
+    oldestPostRes,
+    upcomingPollsRes,
+  ] = await Promise.all([
+    supabase.from("user_profiles").select("id", { head: true, count: "exact" }).eq("moderation", "active"),
+    supabase.from("posts").select("id", { head: true, count: "exact" }).eq("moderation", "approved"),
+    supabase.from("post_comments").select("id", { head: true, count: "exact" }),
+    supabase.from("post_reactions").select("id", { head: true, count: "exact" }),
+    supabase
+      .from("user_profiles")
+      .select("id, display_name, avatar_url, updated_at")
+      .eq("moderation", "active")
+      .order("display_name", { ascending: true }),
+    supabase
+      .from("user_presence")
+      .select("user_id, last_seen_at, status"),
+    supabase
+      .from("posts")
+      .select("created_at")
+      .eq("moderation", "approved")
+      .order("created_at", { ascending: true })
+      .limit(1),
+    supabase
+      .from("post_polls")
+      .select(`
+        id,
+        question,
+        ends_at,
+        post:posts!inner(
+          id,
+          moderation,
+          is_official,
+          author:user_profiles!author_id(display_name, avatar_url)
+        )
+      `)
+      .gt("ends_at", now.toISOString())
+      .eq("posts.moderation", "approved")
+      .order("ends_at", { ascending: true })
+      .limit(upcomingLimit),
+  ]);
+
+  const countErrors = [membersCountRes, postsCountRes, commentsCountRes, reactionsCountRes].find((res) => res.error);
+  if (countErrors?.error) throw countErrors.error;
+  if (recentProfilesRes.error) throw recentProfilesRes.error;
+  if (presenceRes.error) throw presenceRes.error;
+  if (oldestPostRes.error) throw oldestPostRes.error;
+  if (upcomingPollsRes.error) throw upcomingPollsRes.error;
+
+  const recentProfiles = recentProfilesRes.data ?? [];
+  const presenceByUserId = new Map((presenceRes.data ?? []).map((entry) => [entry.user_id, entry]));
+
+  const onlineProfiles = [];
+  const offlineProfiles = [];
+
+  for (const profile of recentProfiles) {
+    const presence = presenceByUserId.get(profile.id);
+    const lastSeenAt = presence?.last_seen_at ?? profile.updated_at ?? null;
+    const isOnline = Boolean(lastSeenAt && new Date(lastSeenAt).getTime() >= new Date(recentThresholdIso).getTime());
+    const member = {
+      ...profile,
+      lastSeenAt,
+      status: isOnline ? "online" : "offline",
+    };
+
+    if (isOnline) onlineProfiles.push(member);
+    else offlineProfiles.push(member);
+  }
+
+  onlineProfiles.sort((a, b) => new Date(b.lastSeenAt ?? 0).getTime() - new Date(a.lastSeenAt ?? 0).getTime());
+  offlineProfiles.sort((a, b) => String(a.display_name ?? "").localeCompare(String(b.display_name ?? ""), "pt-PT"));
+
+  const onlineMembers = onlineProfiles.slice(0, 8);
+  const offlineMembers = offlineProfiles.slice(0, 8);
+
+  const oldestPost = (oldestPostRes.data ?? [])[0]?.created_at ?? null;
+  const createdYear = oldestPost ? new Date(oldestPost).getFullYear() : null;
+
+  return {
+    membersCount: membersCountRes.count ?? 0,
+    postsCount: postsCountRes.count ?? 0,
+    commentsCount: commentsCountRes.count ?? 0,
+    reactionsCount: reactionsCountRes.count ?? 0,
+    onlineNowCount: onlineProfiles.length,
+    offlineNowCount: Math.max(0, recentProfiles.length - onlineProfiles.length),
+    onlineMembers,
+    offlineMembers,
+    createdYear,
+    onlineWindowMinutes,
+    upcomingEvents: (upcomingPollsRes.data ?? []).map((item) => ({
+      id: item.id,
+      title: item.question,
+      endsAt: item.ends_at,
+      isOfficial: Boolean(item.post?.is_official),
+      authorName: item.post?.author?.display_name ?? "Comunidade",
+      authorAvatarUrl: item.post?.author?.avatar_url ?? null,
+    })),
+  };
+}
+
+/**
  * Cria um novo post. Opcionalmente faz upload de imagem para o bucket "posts".
  */
 export async function createPost(content, imageFile = null) {
@@ -162,6 +274,18 @@ export function subscribeToFeed(callback) {
   const channel = supabase
     .channel("realtime:posts")
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, callback)
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}
+
+/**
+ * Subscreve alterações de presença para atualizar online/offline em tempo real.
+ */
+export function subscribeToPresence(callback) {
+  const channel = supabase
+    .channel("realtime:user_presence")
+    .on("postgres_changes", { event: "*", schema: "public", table: "user_presence" }, callback)
     .subscribe();
 
   return () => supabase.removeChannel(channel);

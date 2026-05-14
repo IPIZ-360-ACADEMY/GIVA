@@ -2,7 +2,9 @@ import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
-import { AuthProvider } from "./contexts/AuthContext.jsx";
+import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
+import { usePresenceHeartbeat } from "./hooks/usePresenceHeartbeat.js";
+import { useSessionTimeout } from "./hooks/useSessionTimeout.js";
 
 const DashboardPage = lazy(() => import("./pages/DashboardPage.jsx"));
 const InternshipsPage = lazy(() => import("./pages/InternshipsPage.jsx"));
@@ -116,9 +118,32 @@ function LegacyRedirect({ to }) {
   return <Navigate to={to} replace />;
 }
 
+function PresenceBootstrap() {
+  const { authEnabled, user } = useAuth();
+
+  usePresenceHeartbeat(user?.id, {
+    enabled: authEnabled && Boolean(user?.id),
+  });
+
+  return null;
+}
+
+function SessionTimeoutBootstrap() {
+  const { authEnabled, user, signOut } = useAuth();
+
+  useSessionTimeout(user?.id, {
+    enabled: authEnabled && Boolean(user?.id),
+    onTimeout: signOut,
+  });
+
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <PresenceBootstrap />
+      <SessionTimeoutBootstrap />
       <PrefetchOnIdle />
       <Routes>
         <Route element={<RequireAuth />}>

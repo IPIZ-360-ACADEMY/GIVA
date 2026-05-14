@@ -13,6 +13,12 @@ import {
 import { toUserErrorMessage } from "../utils/errorMessages.js";
 
 function normalizeTimeout(value) {
+  if (value === "1" || value === "1 minuto" || value === "1 min") {
+    return "1";
+  }
+  if (value === "5" || value === "5 minutos" || value === "5 min") {
+    return "5";
+  }
   if (value === "15" || value === "15 minutos") {
     return "15";
   }
@@ -250,6 +256,8 @@ export default function SettingsSecurityPage() {
                 value={security.sessionTimeout}
                 onChange={(event) => setSecurity((prev) => ({ ...prev, sessionTimeout: event.target.value }))}
               >
+                <option value="1">{t("settings.security.min1") || "1 minuto"}</option>
+                <option value="5">{t("settings.security.min5") || "5 minutos"}</option>
                 <option value="15">{t("settings.security.min15")}</option>
                 <option value="30">{t("settings.security.min30")}</option>
                 <option value="60">{t("settings.security.min60")}</option>

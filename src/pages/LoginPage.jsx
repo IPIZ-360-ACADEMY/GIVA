@@ -13,6 +13,7 @@ import {
   signUpStudent,
   verifyStudentProcessNumber,
 } from "../services/authService.js";
+import { toUserErrorMessage } from "../utils/errorMessages.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { createTranslator } from "../utils/i18n.js";
 
@@ -152,7 +153,7 @@ export default function LoginPage() {
             if (signUpMsg.includes("already")) {
               setFormError("Esta conta de aluno já foi registada. Tenta fazer login.");
             } else {
-              setFormError("Erro ao criar conta de aluno: " + signUpMsg);
+              setFormError(toUserErrorMessage(signUpError, "Não foi possível criar a conta de aluno agora. Tente novamente."));
             }
             return;
           }
