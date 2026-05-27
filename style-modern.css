@@ -161,7 +161,7 @@ body {
 body {
   font-family: var(--font-body);
   color: var(--text);
-  background: #0284c7;
+  background: var(--bg);
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
