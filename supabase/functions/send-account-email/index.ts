@@ -184,6 +184,47 @@ function buildEmailHtml(params: { purpose: string; actionLink: string; logoUrl: 
   `;
 }
 
+async function sendResendEmailWithRetry(payload: {
+  from: string;
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+}, apiKey: string) {
+  const maxAttempts = 3;
+  let lastStatus = 0;
+  let lastBody = "";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      return { ok: true, status: response.status, body: await response.text() };
+    }
+
+    lastStatus = response.status;
+    try {
+      lastBody = await response.text();
+    } catch {
+      lastBody = "";
+    }
+
+    if (attempt < maxAttempts) {
+      const delayMs = 600 * attempt;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return { ok: false, status: lastStatus, body: lastBody };
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
@@ -249,7 +290,6 @@ Deno.serve(async (req: Request) => {
     let linkError = recoveryLinkResponse.error;
 
     if (linkError || !linkData?.properties?.action_link) {
-      // Fallback: para emails ainda sem conta, gerar link de signup para concluir ativação.
       const signupLinkResponse = await admin.auth.admin.generateLink({
         type: "signup",
         email,
@@ -281,34 +321,20 @@ Deno.serve(async (req: Request) => {
     const html = buildEmailHtml({ purpose, actionLink, logoUrl, appUrl });
     const text = buildEmailText({ purpose, actionLink });
 
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject,
-        html,
-        text,
-      }),
-    });
+    const resendResult = await sendResendEmailWithRetry({
+      from,
+      to: [email],
+      subject,
+      html,
+      text,
+    }, resendApiKey);
 
-    if (!resendResponse.ok) {
-      let resendErrorBody = "";
-      try {
-        resendErrorBody = await resendResponse.text();
-      } catch {
-        resendErrorBody = "";
-      }
-
+    if (!resendResult.ok) {
       return new Response(JSON.stringify({
         ok: false,
         error: "Failed to dispatch email",
-        providerStatus: resendResponse.status,
-        providerBody: resendErrorBody,
+        providerStatus: resendResult.status,
+        providerBody: resendResult.body,
       }), {
         status: 502,
         headers: corsHeaders,
