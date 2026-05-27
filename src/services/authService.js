@@ -175,6 +175,12 @@ function normalizeEmailAddress(value) {
   return normalized.includes("@") ? normalized : "";
 }
 
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function requiresEmailConfirmation(signUpData) {
   return Boolean(signUpData?.user) && !signUpData?.session;
 }
@@ -522,17 +528,36 @@ async function sendAuthEmailByPurpose(email, purpose) {
         ? [edgeStrategy]
         : [edgeStrategy, authStrategy];
 
+  async function runStrategyWithRetry(strategy) {
+    const maxAttempts = 2;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const response = await strategy();
+        if (!response?.error) {
+          return { ok: true, response };
+        }
+        lastError = response.error;
+      } catch (error) {
+        lastError = error;
+      }
+
+      if (attempt < maxAttempts) {
+        await wait(800);
+      }
+    }
+
+    return { ok: false, error: lastError };
+  }
+
   let lastError = null;
   for (const strategy of strategyOrder) {
-    try {
-      const response = await strategy();
-      if (!response?.error) {
-        return response;
-      }
-      lastError = response.error;
-    } catch (error) {
-      lastError = error;
+    const result = await runStrategyWithRetry(strategy);
+    if (result.ok) {
+      return result.response;
     }
+    lastError = result.error;
   }
 
   return { data: null, error: lastError ?? new Error("Falha ao enviar email") };
@@ -593,7 +618,18 @@ async function recoverSignupAfterConfirmationEmailError(email, password) {
 
     const dispatchResponse = await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION);
     if (dispatchResponse?.error) {
-      return { recovered: false, data: null, error: dispatchResponse.error };
+      return {
+        recovered: true,
+        data: {
+          user: signInAttempt?.data?.user ?? { email: normalizedEmail },
+          session: null,
+        },
+        error: null,
+        warning: {
+          code: "ACTIVATION_EMAIL_PENDING",
+          message: dispatchResponse.error?.message ?? "Falha temporária ao enviar email de ativação",
+        },
+      };
     }
 
     await supabase.auth.signOut().catch(() => null);
@@ -605,6 +641,7 @@ async function recoverSignupAfterConfirmationEmailError(email, password) {
         session: null,
       },
       error: null,
+      warning: null,
     };
   } catch (error) {
     return { recovered: false, data: null, error };
@@ -735,7 +772,7 @@ export async function signUpStudent(processNumber, password, displayName, studen
       const recovered = await recoverSignupAfterConfirmationEmailError(authEmail, password);
       if (recovered.recovered) {
         await restoreAdminSession();
-        return { data: recovered.data, error: null };
+        return { data: recovered.data, error: null, warning: recovered.warning ?? null };
       }
       const fallbackError = recovered.error ?? error;
       await restoreAdminSession();
@@ -754,7 +791,14 @@ export async function signUpStudent(processNumber, password, displayName, studen
     const activationDispatch = await sendAuthEmailByPurpose(authEmail, EMAIL_PURPOSE_ACTIVATION);
     if (activationDispatch?.error) {
       await restoreAdminSession();
-      return { data: null, error: activationDispatch.error };
+      return {
+        data,
+        error: null,
+        warning: {
+          code: "ACTIVATION_EMAIL_PENDING",
+          message: activationDispatch.error?.message ?? "Falha temporária ao enviar email de ativação",
+        },
+      };
     }
     await restoreAdminSession();
     return { data, error: null };
@@ -905,7 +949,7 @@ export async function signUpWithType(email, password, displayName, type, typeDat
       const recovered = await recoverSignupAfterConfirmationEmailError(normalizedEmail, password);
       if (recovered.recovered) {
         await restorePrevSession();
-        return { data: recovered.data, error: null };
+        return { data: recovered.data, error: null, warning: recovered.warning ?? null };
       }
       const fallbackError = recovered.error ?? error;
       await restorePrevSession();
@@ -931,7 +975,14 @@ export async function signUpWithType(email, password, displayName, type, typeDat
     const activationDispatch = await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION);
     if (activationDispatch?.error) {
       await restorePrevSession();
-      return { data: null, error: activationDispatch.error };
+      return {
+        data,
+        error: null,
+        warning: {
+          code: "ACTIVATION_EMAIL_PENDING",
+          message: activationDispatch.error?.message ?? "Falha temporária ao enviar email de ativação",
+        },
+      };
     }
   }
 

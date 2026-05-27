@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   sendAccountActivationEmail,
@@ -9,6 +9,7 @@ import "../styles/auth-email-status.css";
 const PURPOSE_ACTIVATION = "activation";
 const PURPOSE_PASSWORD_RESET = "password-reset";
 const RESEND_COOLDOWN_SECONDS = 30;
+const AUTO_RETRY_INTERVAL_MS = 45000;
 
 function normalizePurpose(value) {
   const normalized = String(value ?? "").trim().toLowerCase();
@@ -42,6 +43,8 @@ export default function EmailDeliveryStatusPage() {
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
   const [resendAllowedAt, setResendAllowedAt] = useState(0);
+  const [autoRetryState, setAutoRetryState] = useState("");
+  const [delivered, setDelivered] = useState(false);
 
   const purpose = useMemo(
     () => normalizePurpose(searchParams.get("purpose")),
@@ -67,30 +70,67 @@ export default function EmailDeliveryStatusPage() {
     ? "Abre o email e clica no botão para criar uma nova senha."
     : "Abre o email e confirma a tua conta no botão de ativação.";
 
-  async function handleResend() {
-    if (!canResend) {
+  const sendFn = useMemo(
+    () => (purpose === PURPOSE_PASSWORD_RESET ? sendPasswordResetEmail : sendAccountActivationEmail),
+    [purpose]
+  );
+
+  const performSend = useCallback(async ({ manual }) => {
+    if (!rawEmail || submitting || delivered) {
       return;
     }
 
-    setError("");
-    setFeedback("");
+    if (manual && !canResend) {
+      return;
+    }
+
+    if (manual) {
+      setError("");
+      setFeedback("");
+    }
+
     setSubmitting(true);
-
-    const sendFn = purpose === PURPOSE_PASSWORD_RESET
-      ? sendPasswordResetEmail
-      : sendAccountActivationEmail;
-
     const { error: sendError } = await sendFn(rawEmail);
     setSubmitting(false);
 
     if (sendError) {
-      setError(`Não foi possível reenviar o email: ${sendError.message ?? "erro desconhecido"}`);
+      if (manual) {
+        setError(`Não foi possível reenviar o email: ${sendError.message ?? "erro desconhecido"}`);
+      } else {
+        setAutoRetryState("Reenvio automático em curso. Vamos tentar novamente em instantes.");
+      }
       return;
     }
 
+    setDelivered(true);
+    setAutoRetryState("Email de ativação confirmado para envio. Verifique sua caixa de entrada.");
     setResendAllowedAt(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
     setFeedback("Reenvio concluído. Verifica caixa de entrada e spam.");
+  }, [canResend, delivered, rawEmail, sendFn, submitting]);
+
+  async function handleResend() {
+    await performSend({ manual: true });
   }
+
+  useEffect(() => {
+    if (purpose !== PURPOSE_ACTIVATION || !rawEmail || delivered) {
+      return;
+    }
+
+    let cancelled = false;
+    const runAutoAttempt = async () => {
+      if (cancelled) return;
+      await performSend({ manual: false });
+    };
+
+    runAutoAttempt();
+    const intervalId = setInterval(runAutoAttempt, AUTO_RETRY_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [delivered, performSend, purpose, rawEmail]);
 
   return (
     <main className="email-status-shell">
@@ -115,6 +155,7 @@ export default function EmailDeliveryStatusPage() {
 
         {feedback ? <p className="email-status-feedback success">{feedback}</p> : null}
         {error ? <p className="email-status-feedback error">{error}</p> : null}
+        {autoRetryState ? <p className="email-status-feedback">{autoRetryState}</p> : null}
 
         <div className="email-status-actions">
           <button
@@ -141,6 +182,7 @@ export default function EmailDeliveryStatusPage() {
 
         <p className="email-status-help">
           O link pode expirar. Se isso acontecer, pede um novo envio nesta página.
+          {purpose === PURPOSE_ACTIVATION ? " Também tentamos reenvio automático enquanto esta página estiver aberta." : ""}
         </p>
 
         <p className="email-status-footer">
