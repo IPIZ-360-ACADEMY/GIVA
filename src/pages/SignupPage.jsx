@@ -61,6 +61,15 @@ function InfoRow({ label, value }) {
 export default function SignupPage() {
   const navigate = useNavigate();
 
+  function getSignupErrorMessage(message) {
+    const normalized = String(message ?? "").trim();
+    const lower = normalized.toLowerCase();
+    if (lower.includes("error sending confirmation email") || lower.includes("sending confirmation email")) {
+      return "A conta foi recebida, mas houve falha no envio da confirmação. Tente novamente em alguns segundos.";
+    }
+    return normalized;
+  }
+
   function goToEmailStatus({ email, purpose, source }) {
     const query = new URLSearchParams({
       email: String(email ?? "").trim().toLowerCase(),
@@ -179,7 +188,7 @@ export default function SignupPage() {
     setSubmittingStudent(false);
 
     if (signUpError) {
-      const msg = signUpError.message ?? "";
+      const msg = getSignupErrorMessage(signUpError.message ?? "");
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este número de processo já tem conta. Faz login.");
       } else {
@@ -295,7 +304,7 @@ export default function SignupPage() {
     setSubmittingOther(false);
 
     if (signUpError) {
-      const msg = signUpError.message ?? "";
+      const msg = getSignupErrorMessage(signUpError.message ?? "");
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este e-mail já está registado. Tenta fazer login.");
       } else {

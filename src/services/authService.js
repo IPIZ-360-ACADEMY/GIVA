@@ -534,6 +534,53 @@ export async function sendPasswordResetEmail(email) {
   return sendAuthEmailByPurpose(email, EMAIL_PURPOSE_PASSWORD_RESET);
 }
 
+function isConfirmationEmailDispatchError(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("error sending confirmation email")
+    || message.includes("sending confirmation email");
+}
+
+function isEmailNotConfirmedError(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("email not confirmed") || message.includes("email_not_confirmed");
+}
+
+async function recoverSignupAfterConfirmationEmailError(email, password) {
+  if (!isAuthEnabled()) {
+    return { recovered: false, data: null };
+  }
+
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  if (!normalizedEmail || !password) {
+    return { recovered: false, data: null };
+  }
+
+  try {
+    const signInAttempt = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    const accountLikelyCreated = !signInAttempt?.error || isEmailNotConfirmedError(signInAttempt.error);
+    if (!accountLikelyCreated) {
+      return { recovered: false, data: null };
+    }
+
+    await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION).catch(() => null);
+    await supabase.auth.signOut().catch(() => null);
+
+    return {
+      recovered: true,
+      data: {
+        user: signInAttempt?.data?.user ?? { email: normalizedEmail },
+        session: null,
+      },
+    };
+  } catch {
+    return { recovered: false, data: null };
+  }
+}
+
 export async function getMfaAuthenticatorAssuranceLevel() {
   if (!isAuthEnabled()) {
     return { data: null, error: new Error("Supabase Auth is not configured") };
@@ -654,6 +701,13 @@ export async function signUpStudent(processNumber, password, displayName, studen
   });
 
   if (error) {
+    if (isConfirmationEmailDispatchError(error)) {
+      const recovered = await recoverSignupAfterConfirmationEmailError(authEmail, password);
+      if (recovered.recovered) {
+        await restoreAdminSession();
+        return { data: recovered.data, error: null };
+      }
+    }
     await restoreAdminSession();
     return { data: null, error };
   }
@@ -810,6 +864,13 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   });
 
   if (error) {
+    if (isConfirmationEmailDispatchError(error)) {
+      const recovered = await recoverSignupAfterConfirmationEmailError(normalizedEmail, password);
+      if (recovered.recovered) {
+        await restorePrevSession();
+        return { data: recovered.data, error: null };
+      }
+    }
     await restorePrevSession();
     return { data: null, error };
   }
