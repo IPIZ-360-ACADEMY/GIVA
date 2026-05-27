@@ -279,18 +279,7 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    const recoveryLinkResponse = await admin.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: {
-        redirectTo,
-      },
-    });
-
-    let linkData = recoveryLinkResponse.data;
-    let linkError = recoveryLinkResponse.error;
-
-    if ((linkError || !linkData?.properties?.action_link) && purpose === PURPOSE_ACTIVATION && createUserPayload?.password) {
+    if (purpose === PURPOSE_ACTIVATION && createUserPayload?.password) {
       const createUserResponse = await admin.auth.admin.createUser({
         email,
         password: String(createUserPayload.password),
@@ -311,35 +300,19 @@ Deno.serve(async (req: Request) => {
           headers: corsHeaders,
         });
       }
-
-      const retryRecoveryLinkResponse = await admin.auth.admin.generateLink({
-        type: "recovery",
-        email,
-        options: {
-          redirectTo,
-        },
-      });
-
-      linkData = retryRecoveryLinkResponse.data;
-      linkError = retryRecoveryLinkResponse.error;
     }
 
-    if (linkError || !linkData?.properties?.action_link) {
-      const signupLinkResponse = await admin.auth.admin.generateLink({
-        type: "signup",
-        email,
-        password: crypto.randomUUID(),
-        options: {
-          redirectTo,
-          data: {
-            user_type: "external",
-          },
-        },
-      });
+    const initialLinkType = purpose === PURPOSE_PASSWORD_RESET ? "recovery" : "magiclink";
+    const linkResponse = await admin.auth.admin.generateLink({
+      type: initialLinkType,
+      email,
+      options: {
+        redirectTo,
+      },
+    });
 
-      linkData = signupLinkResponse.data;
-      linkError = signupLinkResponse.error;
-    }
+    let linkData = linkResponse.data;
+    let linkError = linkResponse.error;
 
     if (linkError || !linkData?.properties?.action_link) {
       return new Response(JSON.stringify({ ok: false, error: "Failed to generate auth link" }), {

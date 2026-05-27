@@ -515,6 +515,13 @@ async function sendAuthEmailByPurpose(email, purpose) {
   };
 
   const authStrategy = async () => {
+    if (normalizedPurpose === EMAIL_PURPOSE_ACTIVATION) {
+      return {
+        data: null,
+        error: new Error("Supabase Auth client não suporta reenvio confiável de ativação neste fluxo"),
+      };
+    }
+
     return supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo,
     });
