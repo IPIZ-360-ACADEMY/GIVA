@@ -103,6 +103,9 @@
       })();
 
       (function (l) {
+        var isGithubPagesHost = /github\.io$/i.test(String(l.hostname || ""));
+        if (!isGithubPagesHost) return;
+
         if (l.search[1] === "/") {
           var decoded = l.search
             .slice(1)
