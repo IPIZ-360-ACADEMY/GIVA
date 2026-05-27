@@ -1,1 +1,4 @@
+/GIVA/assets/* /assets/:splat 200
+/GIVA/giva-favicon.png /giva-favicon.png 200
+/GIVA/* /index.html 200
 /* /index.html 200
