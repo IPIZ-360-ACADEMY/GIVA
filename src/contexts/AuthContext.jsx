@@ -15,6 +15,19 @@ import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { resolveAccessProfile, typeFromRole } from "../utils/accessControl.js";
 
 const AuthContext = createContext(null);
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 10000;
+
+function withTimeout(promise, timeoutMs, timeoutMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      const timer = setTimeout(() => {
+        clearTimeout(timer);
+        reject(new Error(timeoutMessage));
+      }, timeoutMs);
+    }),
+  ]);
+}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -155,11 +168,22 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const nextSession = await getCurrentSession();
+        const nextSession = await withTimeout(
+          getCurrentSession(),
+          AUTH_BOOTSTRAP_TIMEOUT_MS,
+          "Timeout ao validar sessao",
+        );
         if (!active) {
           return;
         }
         await resolveSessionState(nextSession);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        console.warn("Falha ao validar sessao no arranque:", error?.message ?? error);
+        setSession(null);
+        setUserProfile(null);
       } finally {
         if (active) {
           setLoadingPhase("ready");
