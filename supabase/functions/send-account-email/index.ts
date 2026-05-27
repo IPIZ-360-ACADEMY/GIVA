@@ -227,8 +227,8 @@ Deno.serve(async (req: Request) => {
     const purpose = normalizePurpose(payload?.purpose ?? payload?.template);
 
     if (!email || !isValidEmail(email)) {
-      return new Response(JSON.stringify({ ok: true, queued: true }), {
-        status: 200,
+      return new Response(JSON.stringify({ ok: false, error: "Invalid email" }), {
+        status: 400,
         headers: corsHeaders,
       });
     }
@@ -246,8 +246,8 @@ Deno.serve(async (req: Request) => {
     });
 
     if (linkError || !linkData?.properties?.action_link) {
-      return new Response(JSON.stringify({ ok: true, queued: true }), {
-        status: 200,
+      return new Response(JSON.stringify({ ok: false, error: "Failed to generate auth link" }), {
+        status: 502,
         headers: corsHeaders,
       });
     }
@@ -276,8 +276,20 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!resendResponse.ok) {
-      return new Response(JSON.stringify({ ok: true, queued: true }), {
-        status: 200,
+      let resendErrorBody = "";
+      try {
+        resendErrorBody = await resendResponse.text();
+      } catch {
+        resendErrorBody = "";
+      }
+
+      return new Response(JSON.stringify({
+        ok: false,
+        error: "Failed to dispatch email",
+        providerStatus: resendResponse.status,
+        providerBody: resendErrorBody,
+      }), {
+        status: 502,
         headers: corsHeaders,
       });
     }
@@ -286,9 +298,13 @@ Deno.serve(async (req: Request) => {
       status: 200,
       headers: corsHeaders,
     });
-  } catch (_error) {
-    return new Response(JSON.stringify({ ok: true, queued: true }), {
-      status: 200,
+  } catch (error) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: "Unexpected error while sending email",
+      detail: String((error as Error)?.message ?? error ?? "Unknown error"),
+    }), {
+      status: 500,
       headers: corsHeaders,
     });
   }

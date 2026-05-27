@@ -547,12 +547,12 @@ function isEmailNotConfirmedError(error) {
 
 async function recoverSignupAfterConfirmationEmailError(email, password) {
   if (!isAuthEnabled()) {
-    return { recovered: false, data: null };
+    return { recovered: false, data: null, error: null };
   }
 
   const normalizedEmail = String(email ?? "").trim().toLowerCase();
   if (!normalizedEmail || !password) {
-    return { recovered: false, data: null };
+    return { recovered: false, data: null, error: null };
   }
 
   try {
@@ -563,10 +563,14 @@ async function recoverSignupAfterConfirmationEmailError(email, password) {
 
     const accountLikelyCreated = !signInAttempt?.error || isEmailNotConfirmedError(signInAttempt.error);
     if (!accountLikelyCreated) {
-      return { recovered: false, data: null };
+      return { recovered: false, data: null, error: signInAttempt?.error ?? null };
     }
 
-    await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION).catch(() => null);
+    const dispatchResponse = await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION);
+    if (dispatchResponse?.error) {
+      return { recovered: false, data: null, error: dispatchResponse.error };
+    }
+
     await supabase.auth.signOut().catch(() => null);
 
     return {
@@ -575,9 +579,10 @@ async function recoverSignupAfterConfirmationEmailError(email, password) {
         user: signInAttempt?.data?.user ?? { email: normalizedEmail },
         session: null,
       },
+      error: null,
     };
-  } catch {
-    return { recovered: false, data: null };
+  } catch (error) {
+    return { recovered: false, data: null, error };
   }
 }
 
@@ -707,6 +712,9 @@ export async function signUpStudent(processNumber, password, displayName, studen
         await restoreAdminSession();
         return { data: recovered.data, error: null };
       }
+      const fallbackError = recovered.error ?? error;
+      await restoreAdminSession();
+      return { data: null, error: fallbackError };
     }
     await restoreAdminSession();
     return { data: null, error };
@@ -718,7 +726,11 @@ export async function signUpStudent(processNumber, password, displayName, studen
 
   const hasSession = Boolean(data.session);
   if (!hasSession) {
-    await sendAuthEmailByPurpose(authEmail, EMAIL_PURPOSE_ACTIVATION).catch(() => null);
+    const activationDispatch = await sendAuthEmailByPurpose(authEmail, EMAIL_PURPOSE_ACTIVATION);
+    if (activationDispatch?.error) {
+      await restoreAdminSession();
+      return { data: null, error: activationDispatch.error };
+    }
     await restoreAdminSession();
     return { data, error: null };
   }
@@ -870,6 +882,9 @@ export async function signUpWithType(email, password, displayName, type, typeDat
         await restorePrevSession();
         return { data: recovered.data, error: null };
       }
+      const fallbackError = recovered.error ?? error;
+      await restorePrevSession();
+      return { data: null, error: fallbackError };
     }
     await restorePrevSession();
     return { data: null, error };
@@ -888,7 +903,11 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   const hasSession = Boolean(data.session);
 
   if (!hasSession) {
-    await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION).catch(() => null);
+    const activationDispatch = await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION);
+    if (activationDispatch?.error) {
+      await restorePrevSession();
+      return { data: null, error: activationDispatch.error };
+    }
   }
 
   if (hasSession) {

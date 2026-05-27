@@ -65,7 +65,7 @@ export default function SignupPage() {
     const normalized = String(message ?? "").trim();
     const lower = normalized.toLowerCase();
     if (lower.includes("error sending confirmation email") || lower.includes("sending confirmation email")) {
-      return "A conta foi recebida, mas houve falha no envio da confirmação. Tente novamente em alguns segundos.";
+      return "Não foi possível enviar o email de ativação agora. Tente novamente em alguns segundos e verifique também Spam/Promoções.";
     }
     return normalized;
   }
