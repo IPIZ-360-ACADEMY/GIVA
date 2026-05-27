@@ -171,6 +171,18 @@ export async function adminCreatePlatformUser(payload) {
     p_area_id: normalized.areaId,
   });
   if (error) throw error;
+
+  const activationResult = await sendAccountActivationEmail(normalized.email).catch((dispatchError) => ({
+    error: dispatchError,
+  }));
+
+  if (activationResult?.error) {
+    return {
+      ...data,
+      emailDispatchWarning: activationResult.error?.message ?? "Falha ao enviar email de ativação",
+    };
+  }
+
   return data;
 }
 

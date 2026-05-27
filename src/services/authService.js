@@ -413,8 +413,28 @@ export async function updateUserAccountSettings({
 
   const payload = { data: nextMetadata };
   if (email !== undefined) payload.email = email || undefined;
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  const currentEmail = String(user?.email ?? "").trim().toLowerCase();
+  const emailChanged = Boolean(normalizedEmail) && normalizedEmail !== currentEmail;
 
-  return supabase.auth.updateUser(payload);
+  const response = await supabase.auth.updateUser(payload);
+  if (response?.error || !emailChanged) {
+    return response;
+  }
+
+  // Reforça o envio pelo canal central (edge/auth fallback) para padronizar notificações.
+  const activationDispatch = await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION);
+  if (activationDispatch?.error) {
+    return {
+      ...response,
+      warning: {
+        code: "EMAIL_DISPATCH_FAILED",
+        message: activationDispatch.error?.message ?? "Falha ao enviar email de confirmação",
+      },
+    };
+  }
+
+  return response;
 }
 
 export async function updateUserPassword(newPassword) {
@@ -644,6 +664,7 @@ export async function signUpStudent(processNumber, password, displayName, studen
 
   const hasSession = Boolean(data.session);
   if (!hasSession) {
+    await sendAuthEmailByPurpose(authEmail, EMAIL_PURPOSE_ACTIVATION).catch(() => null);
     await restoreAdminSession();
     return { data, error: null };
   }
@@ -804,6 +825,10 @@ export async function signUpWithType(email, password, displayName, type, typeDat
   // Sem sessão, o fluxo depende exclusivamente do trigger handle_new_user_oauth
   // para manter backend como fonte única de verdade.
   const hasSession = Boolean(data.session);
+
+  if (!hasSession) {
+    await sendAuthEmailByPurpose(normalizedEmail, EMAIL_PURPOSE_ACTIVATION).catch(() => null);
+  }
 
   if (hasSession) {
     // Com sessão: upsert direto — garante dados correctos mesmo que trigger tenha corrido
