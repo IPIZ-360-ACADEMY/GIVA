@@ -6,16 +6,17 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import "../style-modern.css";
 import "../style-dark-mode-overrides.css";
 
+const routerBasename = (import.meta.env.VITE_ROUTER_BASENAME ?? "/GIVA").replace(/\/$/, "") || "/";
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter
-x        basename={import.meta.env.BASE_URL}
+        basename={routerBasename}
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
         }}
-      
       >
         <App />
       </BrowserRouter>
