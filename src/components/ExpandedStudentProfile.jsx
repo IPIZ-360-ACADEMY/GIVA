@@ -135,9 +135,9 @@ export default function ExpandedStudentProfile({ studentId, t, isOwnProfile }) {
 
   async function handlePhotoUpload(file) {
     if (!file) return;
-    const updatedProfile = await uploadProfilePhoto(studentId, file);
-    if (updatedProfile?.profile_photo_url) {
-      setProfile({ ...profile, profile_photo_url: updatedProfile.profile_photo_url });
+    const url = await uploadProfilePhoto(studentId, file);
+    if (url) {
+      setProfile({ ...profile, profile_photo_url: url });
     }
   }
 }
@@ -157,11 +157,7 @@ function PersonalTab({ profile, onUpdate, t, isOwnProfile }) {
   async function handleSave() {
     setLoading(true);
     const result = await updateStudentProfile(profile.id, {
-      email: formData.email,
-      address: formData.address,
-      city: formData.city,
-      postal_code: formData.postal_code,
-      bio: formData.bio,
+      ...formData,
       phone_number: formData.phone,
     });
     setLoading(false);

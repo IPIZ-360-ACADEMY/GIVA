@@ -102,4 +102,13 @@ describe("UsersManagementPage security actions", () => {
     expect(screen.queryByRole("button", { name: /editar/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /eliminar conta/i })).not.toBeInTheDocument();
   });
+
+  it("não expõe opção de role legado ADMIN_1 no filtro", async () => {
+    mocks.role = "SUPER_ADMIN";
+    render(<UsersManagementPage embedded showToast={mocks.showToast} />);
+
+    await screen.findByText(/aluno um/i);
+
+    expect(screen.queryByRole("option", { name: /coordenador legado/i })).not.toBeInTheDocument();
+  });
 });

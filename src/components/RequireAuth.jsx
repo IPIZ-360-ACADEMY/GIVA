@@ -56,7 +56,7 @@ function PendingApprovalScreen() {
 }
 
 export default function RequireAuth({ children }) {
-  const { authEnabled, isAuthenticated, loading, userProfile, authProfile, user } = useAuth();
+  const { authEnabled, isAuthenticated, loading, loadingPhase, userProfile, authProfile, user } = useAuth();
   const location = useLocation();
 
   if (!authEnabled) {
@@ -67,7 +67,7 @@ export default function RequireAuth({ children }) {
     return (
       <main className="page" aria-busy="true">
         <section className="panel">
-          <p>A validar sessao...</p>
+          <p>{loadingPhase === "profile" ? "A carregar perfil e permissoes..." : "A validar sessao..."}</p>
         </section>
       </main>
     );
@@ -114,7 +114,7 @@ export default function RequireAuth({ children }) {
     );
   }
 
-  // Coordenador (inclui legado ADMIN_1): apenas escopo académico/operacional
+  // Coordenador: apenas escopo académico/operacional
   if (isCoordinatorUser) {
     const coordinatorAllowedRoutes = [
       "/",

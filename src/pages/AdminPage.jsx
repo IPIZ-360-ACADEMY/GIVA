@@ -9,9 +9,9 @@ import { getPendingPosts, moderatePost } from "../services/postsService.js";
 import { broadcastAnnouncement, sendNotification } from "../services/notificationsService.js";
 import { listManualClasses, createManualClass } from "../services/classesService.js";
 import { registerStudentUnified } from "../services/studentRegistryService.js";
-import { adminUpdateUserProfile } from "../services/usersAdminService.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { isCoordinatorRole } from "../utils/accessControl.js";
+import { isPastSchoolYear, parseSchoolYear, toLocalIsoDate } from "./admin/utils.js";
 
 export function canAccessAdminPanel(role) {
   return String(role ?? "").toUpperCase() === "SUPER_ADMIN";
@@ -56,30 +56,6 @@ function Avatar({ url, name, size = 36 }) {
       {initials}
     </div>
   );
-}
-
-function toLocalIsoDate(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseSchoolYear(value) {
-  const raw = String(value ?? "").trim();
-  const match = raw.match(/^(\d{4})\s*\/\s*(\d{4})$/);
-  if (!match) return null;
-  const startYear = Number(match[1]);
-  const endYear = Number(match[2]);
-  if (!Number.isFinite(startYear) || !Number.isFinite(endYear)) return null;
-  if (endYear !== startYear + 1) return null;
-  return { startYear, endYear };
-}
-
-function isPastSchoolYear(value) {
-  const parsed = parseSchoolYear(value);
-  if (!parsed) return false;
-  return parsed.startYear < new Date().getFullYear();
 }
 
 // ── Stat Card ─────────────────────────────────────────────────
@@ -542,18 +518,13 @@ function UserEditModal({ user, onClose, onSaved, toast }) {
   async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
-    let error = null;
-    try {
-      await adminUpdateUserProfile(user.id, {
-        display_name: form.display_name.trim(),
-        bio: form.bio.trim() || null,
-        avatar_url: form.avatar_url.trim() || null,
-        type: form.type,
-        moderation: form.moderation,
-      });
-    } catch (err) {
-      error = err;
-    }
+    const { error } = await supabase.from("user_profiles").update({
+      display_name: form.display_name.trim(),
+      bio: form.bio.trim() || null,
+      avatar_url: form.avatar_url.trim() || null,
+      type: form.type,
+      moderation: form.moderation,
+    }).eq("id", user.id);
     setSaving(false);
     if (error) { toast("Erro ao guardar: " + error.message, "error"); return; }
     toast("Perfil atualizado.");

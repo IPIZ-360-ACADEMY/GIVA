@@ -2,9 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
-import { AuthProvider, useAuth } from "./contexts/AuthContext.jsx";
-import { usePresenceHeartbeat } from "./hooks/usePresenceHeartbeat.js";
-import { useSessionTimeout } from "./hooks/useSessionTimeout.js";
+import { AuthProvider } from "./contexts/AuthContext.jsx";
 
 const DashboardPage = lazy(() => import("./pages/DashboardPage.jsx"));
 const InternshipsPage = lazy(() => import("./pages/InternshipsPage.jsx"));
@@ -32,6 +30,7 @@ const HomePage = lazy(() => import("./pages/HomePage.jsx"));
 const ChatPage = lazy(() => import("./pages/ChatPage.jsx"));
 const PublicProfilePage = lazy(() => import("./pages/PublicProfilePage.jsx"));
 const PublicPostPage = lazy(() => import("./pages/PublicPostPage.jsx"));
+const EmailDeliveryStatusPage = lazy(() => import("./pages/EmailDeliveryStatusPage.jsx"));
 const LoginPage = lazy(() => import("./pages/LoginPage.jsx"));
 const AdminPage = lazy(() => import("./pages/AdminPage.jsx"));
 const ToolsPage = lazy(() => import("./pages/ToolsPage.jsx"));
@@ -118,32 +117,9 @@ function LegacyRedirect({ to }) {
   return <Navigate to={to} replace />;
 }
 
-function PresenceBootstrap() {
-  const { authEnabled, user } = useAuth();
-
-  usePresenceHeartbeat(user?.id, {
-    enabled: authEnabled && Boolean(user?.id),
-  });
-
-  return null;
-}
-
-function SessionTimeoutBootstrap() {
-  const { authEnabled, user, signOut } = useAuth();
-
-  useSessionTimeout(user?.id, {
-    enabled: authEnabled && Boolean(user?.id),
-    onTimeout: signOut,
-  });
-
-  return null;
-}
-
 export default function App() {
   return (
     <AuthProvider>
-      <PresenceBootstrap />
-      <SessionTimeoutBootstrap />
       <PrefetchOnIdle />
       <Routes>
         <Route element={<RequireAuth />}>
@@ -169,6 +145,7 @@ export default function App() {
 
         <Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
         <Route path="/signup" element={<Suspense fallback={<PageLoader />}><SignupPage /></Suspense>} />
+        <Route path="/email-status" element={<Suspense fallback={<PageLoader />}><EmailDeliveryStatusPage /></Suspense>} />
         <Route path="/perfil-publico/:userId" element={<Suspense fallback={<PageLoader />}><PublicProfilePage /></Suspense>} />
         <Route path="/post/:postId" element={<Suspense fallback={<PageLoader />}><PublicPostPage /></Suspense>} />
         <Route path="/login.html" element={<LegacyRedirect to="/login" />} />

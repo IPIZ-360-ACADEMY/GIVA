@@ -423,7 +423,6 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareFeedback, setShareFeedback] = useState("");
   const [touchStartX, setTouchStartX] = useState(null);
-  const [captionExpanded, setCaptionExpanded] = useState(false);
   const author = post.author ?? {};
   const reactions = post.reactions ?? [];
   const commentsCount = post.comments_count?.[0]?.count ?? 0;
@@ -434,10 +433,7 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
   const myReaction = reactions.find((reaction) => reaction.user_id === user?.id);
   const hasReaction = Boolean(myReaction);
   const reactionsCount = reactions.length;
-  const showCaptionBelow = Boolean(safePostImageUrl);
-  const captionContent = compact ? summarizedContent : post.content;
-  const canExpandCaption = (captionContent?.length ?? 0) > 170;
-  const shouldClampCaption = showCaptionBelow && canExpandCaption && !captionExpanded;
+  const showCompactCaptionBelow = compact && safePostImageUrl;
   const shareUrl = useMemo(() => getPublicPostUrl(post.id), [post.id]);
   const shareText = `${author.display_name ?? "Membro da comunidade"}: ${summarizedContent ?? "Veja esta publicação."}`;
 
@@ -598,159 +594,53 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  /* ─── sub-components reutilizados em ambos os layouts ─── */
-  const authorHeader = (
-    <div className="post-card-header">
-      <Link to={`/perfil-publico/${author.id}`} className="post-author-link">
-        <Avatar url={author.avatar_url} name={author.display_name} size={compact ? 36 : 44} />
-        <div className="post-author-info">
-          <div className="post-author-top">
-            <strong className="post-author-name">{author.display_name ?? "Utilizador"}</strong>
-            {post.is_official && <span className="material-icons-sharp post-verified-icon">verified</span>}
-          </div>
-          <span className="post-author-role">{TYPE_LABELS[author.type] ?? "Membro"}</span>
-          <span className="post-time">{timeAgo}</span>
+  return (
+    <article className={`post-card${compact ? " post-card-compact" : ""}`}>
+      {post.is_official && (
+        <div className="post-official-banner">
+          <span className="material-icons-sharp">campaign</span>
+          Comunicado Oficial IPIZ
         </div>
-      </Link>
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-        {!readOnly && user?.id === author.id && (
-          <PostActionsMenu postId={post.id} onDeleted={onDeleted} />
-        )}
-      </div>
-    </div>
-  );
+      )}
 
-  const actionsBlock = (
-    <div className={`post-instagram-compact${compact ? " is-compact" : ""}`} aria-label="Ações da publicação">
-      <div className="post-instagram-actions">
-        <button
-          type="button"
-          className={`post-ig-btn${hasReaction ? " active" : ""}`}
-          onClick={handleCompactLike}
-          aria-label={hasReaction ? "Remover gosto" : "Gostar"}
-          disabled={readOnly}
-        >
-          <span className="material-icons-sharp">{hasReaction ? "favorite" : "favorite_border"}</span>
-        </button>
-        <button
-          type="button"
-          className="post-ig-btn"
-          aria-label="Comentários"
-          onClick={() => {}}
-          disabled={!post?.id}
-        >
-          <span className="material-icons-sharp">chat_bubble_outline</span>
-        </button>
-        <button
-          type="button"
-          className="post-ig-btn"
-          aria-label="Partilhar"
-          onClick={() => setShareModalOpen(true)}
-          disabled={readOnly || !onShare}
-        >
-          <span className="material-icons-sharp">send</span>
-        </button>
-        <span className="post-instagram-spacer" aria-hidden="true" />
-        {!readOnly && (
+      <div className="post-card-header">
+        <Link to={`/perfil-publico/${author.id}`} className="post-author-link">
+          <Avatar url={author.avatar_url} name={author.display_name} size={compact ? 36 : 44} />
+          <div className="post-author-info">
+            <div className="post-author-top">
+              <strong className="post-author-name">{author.display_name ?? "Utilizador"}</strong>
+              {post.is_official && <span className="material-icons-sharp post-verified-icon">verified</span>}
+            </div>
+            <span className="post-author-role">{TYPE_LABELS[author.type] ?? "Membro"}</span>
+            <span className="post-time">{timeAgo}</span>
+          </div>
+        </Link>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          {!readOnly && user?.id === author.id && (
+            <PostActionsMenu postId={post.id} onDeleted={onDeleted} />
+          )}
+          {!readOnly && (
           <button
             type="button"
-            className={`post-ig-btn${bookmarked ? " active-bookmark" : ""}`}
+            className={`post-bookmark-btn${bookmarked ? " active" : ""}`}
             onClick={handleBookmark}
             title={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
             aria-label={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
-            disabled={bookmarking}
           >
             <span className="material-icons-sharp">{bookmarked ? "bookmark" : "bookmark_border"}</span>
           </button>
-        )}
-      </div>
-      <div className="post-instagram-meta">
-        <p className="post-instagram-likes">{reactionsCount} gosto(s)</p>
-        {showCaptionBelow && (
-          <p className={`post-instagram-caption${shouldClampCaption ? "" : " is-expanded"}`}>
-            <strong>{author.display_name ?? "Utilizador"}</strong> {captionContent}
-          </p>
-        )}
-        {showCaptionBelow && canExpandCaption && (
-          <button
-            type="button"
-            className="post-caption-toggle"
-            onClick={() => setCaptionExpanded((value) => !value)}
-          >
-            {captionExpanded ? "Ver menos" : "Ver mais"}
-          </button>
-        )}
-        {(commentsCount > 0 || sharesCount > 0) && (
-          <div className="post-instagram-stats">
-            {commentsCount > 0 && (
-              <span className="post-instagram-stat-chip">
-                <span className="material-icons-sharp">chat_bubble_outline</span>
-                {commentsCount} comentário(s)
-              </span>
-            )}
-            {sharesCount > 0 && (
-              <span className="post-instagram-stat-chip">
-                <span className="material-icons-sharp">forward_to_inbox</span>
-                {sharesCount} partilha(s)
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  /* ── layout com imagem (desktop: 2 colunas) ── */
-  const imageLayout = safePostImageUrl && !compact && (
-    <div className="post-card-media-layout">
-      {/* coluna esquerda — imagem */}
-      <button
-        type="button"
-        className="post-card-media-col post-image-button"
-        onClick={openImageModal}
-        aria-label="Abrir imagem em tamanho completo"
-      >
-        <img src={safePostImageUrl} alt="" className="post-image" loading="lazy" />
-      </button>
-
-      {/* coluna direita — header + descrição + ações + comentários */}
-      <div className="post-card-content-col">
-        {authorHeader}
-        <div className="post-card-body post-card-body-side">
-          {post.content && (
-            <p className="post-content post-content-side">{post.content}</p>
           )}
-          {poll && <PollSection poll={poll} />}
         </div>
-        {actionsBlock}
-        {!readOnly && (
-          <div className="post-card-comments-side">
-            <CommentSection
-              postId={post.id}
-              commentsCount={commentsCount}
-              sharesCount={sharesCount}
-              onShare={() => setShareModalOpen(true)}
-              compact={false}
-              readOnly={readOnly}
-            />
-          </div>
-        )}
       </div>
-    </div>
-  );
 
-  /* ── layout vertical (sem imagem ou compact) ── */
-  const stackLayout = (!safePostImageUrl || compact) && (
-    <>
-      {authorHeader}
       <div className="post-card-body">
-        {!showCaptionBelow && (
+        {!showCompactCaptionBelow && (
           <p className={`post-content${compact ? " post-content-compact" : ""}`}>{compact ? summarizedContent : post.content}</p>
         )}
-        {compact && safePostImageUrl && (
+        {safePostImageUrl && (
           <button
             type="button"
-            className="post-image-wrap post-image-button post-image-wrap-compact"
+            className={`post-image-wrap post-image-button${compact ? " post-image-wrap-compact" : ""}`}
             onClick={openImageModal}
             aria-label="Abrir imagem em tamanho completo"
           >
@@ -760,35 +650,74 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
         {!compact && poll && <PollSection poll={poll} />}
         {compact && poll && (
           <div className="post-compact-tags" aria-label="Resumo do conteúdo">
-            <span className="post-compact-tag">Contém sondagem</span>
+            {poll ? <span className="post-compact-tag">Contém sondagem</span> : null}
           </div>
         )}
       </div>
-      {actionsBlock}
-      {!compact && !readOnly && (
+
+      {!compact ? (
+        <ReactionBar
+          postId={post.id}
+          reactions={reactions}
+          onToggle={(type) => onReaction?.(post.id, type)}
+          readOnly={readOnly}
+        />
+      ) : (
+        <div className="post-instagram-compact" aria-label="Ações da publicação">
+          <div className="post-instagram-actions">
+            <button
+              type="button"
+              className={`post-ig-btn${hasReaction ? " active" : ""}`}
+              onClick={handleCompactLike}
+              aria-label={hasReaction ? "Remover gosto" : "Gostar"}
+              disabled={readOnly}
+            >
+              <span className="material-icons-sharp">{hasReaction ? "favorite" : "favorite_border"}</span>
+            </button>
+            <button
+              type="button"
+              className="post-ig-btn"
+              aria-label="Comentários"
+              onClick={handleOpenComments}
+              disabled={!post?.id}
+            >
+              <span className="material-icons-sharp">chat_bubble_outline</span>
+            </button>
+            <button
+              type="button"
+              className="post-ig-btn"
+              aria-label="Partilhar"
+              onClick={() => setShareModalOpen(true)}
+              disabled={readOnly || !onShare}
+            >
+              <span className="material-icons-sharp">send</span>
+            </button>
+          </div>
+          <div className="post-instagram-meta">
+            <p className="post-instagram-likes">{reactionsCount} gosto(s)</p>
+            <p className="post-instagram-caption">
+              <strong>{author.display_name ?? "Utilizador"}</strong> {summarizedContent}
+            </p>
+            {commentsCount > 0 && (
+              <p className="post-instagram-comments">Ver {commentsCount} comentário(s)</p>
+            )}
+            {sharesCount > 0 && (
+              <p className="post-instagram-comments">{sharesCount} partilha(s)</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!compact && (
         <CommentSection
           postId={post.id}
           commentsCount={commentsCount}
           sharesCount={sharesCount}
           onShare={() => setShareModalOpen(true)}
-          compact={false}
+          compact={compact}
           readOnly={readOnly}
         />
       )}
-    </>
-  );
-
-  return (
-    <article className={`post-card${compact ? " post-card-compact" : ""}${safePostImageUrl && !compact ? " post-card-has-media" : ""}`}>
-      {post.is_official && (
-        <div className="post-official-banner">
-          <span className="material-icons-sharp">campaign</span>
-          Comunicado Oficial IPIZ
-        </div>
-      )}
-
-      {imageLayout}
-      {stackLayout}
 
       {imageModalOpen && modalImageUrl && (
         <div className="post-overlay" role="dialog" aria-modal="true" aria-label="Imagem da publicação" onClick={closeImageModal}>

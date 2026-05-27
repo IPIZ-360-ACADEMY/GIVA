@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
-import { getAuthProfile, getCurrentSession, sendAccountActivationEmail } from "./authService.js";
+import { getAuthProfile, getCurrentSession, sendAccountActivationEmail, sendPasswordResetEmail } from "./authService.js";
 import {
   defaultModerationForAccountType,
   defaultRoleForAccountType,
@@ -46,15 +46,13 @@ function normalizeUserPayload(payload = {}) {
     ? normalizeStudentProcessNumber(payload.processNumber ?? getStudentProcessNumberFromIdentifier(payload.email)) || null
     : null;
   const areaId = role === "COORDINATOR" ? String(payload.areaId ?? "").trim() || null : null;
-  // ADMIN_1 é o alias legado de COORDINATOR — normalizar para o valor canónico
-  const normalizedRole = role === "ADMIN_1" ? "COORDINATOR" : role;
 
   return {
     email: String(payload.email ?? "").trim().toLowerCase(),
     password: payload.password,
     display_name: String(payload.display_name ?? "").trim(),
     type,
-    role: normalizedRole,
+    role,
     moderation,
     processNumber,
     areaId,
@@ -62,12 +60,41 @@ function normalizeUserPayload(payload = {}) {
   };
 }
 
-/** Lista todos os utilizadores com email, bio e role JWT. Requer ADMIN_1+. */
-export async function adminListUsers() {
+function parsePaginationOptions(options) {
+  const page = Number(options?.page);
+  const limit = Number(options?.limit);
+  if (!Number.isFinite(page) || !Number.isFinite(limit) || page < 1 || limit < 1) {
+    return null;
+  }
+
+  return {
+    page,
+    limit,
+    from: (page - 1) * limit,
+    to: page * limit,
+  };
+}
+
+/** Lista utilizadores com email, bio e role JWT. Requer perfil administrativo. */
+export async function adminListUsers(options = undefined) {
   await requireAdminRole([ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_COORDINATOR], "listar utilizadores");
   const { data, error } = await supabase.rpc("admin_list_users");
   if (error) throw error;
-  return data ?? [];
+
+  const rows = data ?? [];
+  const pagination = parsePaginationOptions(options);
+  if (!pagination) {
+    return rows;
+  }
+
+  const items = rows.slice(pagination.from, pagination.to);
+  return {
+    items,
+    total: rows.length,
+    page: pagination.page,
+    limit: pagination.limit,
+    totalPages: Math.max(1, Math.ceil(rows.length / pagination.limit)),
+  };
 }
 
 /** Muda o JWT role (app_metadata.role). Requer SUPER_ADMIN. */
@@ -93,44 +120,11 @@ export async function adminSetUserArea(targetUid, areaId) {
 /** Actualiza campos do perfil (type, moderation, display_name, bio, avatar_url). */
 export async function adminUpdateUserProfile(uid, updates) {
   await requireAdminRole([ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_COORDINATOR], "atualizar perfil de utilizador");
-  const nextDisplayName = String(updates?.display_name ?? "").trim();
-  const nextAvatarUrl = String(updates?.avatar_url ?? "").trim();
-
   const { error } = await supabase
     .from("user_profiles")
     .update(updates)
     .eq("id", uid);
   if (error) throw error;
-
-  // Sincroniza campos denormalizados da tabela operacional de estágios
-  // para que a interface reflita de imediato alterações no perfil.
-  if (nextDisplayName || nextAvatarUrl) {
-    const { data: studentAccount } = await supabase
-      .from("student_accounts")
-      .select("process_number")
-      .eq("id", uid)
-      .maybeSingle();
-
-    const processNumber = normalizeStudentProcessNumber(studentAccount?.process_number);
-    if (processNumber) {
-      const internshipPatch = {};
-      if (nextDisplayName) internshipPatch.aluno = nextDisplayName;
-      if (nextAvatarUrl) internshipPatch.photo = nextAvatarUrl;
-
-      if (Object.keys(internshipPatch).length > 0) {
-        internshipPatch.ultima_atualizacao = new Date().toLocaleDateString("pt-PT");
-        const { error: internshipSyncError } = await supabase
-          .from("internships")
-          .update(internshipPatch)
-          .eq("processo", processNumber);
-
-        if (internshipSyncError) {
-          // Não bloquear a edição do perfil por falha de sincronização secundária.
-          console.warn("[usersAdminService] internships sync warning:", internshipSyncError.message);
-        }
-      }
-    }
-  }
 }
 
 /** Elimina utilizador da auth + perfil. Requer SUPER_ADMIN. */
@@ -145,6 +139,15 @@ export async function adminDeleteUser(uid) {
  * Útil para reenviar credenciais quando o utilizador não recebeu o email inicial.
  */
 export async function adminSendPasswordReset(email) {
+  await requireAdminRole([ROLE_SUPER_ADMIN], "reenviar ativação de conta");
+  const normalized = String(email ?? "").trim().toLowerCase();
+  if (!normalized) throw new Error("Email é obrigatório");
+  const { error } = await sendPasswordResetEmail(normalized);
+  if (error) throw error;
+}
+
+/** Reenvia email de ativação/convite para contas pendentes. Requer SUPER_ADMIN. */
+export async function adminSendAccountActivation(email) {
   await requireAdminRole([ROLE_SUPER_ADMIN], "reenviar ativação de conta");
   const normalized = String(email ?? "").trim().toLowerCase();
   if (!normalized) throw new Error("Email é obrigatório");

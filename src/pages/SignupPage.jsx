@@ -11,7 +11,6 @@ import {
   uploadAvatar,
   verifyStudentProcessNumber,
 } from "../services/authService.js";
-import { toUserErrorMessage } from "../utils/errorMessages.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 
 const TYPES = [
@@ -61,6 +60,15 @@ function InfoRow({ label, value }) {
 
 export default function SignupPage() {
   const navigate = useNavigate();
+
+  function goToEmailStatus({ email, purpose, source }) {
+    const query = new URLSearchParams({
+      email: String(email ?? "").trim().toLowerCase(),
+      purpose: String(purpose ?? "activation"),
+      source: String(source ?? "signup"),
+    }).toString();
+    navigate(`/email-status?${query}`, { replace: true });
+  }
 
   // step: 1 = tipo | 2 = lookup/formulário | 3 = senha aluno | 4 = pendente empresa
   const [step, setStep] = useState(1);
@@ -175,7 +183,7 @@ export default function SignupPage() {
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este número de processo já tem conta. Faz login.");
       } else {
-        setError(toUserErrorMessage(signUpError, "Não foi possível criar a conta agora. Tente novamente."));
+        setError(msg || "Erro ao criar conta. Tenta novamente.");
       }
       return;
     }
@@ -185,12 +193,19 @@ export default function SignupPage() {
       uploadAvatar(studentAvatarFile, "students").catch(() => null);
     }
 
+    if (requiresEmailConfirmation(signUpData)) {
+      goToEmailStatus({
+        email: verifiedStudent?.email,
+        purpose: "activation",
+        source: "signup-student",
+      });
+      return;
+    }
+
     navigate("/login", {
       replace: true,
       state: {
-        signupMessage: requiresEmailConfirmation(signUpData)
-          ? "Conta criada. Confirma o e-mail enviado antes de entrar."
-          : "Conta criada com sucesso. Podes entrar agora.",
+        signupMessage: "Conta criada com sucesso. Podes entrar agora.",
       },
     });
   }
@@ -284,19 +299,25 @@ export default function SignupPage() {
       if (msg.includes("already registered") || msg.includes("already exists")) {
         setError("Este e-mail já está registado. Tenta fazer login.");
       } else {
-        setError(toUserErrorMessage(signUpError, "Não foi possível criar a conta agora. Tente novamente."));
+        setError(msg || "Erro ao criar conta. Tenta novamente.");
       }
+      return;
+    }
+
+    const shouldConfirmByEmail = selectedType === "company" || requiresEmailConfirmation(signUpData);
+    if (shouldConfirmByEmail) {
+      goToEmailStatus({
+        email: companyForm.email,
+        purpose: "activation",
+        source: selectedType === "company" ? "signup-company" : "signup-external",
+      });
       return;
     }
 
     navigate("/login", {
       replace: true,
       state: {
-        signupMessage: selectedType === "company"
-          ? "Pedido submetido. Confirma o e-mail e aguarda aprovação do administrador."
-          : requiresEmailConfirmation(signUpData)
-            ? "Conta criada. Confirma o e-mail enviado antes de entrar."
-            : "Conta criada com sucesso. Podes entrar agora.",
+        signupMessage: "Conta criada com sucesso. Podes entrar agora.",
       },
     });
   }

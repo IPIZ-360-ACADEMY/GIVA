@@ -3,6 +3,7 @@ import {
   PENDING_STUDENT_OAUTH_STORAGE,
   getAuthProfile,
   getCurrentSession,
+  getPendingStudentOauthTtlMs,
   isAuthEnabled,
   onAuthStateChange,
   signInWithPassword,
@@ -39,7 +40,8 @@ export function AuthProvider({ children }) {
     }
 
     const createdAt = Number(pending?.createdAt ?? 0);
-    const expired = Number.isFinite(createdAt) && createdAt > 0 && Date.now() - createdAt > 30 * 60 * 1000;
+    const ttlMs = getPendingStudentOauthTtlMs();
+    const expired = Number.isFinite(createdAt) && createdAt > 0 && Date.now() - createdAt > ttlMs;
     if (expired) {
       sessionStorage.removeItem(PENDING_STUDENT_OAUTH_STORAGE);
       return;

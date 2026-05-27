@@ -161,7 +161,7 @@ body {
 body {
   font-family: var(--font-body);
   color: var(--text);
-  background: var(--bg);
+  background: #0284c7;
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -315,69 +315,6 @@ td,
   height: 1.9rem;
   object-fit: contain;
   flex-shrink: 0;
-}
-
-/* Tela global de erro */
-.giva-error-screen {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  background:
-    radial-gradient(900px 420px at -10% -20%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 60%),
-    radial-gradient(900px 420px at 110% -20%, color-mix(in srgb, var(--warning) 12%, transparent), transparent 65%),
-    var(--bg);
-}
-
-.giva-error-card {
-  width: min(640px, 100%);
-  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow-lg);
-  padding: clamp(1.25rem, 2.4vw, 2rem);
-  text-align: center;
-}
-
-.giva-error-logo {
-  width: clamp(78px, 9vw, 106px);
-  height: auto;
-  margin: 0 auto 0.75rem;
-}
-
-.giva-error-kicker {
-  margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.giva-error-title {
-  margin: 0.55rem 0 0.4rem;
-  font-family: var(--font-title);
-  font-size: clamp(1.2rem, 1.8vw, 1.6rem);
-  color: var(--text);
-}
-
-.giva-error-description {
-  margin: 0 auto;
-  max-width: 52ch;
-  color: var(--text-muted);
-}
-
-.giva-error-actions {
-  margin-top: 1.15rem;
-  display: flex;
-  justify-content: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.giva-error-helper {
-  margin-top: 0.9rem;
-  color: var(--text-subtle);
-  font-size: 0.82rem;
 }
 
 .sidebar-brand-name {
@@ -6490,68 +6427,6 @@ html[data-ui="neo"] .login-box {
 }
 .tools-section { padding: 1.5rem; }
 
-.tools-import-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.tools-import-template-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--bg-elevated) 72%, transparent), color-mix(in srgb, var(--primary) 8%, var(--bg-soft)));
-  color: var(--text);
-  padding: 0.6rem 0.9rem;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 12%, transparent);
-  transition: transform var(--motion-fast) ease, box-shadow var(--motion-fast) ease, border-color var(--motion-fast) ease;
-}
-
-.tools-import-template-btn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--primary) 18%, transparent);
-}
-
-.tools-import-template-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--ring), 0 12px 26px color-mix(in srgb, var(--primary) 18%, transparent);
-}
-
-.tools-import-template-icon {
-  width: 34px;
-  height: 34px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 9px;
-  font-size: 1.05rem;
-  background: color-mix(in srgb, var(--primary) 16%, var(--bg-elevated));
-  color: var(--primary);
-}
-
-.tools-import-template-copy {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.1;
-}
-
-.tools-import-template-copy strong {
-  font-size: 0.86rem;
-  letter-spacing: 0.01em;
-}
-
-.tools-import-template-copy small {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}
-
 /* Toolbar */
 .tools-toolbar {
   display: flex;
@@ -6951,9 +6826,9 @@ html[data-ui="neo"] .login-box {
   border-radius: var(--radius-sm);
   overflow: hidden;
   margin-top: 0.75rem;
-  max-height: none;
+  max-height: 480px;
 }
-.post-image { width: 100%; height: auto; object-fit: contain; display: block; }
+.post-image { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Badge oficial */
 .post-official-banner {
@@ -7126,14 +7001,13 @@ html[data-ui="neo"] .login-box {
 .post-card-compact .post-image-wrap-compact {
   margin-top: 0.5rem;
   border-radius: 12px;
-  max-height: none;
+  max-height: 210px;
 }
 
 .post-card-compact .post-image-wrap-compact .post-image {
   width: 100%;
-  height: auto;
-  max-height: none;
-  object-fit: contain;
+  height: 210px;
+  object-fit: cover;
 }
 
 .post-content-compact {
@@ -7237,62 +7111,6 @@ html[data-ui="neo"] .login-box {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.post-instagram-caption.is-expanded {
-  display: block;
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-}
-
-.post-caption-toggle {
-  margin-top: 0.08rem;
-  border: none;
-  padding: 0;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.post-caption-toggle:hover {
-  color: var(--text);
-}
-
-.post-instagram-stats {
-  margin-top: 0.2rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.post-instagram-stat-btn,
-.post-instagram-stat-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border) 74%, rgba(56, 189, 248, 0.45));
-  background: color-mix(in srgb, var(--bg-soft) 86%, rgba(56, 189, 248, 0.1));
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  font-weight: 700;
-  padding: 0.25rem 0.52rem;
-}
-
-.post-instagram-stat-btn {
-  cursor: pointer;
-}
-
-.post-instagram-stat-btn:hover {
-  color: var(--text);
-  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
-}
-
-.post-instagram-stat-btn .material-icons-sharp,
-.post-instagram-stat-chip .material-icons-sharp {
-  font-size: 0.92rem;
 }
 
 .post-instagram-comments {
@@ -8044,14 +7862,6 @@ html[data-ui="neo"] .login-box {
 }
 @media (max-width: 640px) {
   .tools-section { padding: 1rem; }
-  .tools-import-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .tools-import-template-btn {
-    width: 100%;
-    justify-content: flex-start;
-  }
   .tools-form-grid { grid-template-columns: 1fr; }
   .tools-pauta-table th:nth-child(5),
   .tools-pauta-table td:nth-child(5),

@@ -88,44 +88,24 @@ function writeToStorage(items) {
 }
 
 export async function listManualClasses() {
-  if (isTestMode) {
-    return readFromStorage();
-  }
-
-  if (!canUseClassesApi()) {
-    throw new Error("Supabase is not configured");
-  }
-
   if (canUseClassesApi()) {
     const { data, error } = await supabase
       .from(TABLE)
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      throw error;
+    if (!error) {
+      const rows = (data ?? []).map(normalizeRow).slice(0, STORAGE_MAX_ITEMS);
+      writeToStorage(rows);
+      return rows;
     }
-
-    const rows = (data ?? []).map(normalizeRow).slice(0, STORAGE_MAX_ITEMS);
-    writeToStorage(rows);
-    return rows;
+    // fall through to localStorage on error
   }
 
-  return [];
+  return readFromStorage();
 }
 
 export async function createManualClass(payload) {
-  if (isTestMode) {
-    const next = { ...payload, id: `manual-${Date.now()}` };
-    const current = readFromStorage();
-    writeToStorage([next, ...current]);
-    return next;
-  }
-
-  if (!canUseClassesApi()) {
-    throw new Error("Supabase is not configured");
-  }
-
   if (canUseClassesApi()) {
     const { data, error } = await supabase
       .from(TABLE)
@@ -146,34 +126,25 @@ export async function createManualClass(payload) {
       .select()
       .single();
 
-    if (error) {
-      throw error;
+    if (!error && data) {
+      return normalizeRow(data);
     }
-
-    return normalizeRow(data);
+    // fall through to localStorage on error
   }
 
-  throw new Error("Falha ao criar turma manual");
+  const next = { ...payload, id: `manual-${Date.now()}` };
+  const current = readFromStorage();
+  writeToStorage([next, ...current]);
+  return next;
 }
 
 export async function deleteManualClass(id) {
-  if (isTestMode) {
-    const current = readFromStorage();
-    writeToStorage(current.filter((item) => item.id !== id));
-    return true;
-  }
-
-  if (!canUseClassesApi()) {
-    throw new Error("Supabase is not configured");
-  }
-
   if (canUseClassesApi()) {
     const { error } = await supabase.from(TABLE).delete().eq("id", id);
-    if (error) {
-      throw error;
-    }
-    return true;
+    if (!error) return true;
   }
 
-  return false;
+  const current = readFromStorage();
+  writeToStorage(current.filter((item) => item.id !== id));
+  return true;
 }

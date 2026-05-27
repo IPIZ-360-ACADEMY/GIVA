@@ -1,96 +1,61 @@
 import { Component } from "react";
-import logoImage from "../../images/logo.png";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
-    this.onWindowError = this.onWindowError.bind(this);
-    this.onUnhandledRejection = this.onUnhandledRejection.bind(this);
   }
 
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
 
-  componentDidMount() {
-    window.addEventListener("error", this.onWindowError);
-    window.addEventListener("unhandledrejection", this.onUnhandledRejection);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener("error", this.onWindowError);
-    window.removeEventListener("unhandledrejection", this.onUnhandledRejection);
-  }
-
   componentDidCatch(error, info) {
     console.error("[GIVA ErrorBoundary]", error, info.componentStack);
   }
 
-  onWindowError(event) {
-    if (this.state.hasError) return;
-    const error = event?.error ?? new Error(event?.message ?? "Erro inesperado na aplicação.");
-    this.setState({ hasError: true, error });
-  }
-
-  onUnhandledRejection(event) {
-    if (this.state.hasError) return;
-    const reason = event?.reason;
-    const error = reason instanceof Error
-      ? reason
-      : new Error(typeof reason === "string" ? reason : "Falha inesperada ao carregar recursos do sistema.");
-    this.setState({ hasError: true, error });
-  }
-
-  getFriendlyMessage() {
-    const message = String(this.state.error?.message ?? "").toLowerCase();
-    const isBundleError =
-      message.includes("chunk")
-      || message.includes("dynamically imported module")
-      || message.includes("failed to fetch")
-      || message.includes("loading css chunk")
-      || message.includes("loading chunk")
-      || message.includes("importing a module script failed");
-
-    if (isBundleError) {
-      return {
-        title: "Estamos a atualizar o sistema agora",
-        description:
-          "A versão da aplicação mudou durante a sua navegação. Para sua segurança, recarregue a página para continuar com os dados mais recentes.",
-      };
-    }
-
-    return {
-      title: "Encontrámos um problema inesperado",
-      description:
-        "A sua sessão está protegida. Recarregue a página para retomar normalmente. Se o problema persistir, contacte o suporte institucional.",
-    };
-  }
-
   render() {
     if (this.state.hasError) {
-      const friendly = this.getFriendlyMessage();
       return (
-        <main className="giva-error-screen" role="alert" aria-live="assertive">
-          <div className="giva-error-card">
-            <img className="giva-error-logo" src={logoImage} alt="Logo GIVA" />
-
-            <p className="giva-error-kicker">GIVA | Plataforma Institucional</p>
-            <h1 className="giva-error-title">{friendly.title}</h1>
-            <p className="giva-error-description">{friendly.description}</p>
-
-            <div className="giva-error-actions">
-              <button className="btn primary" onClick={() => window.location.reload()}>
-                Recarregar sistema
-              </button>
-              <button className="btn secondary" onClick={() => { window.location.href = "/"; }}>
-                Ir para o início
-              </button>
-            </div>
-
-            <p className="giva-error-helper">
-              Caso continue a ver esta mensagem, aguarde alguns segundos e tente novamente.
+        <main style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "2rem",
+          fontFamily: "system-ui, sans-serif",
+        }}>
+          <div style={{
+            maxWidth: 480,
+            textAlign: "center",
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            borderRadius: 16,
+            padding: "2.5rem 2rem",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+          }}>
+            <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "1rem" }}>⚠️</span>
+            <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.1rem", color: "#0f1f2d" }}>
+              Ocorreu um erro inesperado
+            </h2>
+            <p style={{ color: "#5f7386", fontSize: "0.875rem", margin: "0 0 1.5rem" }}>
+              {this.state.error?.message ?? "Algo correu mal ao carregar a página."}
             </p>
+            <button
+              style={{
+                background: "#0f6d67",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "0.6rem 1.4rem",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              onClick={() => window.location.reload()}
+            >
+              Recarregar página
+            </button>
           </div>
         </main>
       );

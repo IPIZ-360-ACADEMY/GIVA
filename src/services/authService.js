@@ -57,10 +57,19 @@ export function isValidEmail(email) {
 }
 
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
-import { normalizeAliasAccountType } from "../utils/accessControl.js";
+import { normalizeAliasAccountType, normalizePlatformRole } from "../utils/accessControl.js";
 
 const DEFAULT_EMAIL_DOMAIN = "giva.ao";
 export const PENDING_STUDENT_OAUTH_STORAGE = "giva.pendingStudentOAuth";
+const DEFAULT_EMAIL_EDGE_FUNCTION = "send-account-email";
+const EMAIL_PURPOSE_ACTIVATION = "activation";
+const EMAIL_PURPOSE_PASSWORD_RESET = "password-reset";
+
+export function getPendingStudentOauthTtlMs() {
+  const rawMinutes = Number.parseInt(String(import.meta.env.VITE_PENDING_OAUTH_TTL_MINUTES ?? "30"), 10);
+  const safeMinutes = Number.isFinite(rawMinutes) && rawMinutes > 0 ? rawMinutes : 30;
+  return safeMinutes * 60 * 1000;
+}
 
 function isUuid(value) {
   const normalized = String(value ?? "").trim();
@@ -129,6 +138,26 @@ function getAuthEmailRedirectTo() {
   return `${getAuthRedirectBase()}/login`;
 }
 
+function getEmailEdgeFunctionName() {
+  return String(import.meta.env.VITE_SUPABASE_EMAIL_EDGE_FUNCTION ?? DEFAULT_EMAIL_EDGE_FUNCTION).trim();
+}
+
+function getEmailProviderPreference() {
+  const raw = String(import.meta.env.VITE_EMAIL_PROVIDER ?? "edge-first").trim().toLowerCase();
+  if (["edge-first", "auth-first", "edge-only", "auth-only"].includes(raw)) {
+    return raw;
+  }
+  return "edge-first";
+}
+
+function normalizeEmailPurpose(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === EMAIL_PURPOSE_PASSWORD_RESET) {
+    return EMAIL_PURPOSE_PASSWORD_RESET;
+  }
+  return EMAIL_PURPOSE_ACTIVATION;
+}
+
 function normalizeEmailAddress(value) {
   const normalized = String(value ?? "").trim().toLowerCase();
   return normalized.includes("@") ? normalized : "";
@@ -171,9 +200,8 @@ export function getAuthProfile(user) {
     ?? appMetadata.course_code
   );
 
-  // Normalizar ADMIN_1 legado para COORDINATOR (tipo único de coordenador)
   const rawRole = appMetadata.role ?? metadata.role ?? "authenticated";
-  const role = rawRole === "ADMIN_1" ? "COORDINATOR" : rawRole;
+  const role = normalizePlatformRole(rawRole);
 
   return {
     displayName: metadata.display_name ?? metadata.name ?? user.email ?? null,
@@ -408,7 +436,7 @@ export async function updateUserPassword(newPassword) {
   });
 }
 
-export async function sendAccountActivationEmail(email) {
+async function sendAuthEmailByPurpose(email, purpose) {
   if (!isAuthEnabled()) {
     return { error: new Error("Supabase Auth is not configured") };
   }
@@ -418,11 +446,72 @@ export async function sendAccountActivationEmail(email) {
     return { error: new Error("Email is required") };
   }
 
-  const redirectTo = getAuthEmailRedirectTo();
+  if (!isValidEmail(normalizedEmail)) {
+    return { error: new Error("Email inválido") };
+  }
 
-  return supabase.auth.resetPasswordForEmail(normalizedEmail, {
-    redirectTo,
-  });
+  const redirectTo = getAuthEmailRedirectTo();
+  const normalizedPurpose = normalizeEmailPurpose(purpose);
+
+  const authStrategy = async () => {
+    return supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+  };
+
+  const edgeStrategy = async () => {
+    const functionName = getEmailEdgeFunctionName();
+    if (!functionName || !supabase.functions?.invoke) {
+      return { data: null, error: new Error("Supabase Edge Functions indisponível") };
+    }
+
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: {
+        template: normalizedPurpose,
+        purpose: normalizedPurpose,
+        email: normalizedEmail,
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  };
+
+  const strategyByProvider = getEmailProviderPreference();
+  const strategyOrder = strategyByProvider === "auth-first"
+    ? [authStrategy, edgeStrategy]
+    : strategyByProvider === "auth-only"
+      ? [authStrategy]
+      : strategyByProvider === "edge-only"
+        ? [edgeStrategy]
+        : [edgeStrategy, authStrategy];
+
+  let lastError = null;
+  for (const strategy of strategyOrder) {
+    try {
+      const response = await strategy();
+      if (!response?.error) {
+        return response;
+      }
+      lastError = response.error;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  return { data: null, error: lastError ?? new Error("Falha ao enviar email") };
+}
+
+export async function sendAccountActivationEmail(email) {
+  return sendAuthEmailByPurpose(email, EMAIL_PURPOSE_ACTIVATION);
+}
+
+export async function sendPasswordResetEmail(email) {
+  return sendAuthEmailByPurpose(email, EMAIL_PURPOSE_PASSWORD_RESET);
 }
 
 export async function getMfaAuthenticatorAssuranceLevel() {

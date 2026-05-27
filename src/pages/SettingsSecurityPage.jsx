@@ -10,15 +10,8 @@ import {
   updateUserPassword,
   verifyMfaTotpCode,
 } from "../services/authService.js";
-import { toUserErrorMessage } from "../utils/errorMessages.js";
 
 function normalizeTimeout(value) {
-  if (value === "1" || value === "1 minuto" || value === "1 min") {
-    return "1";
-  }
-  if (value === "5" || value === "5 minutos" || value === "5 min") {
-    return "5";
-  }
   if (value === "15" || value === "15 minutos") {
     return "15";
   }
@@ -94,7 +87,7 @@ export default function SettingsSecurityPage() {
     setMfaLoading(false);
 
     if (aalError || factorsError) {
-      setMfaError(toUserErrorMessage(aalError || factorsError, "Não foi possível carregar o estado da autenticação em dois fatores."));
+      setMfaError(aalError?.message || factorsError?.message || "Não foi possível carregar o estado do MFA.");
       return;
     }
 
@@ -124,7 +117,7 @@ export default function SettingsSecurityPage() {
     setMfaBusy(false);
 
     if (error) {
-      setMfaError(toUserErrorMessage(error, "Não foi possível iniciar a autenticação em dois fatores."));
+      setMfaError(error.message || "Não foi possível iniciar o MFA.");
       return;
     }
 
@@ -147,7 +140,7 @@ export default function SettingsSecurityPage() {
     setMfaBusy(false);
 
     if (error) {
-      setMfaError(toUserErrorMessage(error, "Não foi possível validar o código da autenticação em dois fatores."));
+      setMfaError(error.message || "Não foi possível validar o código MFA.");
       return;
     }
 
@@ -166,7 +159,7 @@ export default function SettingsSecurityPage() {
     setMfaBusy(false);
 
     if (error) {
-      setMfaError(toUserErrorMessage(error, "Não foi possível desativar a autenticação em dois fatores."));
+      setMfaError(error.message || "Não foi possível desativar o MFA.");
       return;
     }
 
@@ -256,8 +249,6 @@ export default function SettingsSecurityPage() {
                 value={security.sessionTimeout}
                 onChange={(event) => setSecurity((prev) => ({ ...prev, sessionTimeout: event.target.value }))}
               >
-                <option value="1">{t("settings.security.min1") || "1 minuto"}</option>
-                <option value="5">{t("settings.security.min5") || "5 minutos"}</option>
                 <option value="15">{t("settings.security.min15")}</option>
                 <option value="30">{t("settings.security.min30")}</option>
                 <option value="60">{t("settings.security.min60")}</option>

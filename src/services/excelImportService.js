@@ -1,10 +1,21 @@
-import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase.js';
 import { registerStudentUnified } from './studentRegistryService.js';
-import { normalizeStudentProcessNumber } from '../utils/processNumber.js';
+import { createManualClass } from './classesService.js';
+import { createTrainingArea, createCourse } from './trainingAreaService.js';
 
 function normalizeString(value) {
   return String(value ?? '').trim();
+}
+
+function parseSchoolYear(value) {
+  const raw = normalizeString(value);
+  const match = raw.match(/^(\d{4})\s*\/\s*(\d{4})$/);
+  if (!match) return null;
+  const startYear = Number(match[1]);
+  const endYear = Number(match[2]);
+  if (!Number.isFinite(startYear) || !Number.isFinite(endYear)) return null;
+  if (endYear !== startYear + 1) return null;
+  return { startYear, endYear };
 }
 
 function currentSchoolYear() {
@@ -12,192 +23,191 @@ function currentSchoolYear() {
   return `${year}/${year + 1}`;
 }
 
-function normalizeHeader(value) {
-  return normalizeString(value)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-const HEADER_ALIASES = {
-  processNumber: ['processo', 'nprocesso', 'numprocesso', 'numeroprocesso', 'numerodeprocesso', 'processnumber', 'nproc', 'nrproc', 'noproc'],
-  fullName: ['nomecompleto', 'nome', 'fullname', 'name', 'nomecompletodoaluno', 'nomedoaluno'],
-  email: ['email', 'correio', 'correioeletronico', 'correioelectronico', 'e-mail', 'mail'],
-  phoneNumber: ['telemovel', 'telefone', 'contacto', 'contato', 'phone', 'phonenumber', 'numerodetelemovel', 'numerodetelefone'],
-};
-
-function mapHeaders(headerRow) {
-  const mapped = {};
-
-  headerRow.forEach((headerValue, index) => {
-    const normalized = normalizeHeader(headerValue);
-    for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
-      if (aliases.includes(normalized) && mapped[field] === undefined) {
-        mapped[field] = index;
-      }
-    }
-  });
-
-  return mapped;
-}
-
-function scoreHeaderMap(map) {
-  let score = 0;
-  if (map.processNumber !== undefined) score += 2;
-  if (map.fullName !== undefined) score += 2;
-  if (map.email !== undefined) score += 1;
-  if (map.phoneNumber !== undefined) score += 1;
-  return score;
-}
-
-function detectHeaderRow(rawRows) {
-  let best = null;
-  const maxScan = Math.min(rawRows.length, 40);
-
-  for (let i = 0; i < maxScan; i++) {
-    const row = rawRows[i] ?? [];
-    const map = mapHeaders(row);
-    const score = scoreHeaderMap(map);
-    if (!best || score > best.score) {
-      best = { rowIndex: i, map, score };
-    }
-    if (score >= 4) break;
-  }
-
-  if (!best) return null;
-  if (best.map.processNumber === undefined || best.map.fullName === undefined) return null;
-  return best;
-}
-
-export async function parseExcelImportRows(file) {
+export async function importExcelData(file) {
+  const XLSX = await import('xlsx');
   const arrayBuffer = await file.arrayBuffer();
   const workbook = XLSX.read(arrayBuffer, { type: 'array' });
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
-  const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-  if (rawRows.length < 2) {
-    throw new Error('O ficheiro Excel deve conter pelo menos cabeçalho e uma linha de dados.');
+  if (jsonData.length < 2) {
+    throw new Error('O ficheiro Excel deve conter pelo menos uma linha de cabeçalho e uma linha de dados.');
   }
 
-  const detectedHeader = detectHeaderRow(rawRows);
-  if (!detectedHeader) {
-    throw new Error('Não foi possível localizar as colunas de Processo e Nome Completo no ficheiro.');
-  }
+  const headers = jsonData[0].map(h => normalizeString(h).toLowerCase());
+  const rows = jsonData.slice(1);
 
-  const dataRows = [];
+  // Expected headers (case insensitive)
+  const expectedHeaders = [
+    'area_codigo', 'area_nome', 'curso_codigo', 'curso_nome', 'turma_nome',
+    'processo', 'nome_completo', 'email', 'telefone', 'data_nascimento', 'bi', 'morada'
+  ];
 
-  for (let i = detectedHeader.rowIndex + 1; i < rawRows.length; i++) {
-    const row = rawRows[i];
-    if (!row || !row.some((cell) => normalizeString(cell) !== '')) continue;
-
-    const processNumber = normalizeStudentProcessNumber(row[detectedHeader.map.processNumber]);
-    const fullName = normalizeString(row[detectedHeader.map.fullName]);
-    const email = detectedHeader.map.email !== undefined
-      ? normalizeString(row[detectedHeader.map.email]).toLowerCase()
-      : '';
-    const phoneNumber = detectedHeader.map.phoneNumber !== undefined
-      ? normalizeString(row[detectedHeader.map.phoneNumber])
-      : '';
-
-    dataRows.push({
-      _rowNum: i + 1,
-      processNumber,
-      fullName,
-      email,
-      phoneNumber,
-    });
-  }
-
-  return {
-    rows: dataRows,
-    headerRowNumber: detectedHeader.rowIndex + 1,
-  };
-}
-
-export async function importExcelData(file) {
-  const parsed = await parseExcelImportRows(file);
-  const rows = parsed.rows;
-
-  if (!rows.length) {
-    throw new Error('Não foram encontradas linhas válidas para importação.');
+  const headerMap = {};
+  for (const expected of expectedHeaders) {
+    const index = headers.indexOf(expected);
+    if (index === -1) {
+      throw new Error(`Cabeçalho obrigatório não encontrado: ${expected}`);
+    }
+    headerMap[expected] = index;
   }
 
   const results = {
-    processNumbersRegistered: 0,
+    areasCreated: 0,
+    coursesCreated: 0,
+    classesCreated: 0,
     studentsRegistered: 0,
-    accountsAlreadyLinked: 0,
-    withEmail: 0,
-    withPhoneNumber: 0,
-    rowsProcessed: 0,
-    skipped: 0,
     errors: [],
     warnings: []
   };
 
-  const seenProcessesInFile = new Set();
-  const accountExistsCache = new Map();
-  const schoolYear = currentSchoolYear();
+  const areaCache = new Map(); // code -> id
+  const courseCache = new Map(); // areaId + code -> id
+  const classCache = new Map(); // areaId + courseCode + className -> id
 
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex];
-    if (!row) continue;
-
-    results.rowsProcessed++;
+    if (!row || row.length === 0) continue;
 
     try {
-      const processNumber = normalizeStudentProcessNumber(row.processNumber);
-      const fullName = normalizeString(row.fullName);
-      const email = normalizeString(row.email).toLowerCase();
-      const phoneNumber = normalizeString(row.phoneNumber);
-      const rowNumber = row._rowNum ?? rowIndex + 2;
+      const areaCode = normalizeString(row[headerMap['area_codigo']]);
+      const areaName = normalizeString(row[headerMap['area_nome']]);
+      const courseCode = normalizeString(row[headerMap['curso_codigo']]);
+      const courseName = normalizeString(row[headerMap['curso_nome']]);
+      const className = normalizeString(row[headerMap['turma_nome']]);
+      const processNumber = normalizeString(row[headerMap['processo']]);
+      const fullName = normalizeString(row[headerMap['nome_completo']]);
+      const email = normalizeString(row[headerMap['email']]);
+      const phone = normalizeString(row[headerMap['telefone']]);
+      const birthDate = row[headerMap['data_nascimento']];
+      const bi = normalizeString(row[headerMap['bi']]);
+      const address = normalizeString(row[headerMap['morada']]);
+
+      if (!areaCode || !areaName) {
+        results.errors.push(`Linha ${rowIndex + 2}: Código e nome da área são obrigatórios.`);
+        continue;
+      }
+
+      if (!courseCode || !courseName) {
+        results.errors.push(`Linha ${rowIndex + 2}: Código e nome do curso são obrigatórios.`);
+        continue;
+      }
+
+      if (!className) {
+        results.errors.push(`Linha ${rowIndex + 2}: Nome da turma é obrigatório.`);
+        continue;
+      }
 
       if (!processNumber || !fullName) {
-        results.skipped++;
-        results.errors.push(`Linha ${rowNumber}: Processo e Nome Completo são obrigatórios.`);
+        results.errors.push(`Linha ${rowIndex + 2}: Número de processo e nome completo são obrigatórios.`);
         continue;
       }
 
-      if (seenProcessesInFile.has(processNumber)) {
-        results.skipped++;
-        results.warnings.push(`Linha ${rowNumber}: processo ${processNumber} duplicado no ficheiro (linha ignorada).`);
-        continue;
-      }
-      seenProcessesInFile.add(processNumber);
+      // Ensure area exists
+      let areaId = areaCache.get(areaCode);
+      if (!areaId) {
+        const { data: existingAreas } = await supabase
+          .from('training_area')
+          .select('id')
+          .eq('code', areaCode)
+          .limit(1);
 
+        if (existingAreas?.length) {
+          areaId = existingAreas[0].id;
+        } else {
+          const newArea = await createTrainingArea({ code: areaCode, name: areaName });
+          if (newArea) {
+            areaId = newArea.id;
+            results.areasCreated++;
+          } else {
+            results.errors.push(`Linha ${rowIndex + 2}: Falha ao criar área ${areaCode}.`);
+            continue;
+          }
+        }
+        areaCache.set(areaCode, areaId);
+      }
+
+      // Ensure course exists
+      const courseKey = `${areaId}-${courseCode}`;
+      let courseId = courseCache.get(courseKey);
+      if (!courseId) {
+        const { data: existingCourses } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('training_area_id', areaId)
+          .eq('code', courseCode)
+          .limit(1);
+
+        if (existingCourses?.length) {
+          courseId = existingCourses[0].id;
+        } else {
+          const newCourse = await createCourse(areaId, { code: courseCode, name: courseName });
+          if (newCourse) {
+            courseId = newCourse.id;
+            results.coursesCreated++;
+          } else {
+            results.errors.push(`Linha ${rowIndex + 2}: Falha ao criar curso ${courseCode}.`);
+            continue;
+          }
+        }
+        courseCache.set(courseKey, courseId);
+      }
+
+      // Ensure class exists
+      const classKey = `${areaId}-${courseCode}-${className}`;
+      let classExists = classCache.has(classKey);
+      if (!classExists) {
+        const { data: existingClasses } = await supabase
+          .from('manual_classes')
+          .select('id')
+          .eq('area_id', areaId)
+          .eq('curso', courseCode)
+          .eq('turma', className)
+          .limit(1);
+
+        if (!existingClasses?.length) {
+          const newClass = await createManualClass({
+            anoLetivo: currentSchoolYear(),
+            curso: courseCode,
+            turma: className,
+            supervisor: '',
+            areaId,
+            total: 0,
+            ativos: 0,
+            monitoramento: 0,
+            risco: 0,
+            mediaNota: '0.0'
+          });
+          if (newClass) {
+            results.classesCreated++;
+          } else {
+            results.errors.push(`Linha ${rowIndex + 2}: Falha ao criar turma ${className}.`);
+            continue;
+          }
+        }
+        classCache.set(classKey, true);
+      }
+
+      // Register student
       const studentInput = {
         processNumber,
         fullName,
         email: email || null,
-        phoneNumber: phoneNumber || null,
-        courseCode: 'GERAL',
-        schoolYear,
-        internshipStatus: 'active',
+        phoneNumber: phone || null,
+        dateOfBirth: birthDate ? new Date(birthDate).toISOString().split('T')[0] : null,
+        trainingAreaId: areaId,
+        courseId,
+        address: address || null,
+        bi: bi || null,
+        className,
+        courseCode,
+        schoolYear: currentSchoolYear(),
+        internshipStatus: 'active'
       };
 
-      if (!accountExistsCache.has(processNumber)) {
-        const { data: accountRow } = await supabase
-          .from('student_accounts')
-          .select('id')
-          .eq('process_number', processNumber)
-          .limit(1)
-          .maybeSingle();
-        accountExistsCache.set(processNumber, Boolean(accountRow?.id));
-      }
-
-      const hasLinkedAccount = accountExistsCache.get(processNumber) === true;
-      if (hasLinkedAccount) {
-        results.accountsAlreadyLinked++;
-        results.warnings.push(`Linha ${rowNumber}: processo ${processNumber} já tem conta criada; foi atualizado apenas o pré-registo académico.`);
-      }
-
       await registerStudentUnified(studentInput);
-
       results.studentsRegistered++;
-      results.processNumbersRegistered++;
-  if (email) results.withEmail++;
-  if (phoneNumber) results.withPhoneNumber++;
 
     } catch (err) {
       results.errors.push(`Linha ${rowIndex + 2}: ${err.message}`);

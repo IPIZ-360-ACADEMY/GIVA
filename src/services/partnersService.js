@@ -39,6 +39,21 @@ function normalizeRow(row) {
   };
 }
 
+function parsePaginationOptions(options) {
+  const page = Number(options?.page);
+  const limit = Number(options?.limit);
+  if (!Number.isFinite(page) || !Number.isFinite(limit) || page < 1 || limit < 1) {
+    return null;
+  }
+
+  return {
+    page,
+    limit,
+    from: (page - 1) * limit,
+    to: page * limit - 1,
+  };
+}
+
 async function getScopedFields() {
   const { session, profile } = await getRequiredScope();
 
@@ -53,7 +68,7 @@ export function canUsePartnersApi() {
 }
 
 /**
- * Obter o parceiro associado ao utilizador autenticado (ADMIN_1)
+ * Obter o parceiro associado ao utilizador autenticado (empresa).
  */
 export async function getMyPartner() {
   if (!canUsePartnersApi()) return null;
@@ -98,21 +113,41 @@ export async function getMyPartner() {
   return Array.isArray(byEmail) && byEmail[0] ? normalizeRow(byEmail[0]) : null;
 }
 
-export async function listPartners() {
+export async function listPartners(options = undefined) {
+  const pagination = parsePaginationOptions(options);
+
   if (!canUsePartnersApi()) {
     throw new Error("Supabase is not configured");
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from(PARTNERS_TABLE)
-    .select("*")
+    .select("*", pagination ? { count: "exact" } : undefined)
     .order("created_at", { ascending: false });
+
+  if (pagination) {
+    query = query.range(pagination.from, pagination.to);
+  }
+
+  const { data, error, count } = await query;
 
   if (error) {
     throw error;
   }
 
-  return data.map(normalizeRow);
+  const rows = data.map(normalizeRow);
+  if (!pagination) {
+    return rows;
+  }
+
+  const total = Number.isFinite(count) ? count : rows.length;
+  return {
+    items: rows,
+    total,
+    page: pagination.page,
+    limit: pagination.limit,
+    totalPages: Math.max(1, Math.ceil(total / pagination.limit)),
+  };
 }
 
 export async function createPartner(partner) {

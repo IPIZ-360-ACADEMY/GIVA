@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { rpcMock, sendAccountActivationEmailMock, getCurrentSessionMock, getAuthProfileMock } = vi.hoisted(() => ({
+const { rpcMock, sendAccountActivationEmailMock, sendPasswordResetEmailMock, getCurrentSessionMock, getAuthProfileMock } = vi.hoisted(() => ({
   rpcMock: vi.fn(),
   sendAccountActivationEmailMock: vi.fn(),
+  sendPasswordResetEmailMock: vi.fn(),
   getCurrentSessionMock: vi.fn(),
   getAuthProfileMock: vi.fn(),
 }));
@@ -15,6 +16,7 @@ vi.mock("../lib/supabase.js", () => ({
 
 vi.mock("../services/authService.js", () => ({
   sendAccountActivationEmail: sendAccountActivationEmailMock,
+  sendPasswordResetEmail: sendPasswordResetEmailMock,
   getCurrentSession: getCurrentSessionMock,
   getAuthProfile: getAuthProfileMock,
 }));
@@ -25,6 +27,7 @@ describe("usersAdminService", () => {
   beforeEach(() => {
     rpcMock.mockReset();
     sendAccountActivationEmailMock.mockReset();
+    sendPasswordResetEmailMock.mockReset();
     getCurrentSessionMock.mockReset();
     getAuthProfileMock.mockReset();
 
@@ -57,11 +60,11 @@ describe("usersAdminService", () => {
   });
 
   it("envia reset com email normalizado", async () => {
-    sendAccountActivationEmailMock.mockResolvedValue({ error: null });
+    sendPasswordResetEmailMock.mockResolvedValue({ error: null });
 
     await adminSendPasswordReset("  USER@Example.com ");
 
-    expect(sendAccountActivationEmailMock).toHaveBeenCalledWith("user@example.com");
+    expect(sendPasswordResetEmailMock).toHaveBeenCalledWith("user@example.com");
   });
 
   it("falha quando email de reset está vazio", async () => {

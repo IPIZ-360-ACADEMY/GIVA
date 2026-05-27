@@ -268,3 +268,46 @@ execute function update_updated_at_column();
 **Estimated Time:** 15-20 minutos  
 **Risk Level:** Low (script é idempotent, pode re-executar se necessário)  
 **Next Step:** Depois de completar, testar endpoints em `src/services/*` com dados reais
+
+---
+
+## 📧 Setup Email (Supabase + Resend)
+
+### Objetivo
+
+Garantir envio de emails de ativação e recuperação com Edge Function `send-account-email`, com fallback no cliente para Supabase Auth.
+
+### Variáveis do frontend (Vercel/Local)
+
+```bash
+VITE_EMAIL_PROVIDER=edge-first
+VITE_SUPABASE_EMAIL_EDGE_FUNCTION=send-account-email
+VITE_APP_URL=https://www.ipiz-giva.com
+```
+
+Valores aceites para `VITE_EMAIL_PROVIDER`:
+
+- `edge-first` (recomendado)
+- `auth-first`
+- `edge-only`
+- `auth-only`
+
+### Secrets da Edge Function (Supabase)
+
+No Supabase Dashboard > Edge Functions > send-account-email > Secrets:
+
+```bash
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+RESEND_API_KEY=<resend-api-key>
+EMAIL_FROM=no-reply@giva.ao
+APP_URL=https://www.ipiz-giva.com
+EMAIL_ALLOWED_ORIGINS=http://localhost:5173,https://www.ipiz-giva.com
+```
+
+### Critérios de sucesso
+
+- Requisição `OPTIONS` da função devolve `200` com `Access-Control-Allow-Origin` válido.
+- Requisição `POST` da função devolve `200` com `{ ok: true }`.
+- Fluxo de `Esqueci a senha` mostra tela de confirmação e permite reenvio.
+- Sem erro CORS no browser console.

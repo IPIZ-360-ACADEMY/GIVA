@@ -7,15 +7,90 @@ import fabrimetalLogo from "../../images/Empresas/fabrimetal-removebg-preview.pn
 import refriangoLogo from "../../images/Empresas/refriango-removebg-preview.png";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
+  normalizeAuthIdentifier,
   requiresEmailConfirmation,
   resolveAuthLoginEmail,
+  sendPasswordResetEmail,
   signInWithOAuth,
   signUpStudent,
   verifyStudentProcessNumber,
 } from "../services/authService.js";
-import { toUserErrorMessage } from "../utils/errorMessages.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { createTranslator } from "../utils/i18n.js";
+
+const LOGIN_RATE_LIMIT_STORAGE_KEY = "giva.loginRateLimit";
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_BASE_BLOCK_MS = 60 * 1000;
+
+function readRateLimitState() {
+  try {
+    const raw = localStorage.getItem(LOGIN_RATE_LIMIT_STORAGE_KEY);
+    if (!raw) {
+      return { attempts: [], blockedUntil: 0 };
+    }
+
+    const parsed = JSON.parse(raw);
+    return {
+      attempts: Array.isArray(parsed?.attempts)
+        ? parsed.attempts.filter((value) => Number.isFinite(value))
+        : [],
+      blockedUntil: Number.isFinite(parsed?.blockedUntil) ? parsed.blockedUntil : 0,
+    };
+  } catch {
+    return { attempts: [], blockedUntil: 0 };
+  }
+}
+
+function writeRateLimitState(state) {
+  try {
+    localStorage.setItem(LOGIN_RATE_LIMIT_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // noop
+  }
+}
+
+function clearRateLimitState() {
+  try {
+    localStorage.removeItem(LOGIN_RATE_LIMIT_STORAGE_KEY);
+  } catch {
+    // noop
+  }
+}
+
+function getActiveAttempts(attempts, now) {
+  return attempts.filter((value) => now - value <= RATE_LIMIT_WINDOW_MS);
+}
+
+function getBlockedRemainingMs() {
+  const now = Date.now();
+  const state = readRateLimitState();
+  const activeAttempts = getActiveAttempts(state.attempts, now);
+  const blockedRemainingMs = Math.max(0, Number(state.blockedUntil ?? 0) - now);
+
+  writeRateLimitState({
+    attempts: activeAttempts,
+    blockedUntil: blockedRemainingMs > 0 ? state.blockedUntil : 0,
+  });
+
+  return blockedRemainingMs;
+}
+
+function registerFailedLoginAttempt() {
+  const now = Date.now();
+  const state = readRateLimitState();
+  const attempts = [...getActiveAttempts(state.attempts, now), now];
+  const exceededBy = Math.max(0, attempts.length - RATE_LIMIT_MAX_ATTEMPTS);
+
+  let blockedUntil = Number(state.blockedUntil ?? 0);
+  if (exceededBy > 0) {
+    const blockMs = RATE_LIMIT_BASE_BLOCK_MS * (2 ** (exceededBy - 1));
+    blockedUntil = Math.max(blockedUntil, now + blockMs);
+  }
+
+  writeRateLimitState({ attempts, blockedUntil });
+  return Math.max(0, blockedUntil - now);
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -24,6 +99,7 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sendingRecovery, setSendingRecovery] = useState(false);
   const [formError, setFormError] = useState("");
   const [infoMessage, setInfoMessage] = useState(() => String(location.state?.signupMessage ?? ""));
   const [autoRegisterInProgress, setAutoRegisterInProgress] = useState(false);
@@ -101,9 +177,16 @@ export default function LoginPage() {
       return;
     }
 
+    const blockedRemainingMs = getBlockedRemainingMs();
+    if (blockedRemainingMs > 0) {
+      const waitSeconds = Math.ceil(blockedRemainingMs / 1000);
+      setFormError(`Muitas tentativas de login. Tente novamente em ${waitSeconds}s.`);
+      return;
+    }
+
     setSubmitting(true);
     const rawIdentifier = identifier.trim();
-    const isProcessNumber = /^[A-Za-z]\d{1,4}A?$/.test(rawIdentifier);
+    const isProcessNumber = /^[A-Za-z]\d{1,8}[A-Za-z]?$/.test(rawIdentifier);
     const normalizedIdentifier = await resolveAuthLoginEmail(identifier);
     const { error } = await signInWithPassword({ email: normalizedIdentifier, password });
     setSubmitting(false);
@@ -153,7 +236,7 @@ export default function LoginPage() {
             if (signUpMsg.includes("already")) {
               setFormError("Esta conta de aluno já foi registada. Tenta fazer login.");
             } else {
-              setFormError(toUserErrorMessage(signUpError, "Não foi possível criar a conta de aluno agora. Tente novamente."));
+              setFormError("Erro ao criar conta de aluno: " + signUpMsg);
             }
             return;
           }
@@ -169,11 +252,56 @@ export default function LoginPage() {
         setAutoRegisterInProgress(false);
       }
 
+      if (isInvalidCredentials) {
+        const retryAfterMs = registerFailedLoginAttempt();
+        if (retryAfterMs > 0) {
+          const waitSeconds = Math.ceil(retryAfterMs / 1000);
+          setFormError(`Credenciais inválidas. Novo bloqueio temporário por ${waitSeconds}s.`);
+          return;
+        }
+      }
+
       setFormError(resolveAuthErrorMessage(error));
       return;
     }
+
+    clearRateLimitState();
     // Navegação tratada pelo useEffect quando isAuthenticated mudar para true.
     // Não chamar navigate() aqui — evita race condition com o RequireAuth.
+  }
+
+  async function handleForgotPassword(event) {
+    event.preventDefault();
+    setFormError("");
+    setInfoMessage("");
+
+    const rawIdentifier = String(identifier ?? "").trim();
+    if (!rawIdentifier) {
+      setFormError("Informe o utilizador/email para recuperação de senha.");
+      return;
+    }
+
+    const normalizedEmail = normalizeAuthIdentifier(rawIdentifier);
+    if (!normalizedEmail.includes("@")) {
+      setFormError("Não foi possível resolver um email válido para recuperação.");
+      return;
+    }
+
+    setSendingRecovery(true);
+    const { error } = await sendPasswordResetEmail(normalizedEmail);
+    setSendingRecovery(false);
+
+    if (error) {
+      setFormError(`Falha ao enviar email de recuperação: ${error.message ?? "erro desconhecido"}`);
+      return;
+    }
+
+    const query = new URLSearchParams({
+      purpose: "password-reset",
+      email: normalizedEmail,
+      source: "login-forgot",
+    }).toString();
+    navigate(`/email-status?${query}`);
   }
 
   if (authEnabled && loading) {
@@ -229,6 +357,9 @@ export default function LoginPage() {
             {formError ? <p className="meta">{formError}</p> : null}
             <button className="btn primary" type="submit">
               {submitting ? t("login.signingIn") : t("login.submit")}
+            </button>
+            <button className="btn ghost" type="button" onClick={handleForgotPassword} disabled={sendingRecovery || submitting}>
+              {sendingRecovery ? "A enviar..." : "Esqueci a senha"}
             </button>
           </form>
 

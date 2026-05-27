@@ -4,7 +4,6 @@ import logoImage from "../../images/logo.png";
 import fallbackAvatar from "../../images/perfil-1.jpg";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { createTranslator, resolveDateLocale } from "../utils/i18n.js";
-import { toUserErrorMessage } from "../utils/errorMessages.js";
 import { resolveAccessProfile } from "../utils/accessControl.js";
 import { getUnreadCount, subscribeToConversations } from "../services/chatService.js";
 import NotifToastContainer from "./NotifToast.jsx";
@@ -121,6 +120,7 @@ export default function AppShell() {
           { to: "/", icon: "dashboard", label: t("nav.dashboard") },
           { to: "/rbac/vagas", icon: "work", label: "Vagas RBAC" },
           { to: "/turmas", icon: "school", label: "Turmas" },
+          { to: "/avaliacoes", icon: "grading", label: t("nav.evaluations") },
           { to: "/documentos", icon: "description", label: t("nav.documents") },
           { to: "/chat", icon: "chat", label: "Chat", pill: chatUnread > 0 ? String(chatUnread) : null },
           { to: "/notificacoes", icon: "notifications", label: t("nav.notifications"), pill: notifCount > 0 ? String(notifCount > 99 ? "99+" : notifCount) : null },
@@ -286,10 +286,7 @@ export default function AppShell() {
       if (!preferences.uiNotifications) {
         return;
       }
-      const normalizedMessage = type === "error"
-        ? toUserErrorMessage(message)
-        : String(message ?? "Operação concluída com sucesso.");
-      setToast({ message: normalizedMessage, type, id: Date.now() });
+      setToast({ message, type, id: Date.now() });
     },
     [preferences.uiNotifications]
   );

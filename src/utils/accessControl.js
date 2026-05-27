@@ -2,7 +2,6 @@ const KNOWN_ACCOUNT_TYPES = new Set(["student", "company", "admin", "external", 
 const KNOWN_PLATFORM_ROLES = new Set([
   "SUPER_ADMIN",
   "ADMIN",
-  "ADMIN_1",
   "COORDINATOR",
   "TEACHER",
   "COMPANY",
@@ -46,8 +45,9 @@ export function normalizeAliasAccountType(value) {
 
 export function normalizePlatformRole(value, fallback = "authenticated") {
   const raw = String(value ?? "").trim();
+  const rawFallback = String(fallback ?? "authenticated").trim();
   if (!raw) {
-    return fallback;
+    return normalizePlatformRole(rawFallback, "authenticated");
   }
 
   if (raw === "authenticated") {
@@ -55,7 +55,18 @@ export function normalizePlatformRole(value, fallback = "authenticated") {
   }
 
   const normalized = raw.toUpperCase();
-  return KNOWN_PLATFORM_ROLES.has(normalized) ? normalized : fallback;
+  const canonical = normalized === "ADMIN_1" ? "COORDINATOR" : normalized;
+  if (KNOWN_PLATFORM_ROLES.has(canonical)) {
+    return canonical;
+  }
+
+  if (rawFallback === "authenticated") {
+    return "authenticated";
+  }
+
+  const fallbackNormalized = rawFallback.toUpperCase();
+  const fallbackCanonical = fallbackNormalized === "ADMIN_1" ? "COORDINATOR" : fallbackNormalized;
+  return KNOWN_PLATFORM_ROLES.has(fallbackCanonical) ? fallbackCanonical : "authenticated";
 }
 
 export function getAllowedRolesForType(type) {
@@ -80,21 +91,18 @@ export function isCoordinatorRole(role) {
  */
 export function typeFromRole(role) {
   const normalized = normalizePlatformRole(role ?? "");
-  const canonical = normalized === "ADMIN_1" ? "COORDINATOR" : normalized;
-  if (canonical === "SUPER_ADMIN" || canonical === "ADMIN") return "admin";
-  if (canonical === "COORDINATOR") return "coordinator";
-  if (canonical === "TEACHER") return "teacher";
-  if (canonical === "COMPANY") return "company";
-  if (canonical === "STUDENT") return "student";
-  if (canonical === "EXTERNAL") return "external";
+  if (normalized === "SUPER_ADMIN" || normalized === "ADMIN") return "admin";
+  if (normalized === "COORDINATOR") return "coordinator";
+  if (normalized === "TEACHER") return "teacher";
+  if (normalized === "COMPANY") return "company";
+  if (normalized === "STUDENT") return "student";
+  if (normalized === "EXTERNAL") return "external";
   return "external";
 }
 
 export function defaultRoleForAccountType(type, fallback = "authenticated") {
   const allowedRoles = getAllowedRolesForType(type);
-  // Normalizar ADMIN_1 legado para COORDINATOR
-  const raw = normalizePlatformRole(fallback);
-  const normalizedFallback = raw === "ADMIN_1" ? "COORDINATOR" : raw;
+  const normalizedFallback = normalizePlatformRole(fallback);
   return allowedRoles.includes(normalizedFallback) ? normalizedFallback : allowedRoles[0];
 }
 
@@ -109,7 +117,6 @@ export function resolveAccessProfile({ role, type }) {
       normalizedType: null,
       normalizedRole: null,
       isSuperAdmin: false,
-      isAdmin1: false,
       isAdmin: false,
       isCompanyUser: false,
       isStudentUser: false,
@@ -127,7 +134,6 @@ export function resolveAccessProfile({ role, type }) {
   const normalizedRole = defaultRoleForAccountType(normalizedType, role);
   const isSuperAdmin = normalizedRole === "SUPER_ADMIN";
   const isAdminCore = normalizedRole === "ADMIN";
-  const isAdmin1 = normalizedRole === "ADMIN_1";
   const isCoordinatorUser = isCoordinatorRole(normalizedRole) || normalizedType === "coordinator";
   const isTeacherUser = normalizedRole === "TEACHER" || normalizedType === "teacher";
   const isAdmin = isSuperAdmin || isAdminCore || normalizedType === "admin";
@@ -140,7 +146,6 @@ export function resolveAccessProfile({ role, type }) {
     normalizedRole,
     isSuperAdmin,
     isAdminCore,
-    isAdmin1,
     isAdmin,
     isCoordinatorUser,
     isTeacherUser,
