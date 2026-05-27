@@ -491,13 +491,7 @@ async function sendAuthEmailByPurpose(email, purpose) {
   const redirectTo = getAuthEmailRedirectTo();
   const normalizedPurpose = normalizeEmailPurpose(purpose);
 
-  const authStrategy = async () => {
-    return supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo,
-    });
-  };
-
-  const edgeStrategy = async () => {
+  const invokeEmailEdgeFunction = async (extraBody = {}) => {
     const functionName = getEmailEdgeFunctionName();
     if (!functionName || !supabase.functions?.invoke) {
       return { data: null, error: new Error("Supabase Edge Functions indisponível") };
@@ -509,6 +503,7 @@ async function sendAuthEmailByPurpose(email, purpose) {
         purpose: normalizedPurpose,
         email: normalizedEmail,
         redirectTo,
+        ...extraBody,
       },
     });
 
@@ -517,6 +512,16 @@ async function sendAuthEmailByPurpose(email, purpose) {
     }
 
     return { data, error: null };
+  };
+
+  const authStrategy = async () => {
+    return supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+  };
+
+  const edgeStrategy = async () => {
+    return invokeEmailEdgeFunction();
   };
 
   const strategyByProvider = getEmailProviderPreference();
@@ -587,7 +592,7 @@ function isInvalidCredentialsError(error) {
   return message.includes("invalid login credentials") || message.includes("invalid credentials");
 }
 
-async function recoverSignupAfterConfirmationEmailError(email, password) {
+async function recoverSignupAfterConfirmationEmailError(email, password, createUser = null) {
   if (!isAuthEnabled()) {
     return { recovered: false, data: null, error: null };
   }
@@ -606,10 +611,41 @@ async function recoverSignupAfterConfirmationEmailError(email, password) {
     const accountLikelyCreated = !signInAttempt?.error || isEmailNotConfirmedError(signInAttempt.error);
     if (!accountLikelyCreated) {
       if (isInvalidCredentialsError(signInAttempt?.error)) {
+        const functionName = getEmailEdgeFunctionName();
+        if (!functionName || !supabase.functions?.invoke || !createUser?.password) {
+          return {
+            recovered: false,
+            data: null,
+            error: new Error("Error sending confirmation email"),
+          };
+        }
+
+        const { data: edgeData, error: edgeError } = await supabase.functions.invoke(functionName, {
+          body: {
+            template: EMAIL_PURPOSE_ACTIVATION,
+            purpose: EMAIL_PURPOSE_ACTIVATION,
+            email: normalizedEmail,
+            redirectTo: getAuthEmailRedirectTo(),
+            createUser,
+          },
+        });
+
+        if (edgeError) {
+          return {
+            recovered: false,
+            data: null,
+            error: edgeError,
+          };
+        }
+
         return {
-          recovered: false,
-          data: null,
-          error: new Error("Error sending confirmation email"),
+          recovered: true,
+          data: {
+            user: edgeData?.user ?? { email: normalizedEmail },
+            session: null,
+          },
+          error: null,
+          warning: null,
         };
       }
 
@@ -769,7 +805,16 @@ export async function signUpStudent(processNumber, password, displayName, studen
 
   if (error) {
     if (isConfirmationEmailDispatchError(error)) {
-      const recovered = await recoverSignupAfterConfirmationEmailError(authEmail, password);
+      const recovered = await recoverSignupAfterConfirmationEmailError(authEmail, password, {
+        password,
+        metadata: {
+          display_name: displayName,
+          full_name: displayName,
+          user_type: "student",
+          process_number: normalizedProcessNumber,
+          student_id: studentDbId ?? undefined,
+        },
+      });
       if (recovered.recovered) {
         await restoreAdminSession();
         return { data: recovered.data, error: null, warning: recovered.warning ?? null };
@@ -946,7 +991,10 @@ export async function signUpWithType(email, password, displayName, type, typeDat
 
   if (error) {
     if (isConfirmationEmailDispatchError(error)) {
-      const recovered = await recoverSignupAfterConfirmationEmailError(normalizedEmail, password);
+      const recovered = await recoverSignupAfterConfirmationEmailError(normalizedEmail, password, {
+        password,
+        metadata: signUpMetadata,
+      });
       if (recovered.recovered) {
         await restorePrevSession();
         return { data: recovered.data, error: null, warning: recovered.warning ?? null };

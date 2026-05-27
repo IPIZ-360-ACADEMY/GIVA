@@ -266,6 +266,7 @@ Deno.serve(async (req: Request) => {
     const email = String(payload?.email ?? "").trim().toLowerCase();
     const redirectTo = String(payload?.redirectTo ?? appUrl).trim();
     const purpose = normalizePurpose(payload?.purpose ?? payload?.template);
+    const createUserPayload = payload?.createUser ?? null;
 
     if (!email || !isValidEmail(email)) {
       return new Response(JSON.stringify({ ok: false, error: "Invalid email" }), {
@@ -288,6 +289,40 @@ Deno.serve(async (req: Request) => {
 
     let linkData = recoveryLinkResponse.data;
     let linkError = recoveryLinkResponse.error;
+
+    if ((linkError || !linkData?.properties?.action_link) && purpose === PURPOSE_ACTIVATION && createUserPayload?.password) {
+      const createUserResponse = await admin.auth.admin.createUser({
+        email,
+        password: String(createUserPayload.password),
+        email_confirm: false,
+        user_metadata: createUserPayload?.metadata ?? {},
+        app_metadata: createUserPayload?.appMetadata ?? {},
+      });
+
+      const createUserErrorMessage = String(createUserResponse.error?.message ?? "").toLowerCase();
+      const userAlreadyExists = createUserErrorMessage.includes("already") || createUserErrorMessage.includes("registered");
+      if (createUserResponse.error && !userAlreadyExists) {
+        return new Response(JSON.stringify({
+          ok: false,
+          error: "Failed to create auth user",
+          detail: createUserResponse.error.message,
+        }), {
+          status: 502,
+          headers: corsHeaders,
+        });
+      }
+
+      const retryRecoveryLinkResponse = await admin.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: {
+          redirectTo,
+        },
+      });
+
+      linkData = retryRecoveryLinkResponse.data;
+      linkError = retryRecoveryLinkResponse.error;
+    }
 
     if (linkError || !linkData?.properties?.action_link) {
       const signupLinkResponse = await admin.auth.admin.generateLink({
@@ -341,7 +376,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, queued: true }), {
+    return new Response(JSON.stringify({ ok: true, queued: true, user: createUserPayload ? { email } : null }), {
       status: 200,
       headers: corsHeaders,
     });
