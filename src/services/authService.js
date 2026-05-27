@@ -134,8 +134,20 @@ function getAuthRedirectBase() {
   return import.meta.env.DEV ? window.location.origin : (appUrl || window.location.origin);
 }
 
+function getRouterBasename() {
+  const raw = String(import.meta.env.VITE_ROUTER_BASENAME ?? "/GIVA").trim();
+  if (!raw || raw === "/") {
+    return "";
+  }
+
+  const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeadingSlash.replace(/\/$/, "");
+}
+
 function getAuthEmailRedirectTo() {
-  return `${getAuthRedirectBase()}/login`;
+  const base = getAuthRedirectBase();
+  const basename = getRouterBasename();
+  return `${base}${basename}/login`;
 }
 
 function getEmailEdgeFunctionName() {

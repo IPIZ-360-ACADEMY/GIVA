@@ -138,6 +138,26 @@ export default function LoginPage() {
     setInfoMessage(String(location.state?.signupMessage ?? ""));
   }, [location.state]);
 
+  useEffect(() => {
+    const hash = String(window.location.hash ?? "");
+    if (!hash.includes("error=") && !hash.includes("error_code=")) {
+      return;
+    }
+
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+    const errorCode = String(hashParams.get("error_code") ?? "").toLowerCase();
+    const errorDescription = String(hashParams.get("error_description") ?? "");
+
+    if (errorCode === "otp_expired") {
+      setFormError("O link de confirmação expirou. Solicite um novo email de ativação para continuar.");
+    } else if (errorDescription) {
+      setFormError(`Falha ao validar o link de confirmação: ${errorDescription}`);
+    }
+
+    const cleanUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }, []);
+
   function resolveAuthErrorMessage(error) {
     const rawMessage = String(error?.message ?? "").trim();
     const message = rawMessage.toLowerCase();

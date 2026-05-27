@@ -49,6 +49,16 @@
       "source": "/",
       "destination": "/GIVA/login",
       "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "/GIVA/login",
+      "permanent": false
+    },
+    {
+      "source": "/login/(.*)",
+      "destination": "/GIVA/login",
+      "permanent": false
     }
   ],
   "rewrites": [
