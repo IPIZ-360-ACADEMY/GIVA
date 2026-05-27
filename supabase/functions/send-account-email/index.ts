@@ -237,13 +237,34 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    const recoveryLinkResponse = await admin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
         redirectTo,
       },
     });
+
+    let linkData = recoveryLinkResponse.data;
+    let linkError = recoveryLinkResponse.error;
+
+    if (linkError || !linkData?.properties?.action_link) {
+      // Fallback: para emails ainda sem conta, gerar link de signup para concluir ativação.
+      const signupLinkResponse = await admin.auth.admin.generateLink({
+        type: "signup",
+        email,
+        password: crypto.randomUUID(),
+        options: {
+          redirectTo,
+          data: {
+            user_type: "external",
+          },
+        },
+      });
+
+      linkData = signupLinkResponse.data;
+      linkError = signupLinkResponse.error;
+    }
 
     if (linkError || !linkData?.properties?.action_link) {
       return new Response(JSON.stringify({ ok: false, error: "Failed to generate auth link" }), {
