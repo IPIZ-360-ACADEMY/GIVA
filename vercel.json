@@ -63,6 +63,10 @@
   ],
   "rewrites": [
     {
+      "source": "/assets/index-CDaS20a4.js",
+      "destination": "/assets/index-CQiZbDgv.js"
+    },
+    {
       "source": "/GIVA/assets/(.*)",
       "destination": "/assets/$1"
     },
