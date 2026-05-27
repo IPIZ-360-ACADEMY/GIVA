@@ -557,6 +557,11 @@ function isEmailNotConfirmedError(error) {
   return message.includes("email not confirmed") || message.includes("email_not_confirmed");
 }
 
+function isInvalidCredentialsError(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("invalid login credentials") || message.includes("invalid credentials");
+}
+
 async function recoverSignupAfterConfirmationEmailError(email, password) {
   if (!isAuthEnabled()) {
     return { recovered: false, data: null, error: null };
@@ -575,6 +580,14 @@ async function recoverSignupAfterConfirmationEmailError(email, password) {
 
     const accountLikelyCreated = !signInAttempt?.error || isEmailNotConfirmedError(signInAttempt.error);
     if (!accountLikelyCreated) {
+      if (isInvalidCredentialsError(signInAttempt?.error)) {
+        return {
+          recovered: false,
+          data: null,
+          error: new Error("Error sending confirmation email"),
+        };
+      }
+
       return { recovered: false, data: null, error: signInAttempt?.error ?? null };
     }
 

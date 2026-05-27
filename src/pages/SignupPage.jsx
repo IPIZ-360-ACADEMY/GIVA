@@ -67,6 +67,9 @@ export default function SignupPage() {
     if (lower.includes("error sending confirmation email") || lower.includes("sending confirmation email")) {
       return "Não foi possível enviar o email de ativação agora. Tente novamente em alguns segundos e verifique também Spam/Promoções.";
     }
+    if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
+      return "Não foi possível concluir a criação da conta neste momento. Tente novamente para gerar um novo email de ativação.";
+    }
     return normalized;
   }
 
