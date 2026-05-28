@@ -1,3 +1,31 @@
+// Envia email para todos os admins e super admins avisando sobre novo usuário
+async function notifyAdminsOnUserCreated(newUser) {
+  // Busca todos os admins e super admins
+  let users = [];
+  try {
+    users = await adminListUsers();
+  } catch (e) {
+    // Se falhar, não bloqueia criação
+    return;
+  }
+  const adminEmails = users
+    .filter(u => [ROLE_ADMIN, ROLE_SUPER_ADMIN].includes(String(u.role).toUpperCase()))
+    .map(u => u.email)
+    .filter(Boolean);
+  // Evita duplicados
+  const uniqueEmails = [...new Set(adminEmails)];
+  // Monta mensagem
+  const subject = `Novo usuário criado: ${newUser.display_name || newUser.email}`;
+  const body = `Um novo usuário foi criado no sistema.\n\nNome: ${newUser.display_name || "-"}\nEmail: ${newUser.email}\nEmpresa: ${newUser.company || "-"}\nTipo: ${newUser.type || "-"}`;
+  // Usa função de envio de email do authService
+  for (const email of uniqueEmails) {
+    try {
+      await sendAccountActivationEmail(email, { subject, body }); // subject/body ignorados se template, mas edge pode usar
+    } catch (e) {
+      // Não bloqueia
+    }
+  }
+}
 import { supabase } from "../lib/supabase.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { getAuthProfile, getCurrentSession, sendAccountActivationEmail, sendPasswordResetEmail } from "./authService.js";
@@ -51,6 +79,7 @@ function normalizeUserPayload(payload = {}) {
     email: String(payload.email ?? "").trim().toLowerCase(),
     password: payload.password,
     display_name: String(payload.display_name ?? "").trim(),
+    avatar_url: payload.avatar_url || null,
     type,
     role,
     moderation,
@@ -159,9 +188,10 @@ export async function adminSendAccountActivation(email) {
 export async function adminCreatePlatformUser(payload) {
   await requireAdminRole([ROLE_SUPER_ADMIN], "criar utilizador");
   const normalized = normalizeUserPayload(payload);
+  // Cria usuário sem senha
   const { data, error } = await supabase.rpc("admin_create_platform_user", {
     p_email: normalized.email,
-    p_password: normalized.password,
+    p_password: null,
     p_display_name: normalized.display_name,
     p_type: normalized.type,
     p_role: normalized.role,
@@ -169,8 +199,17 @@ export async function adminCreatePlatformUser(payload) {
     p_require_password_change: normalized.requirePasswordChange,
     p_process_number: normalized.processNumber,
     p_area_id: normalized.areaId,
+    p_avatar_url: normalized.avatar_url || null,
   });
   if (error) throw error;
+
+  // Notifica admins/super admins
+  notifyAdminsOnUserCreated({
+    email: normalized.email,
+    display_name: normalized.display_name,
+    company: payload.company,
+    type: normalized.type,
+  });
 
   const activationResult = await sendAccountActivationEmail(normalized.email).catch((dispatchError) => ({
     error: dispatchError,

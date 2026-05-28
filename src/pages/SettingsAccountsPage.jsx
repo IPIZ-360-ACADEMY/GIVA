@@ -101,6 +101,7 @@ export default function SettingsAccountsPage() {
   }
 
   async function handleDisconnect(identity) {
+    // Call Supabase unlinkIdentity API — show guidance if not available
     setLoadingProvider(identity.provider);
     const { error } = await supabase.auth.unlinkIdentity(identity);
     setLoadingProvider(null);
@@ -115,7 +116,7 @@ export default function SettingsAccountsPage() {
   async function handleDeleteAccount() {
     if (!deleteConfirm) { setDeleteConfirm(true); return; }
     setDeleting(true);
-    // Call Supabase Admin API via RPC or Edge Function — show guidance if not available
+    // Call Supabase Admin API via RPC or Edge Function — show guidance if not available 
     const { error } = await supabase.rpc("delete_own_account").catch(() => ({ error: { message: "RPC não disponível" } }));
     setDeleting(false);
     if (error) {

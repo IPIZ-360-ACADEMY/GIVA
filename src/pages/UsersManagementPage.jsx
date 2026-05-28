@@ -11,7 +11,7 @@ import {
 } from "../utils/accessControl.js";
 import { normalizeStudentProcessNumber } from "../utils/processNumber.js";
 import { listTrainingAreas } from "../services/trainingAreaService.js";
-import { uploadAvatar } from "../services/profilesService.js";
+import { uploadAvatar } from "../services/authService.js";
 import {
   adminListUsers,
   adminEnsureAccountTypeArtifacts,
@@ -142,8 +142,9 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
     if (file.size > 5 * 1024 * 1024) { toast("Foto máx. 5 MB", "error"); return; }
     setUploadingAvatar(true);
     try {
-      const publicUrl = await uploadAvatar(user.id, file);
-      set("avatar_url", publicUrl);
+      const { url, error } = await uploadAvatar(file, "pending");
+      if (error) throw error;
+      set("avatar_url", url);
       toast("Foto carregada com sucesso", "success");
     } catch (err) {
       toast("Erro ao carregar foto: " + err.message, "error");
@@ -289,9 +290,8 @@ function UserEditModal({ user, isSuperAdmin, onClose, onSaved, toast }) {
 // ── Register User Form ──────────────────────────────────────────
 const BLANK_USER = {
   email: "",
-  password: "",
-  confirmPassword: "",
   display_name: "",
+  avatar_url: "",
   type: "student",
   role: "authenticated",
   moderation: "active",
@@ -308,6 +308,8 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
   const [openWizard, setOpenWizard] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const avatarInputRef = useRef(null);
 
   function isValidEmail(value) {
     const email = String(value ?? "").trim().toLowerCase();
@@ -381,11 +383,24 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
     if (step === 3) {
       const hasIdentity = form.display_name.trim() && form.email.trim();
       if (!hasIdentity) return false;
-      if (form.password.length < 8) return false;
-      if (form.password !== form.confirmPassword) return false;
+      if (!form.avatar_url) return false;
       return true;
     }
     return true;
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast("Foto máx. 5 MB", "error");
+      return;
+    }
+    setAvatarFile(file);
+    // Pré-visualização
+    const reader = new FileReader();
+    reader.onload = (ev) => setForm((f) => ({ ...f, avatar_url: ev.target.result }));
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e) {
@@ -408,14 +423,9 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       toast("Nome de apresentação é obrigatório.", "error");
       return;
     }
-    if (form.password.length < 8) {
-      setSubmitMessage({ type: "error", text: "Password deve ter pelo menos 8 caracteres." });
-      toast("Password deve ter pelo menos 8 caracteres.", "error");
-      return;
-    }
-    if (form.password !== form.confirmPassword) {
-      setSubmitMessage({ type: "error", text: "As passwords não coincidem." });
-      toast("As passwords não coincidem.", "error");
+    if (!form.avatar_url) {
+      setSubmitMessage({ type: "error", text: "Foto de perfil é obrigatória." });
+      toast("Foto de perfil é obrigatória.", "error");
       return;
     }
     if (form.role === "COORDINATOR" && !form.areaId) {
@@ -439,10 +449,18 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
         ? getStudentProcessNumberFromIdentifier(form.email)
         : null;
 
+      // Upload da foto de perfil
+      let avatarUrl = form.avatar_url;
+      if (avatarFile) {
+        // TODO: Substituir por upload real para o bucket avatars
+        // Exemplo: const { url } = await uploadAvatar(avatarFile, finalEmail);
+        // avatarUrl = url;
+      }
+
       const uid = await adminCreatePlatformUser({
         email: finalEmail,
-        password: form.password,
         display_name: form.display_name.trim(),
+        avatar_url: avatarUrl,
         type: form.type,
         role: form.role,
         moderation,
@@ -462,6 +480,7 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
       toast(`Utilizador criado — ID: ${uid}`);
 
       setForm(BLANK_USER);
+      setAvatarFile(null);
       setOpenWizard(false);
       setStep(1);
       if (onCreated) onCreated();
@@ -589,25 +608,25 @@ function RegisterUserSection({ toast, onCreated, isSuperAdmin, areas }) {
                     )}
                   </div>
                   <div className="form-field">
-                    <label>Password inicial * (mín. 8 caracteres)</label>
-                    <input
-                      type="password"
-                      minLength={8}
-                      required
-                      value={form.password}
-                      onChange={(e) => set("password", e.target.value)}
-                    />
-                    <p className="form-hint">O utilizador terá de mudar a password no primeiro acesso.</p>
-                  </div>
-                  <div className="form-field">
-                    <label>Confirmar password *</label>
-                    <input
-                      type="password"
-                      minLength={8}
-                      required
-                      value={form.confirmPassword}
-                      onChange={(e) => set("confirmPassword", e.target.value)}
-                    />
+                    <label>Foto de perfil *</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      {form.avatar_url ? (
+                        <img src={form.avatar_url} alt="avatar" style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                      ) : (
+                        <span className="material-icons-sharp" style={{ fontSize: 48, color: "var(--text-muted)" }}>account_circle</span>
+                      )}
+                      <button
+                        type="button"
+                        className="btn secondary sm"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={submitting}
+                      >
+                        <span className="material-icons-sharp">upload_file</span>
+                        Selecionar foto
+                      </button>
+                      <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} disabled={submitting} />
+                    </div>
+                    <p className="form-hint" style={{ marginTop: "0.25rem" }}>JPEG, PNG, WebP. Máx. 5 MB. Permite tirar foto pela câmera ou escolher dos ficheiros.</p>
                   </div>
                 </div>
               )}

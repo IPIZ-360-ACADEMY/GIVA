@@ -65,9 +65,11 @@ function buildEmailText(params: { purpose: string; actionLink: string }) {
   }
 
   return [
-    "ATIVACAO DE CONTA",
+    "CONTA CRIADA COM SUCESSO",
     "",
-    "A sua conta no GIVA esta quase pronta para uso.",
+    "A sua conta no GIVA foi criada com sucesso.",
+    "",
+    "Use o link abaixo para concluir a ativacao e aceder ao sistema:",
     "",
     `Confirmar conta: ${params.actionLink}`,
     "",
@@ -82,7 +84,7 @@ function buildEmailHtml(params: { purpose: string; actionLink: string; logoUrl: 
 
   const title = params.purpose === PURPOSE_PASSWORD_RESET
     ? "Recuperacao de palavra-passe"
-    : "Ativacao de conta";
+    : "Conta criada com sucesso";
 
   const intro = params.purpose === PURPOSE_PASSWORD_RESET
     ? "Recebemos um pedido para redefinir a sua palavra-passe no GIVA."
@@ -248,8 +250,8 @@ Deno.serve(async (req: Request) => {
   const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
   const appUrlRaw = Deno.env.get("APP_URL") ?? "";
   const appUrl = appUrlRaw.replace(/\/$/, "");
-  const logoPngUrl = Deno.env.get("EMAIL_LOGO_PNG_URL") ?? "";
-  const logoUrl = logoPngUrl || (Deno.env.get("EMAIL_LOGO_URL") ?? (appUrl ? `${appUrl}/images/logo.png` : "https://www.ipiz-giva.com/images/logo.png"));
+  // Força sempre o logo institucional local
+  const logoUrl = appUrl ? `${appUrl}/images/logo.png` : "https://www.ipiz-giva.com/images/logo.png";
   const fromAddress = Deno.env.get("EMAIL_FROM") ?? "no-reply@ipiz-giva.com";
   const fromDisplayName = Deno.env.get("EMAIL_FROM_NAME") ?? "IPIZ GIVA";
   const from = fromAddress.includes("<") ? fromAddress : `${fromDisplayName} <${fromAddress}>`;
@@ -324,7 +326,7 @@ Deno.serve(async (req: Request) => {
     const actionLink = String(linkData.properties.action_link);
     const subject = purpose === PURPOSE_PASSWORD_RESET
       ? "IPIZ GIVA - Recuperacao de palavra-passe"
-      : "IPIZ GIVA - Ativacao de conta";
+      : "IPIZ GIVA - Conta criada com sucesso";
 
     const html = buildEmailHtml({ purpose, actionLink, logoUrl, appUrl });
     const text = buildEmailText({ purpose, actionLink });
