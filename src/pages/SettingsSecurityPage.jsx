@@ -351,14 +351,16 @@ export default function SettingsSecurityPage() {
                   id="mfa-code"
                   type="text"
                   inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
                   autoComplete="one-time-code"
                   value={mfaCode}
-                  onChange={(event) => setMfaCode(event.target.value.replace(/\s+/g, ""))}
+                  onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="000000"
                 />
               </div>
               <div className="form-actions">
-                <button className="btn primary" type="submit" disabled={mfaBusy || mfaCode.trim().length < 6}>
+                <button className="btn primary" type="submit" disabled={mfaBusy || mfaCode.trim().length !== 6}>
                   {mfaBusy ? "A validar..." : "Confirmar e ativar"}
                 </button>
                 <button className="btn ghost" type="button" onClick={() => setEnrollment(null)} disabled={mfaBusy}>

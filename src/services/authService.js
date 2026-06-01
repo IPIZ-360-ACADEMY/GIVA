@@ -723,15 +723,25 @@ export async function verifyMfaTotpCode({ factorId, code }) {
     return { data: null, error: new Error("Supabase Auth is not configured") };
   }
 
-  const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+  const normalizedFactorId = String(factorId ?? "").trim();
+  if (!normalizedFactorId) {
+    return { data: null, error: new Error("Fator MFA inválido.") };
+  }
+
+  const normalizedCode = String(code ?? "").replace(/\s+/g, "").trim();
+  if (!/^\d{6}$/.test(normalizedCode)) {
+    return { data: null, error: new Error("Código MFA inválido. Use 6 dígitos.") };
+  }
+
+  const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: normalizedFactorId });
   if (challengeError) {
     return { data: null, error: challengeError };
   }
 
   return supabase.auth.mfa.verify({
-    factorId,
+    factorId: normalizedFactorId,
     challengeId: challengeData.id,
-    code: String(code ?? "").trim(),
+    code: normalizedCode,
   });
 }
 

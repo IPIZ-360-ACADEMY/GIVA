@@ -2080,6 +2080,12 @@ function ImportacaoExcelTab({ showToast, onImported, title = "Importação Autom
   const fileRef = useRef(null);
   const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
+  function sanitizeCsvCell(value) {
+    const raw = String(value ?? "");
+    // Mitiga CSV injection em folhas de cálculo (fórmulas iniciadas por =,+,-,@)
+    return /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  }
+
   function exportCredentialsCsv(credentials) {
     if (!Array.isArray(credentials) || credentials.length === 0) {
       return;
@@ -2095,7 +2101,7 @@ function ImportacaoExcelTab({ showToast, onImported, title = "Importação Autom
     ]);
 
     const escapeCsv = (value) => {
-      const raw = String(value ?? "");
+      const raw = sanitizeCsvCell(value);
       if (raw.includes('"') || raw.includes(",") || raw.includes("\n")) {
         return `"${raw.replace(/"/g, '""')}"`;
       }
@@ -2132,7 +2138,7 @@ function ImportacaoExcelTab({ showToast, onImported, title = "Importação Autom
 
     const headers = ["tipo", "detalhe"];
     const escapeCsv = (value) => {
-      const raw = String(value ?? "");
+      const raw = sanitizeCsvCell(value);
       if (raw.includes('"') || raw.includes(",") || raw.includes("\n")) {
         return `"${raw.replace(/"/g, '""')}"`;
       }
