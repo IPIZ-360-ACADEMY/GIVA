@@ -15,6 +15,7 @@ const TYPE_META = {
   share:            { icon: "share",               color: "#00ba7c", label: "Partilha" },
   follow:           { icon: "person_add",          color: "#7856ff", label: "Seguidor" },
   message:          { icon: "mail",                color: "#1d9bf0", label: "Mensagem" },
+  security_mfa:     { icon: "verified_user",       color: "#0f766e", label: "Segurança" },
   announcement:     { icon: "campaign",            color: "#ff7a00", label: "Aviso" },
   post_approved:    { icon: "verified",            color: "#00ba7c", label: "Publicação" },
   company_approved: { icon: "business",            color: "#0f6d67", label: "Empresa" },
@@ -247,6 +248,7 @@ export default function NotificationsPage() {
           { id: "comment",  label: "Comentários" },
           { id: "follow",   label: "Seguidores" },
           { id: "message",  label: "Mensagens" },
+          { id: "security_mfa", label: "Segurança" },
         ].map((f) => (
           <button
             key={f.id}

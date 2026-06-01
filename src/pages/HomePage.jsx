@@ -7,6 +7,65 @@ import PostCard from "../components/PostCard.jsx";
 import "../styles/community-feed.css";
 import { useAuth, useAccessProfile } from "../contexts/AuthContext.jsx";
 import { getBookmarkedPostIds, getBookmarkedPosts, getFeedPosts, sharePost, subscribeToFeed, toggleReaction } from "../services/postsService.js";
+import styled from "@emotion/styled";
+
+const FeedHero = styled.section`
+  width: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  color: var(--text-inverted);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+  padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+  margin-bottom: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  position: relative;
+  overflow: hidden;
+  @media (max-width: 700px) {
+    padding: 1.2rem 0.7rem 1.1rem 0.7rem;
+    margin-bottom: 1.2rem;
+  }
+`;
+
+const FeedGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  margin-bottom: 2.5rem;
+  @media (max-width: 700px) {
+    gap: 0.85rem;
+    grid-template-columns: 1fr;
+    margin-bottom: 1.2rem;
+  }
+`;
+
+const FeedSummary = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 1.05rem;
+  opacity: 0.92;
+  @media (max-width: 700px) {
+    gap: 0.7rem;
+    font-size: 0.97rem;
+  }
+`;
+
+const FeedSpotlight = styled.div`
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  font-size: 0.93rem;
+  opacity: 0.85;
+  @media (max-width: 700px) {
+    gap: 0.5rem;
+    font-size: 0.89rem;
+  }
+`;
+
 export default function HomePage() {
   const { t } = useOutletContext();
   const { user } = useAuth();
@@ -145,93 +204,13 @@ export default function HomePage() {
     if (newPost) setPosts((prev) => [newPost, ...prev]);
   }
 
-  const visiblePostsCount = posts.length;
-  const officialPostsCount = posts.filter((post) => post.is_official).length;
-  const savedPostsCount = bookmarkedIds.size;
-  const visibleReactionsCount = posts.reduce((sum, post) => sum + (post.reactions?.length ?? 0), 0);
-  const compactSummary = [
-    `${visiblePostsCount} publicações`,
-    `${officialPostsCount} oficiais`,
-    `${savedPostsCount} guardadas`,
-    `${visibleReactionsCount} interações`,
-  ];
+  // Limpeza: métricas removidas para visual mais clean
 
-  const feedPersona = (() => {
-    if (isSuperAdmin) {
-      return {
-        title: "Comando Social Institucional",
-        description: "Canal completo para comunicação estratégica, monitorização e decisão institucional.",
-        summary: [
-          `${visiblePostsCount} publicações no ecossistema`,
-          `${officialPostsCount} comunicados oficiais`,
-          `${savedPostsCount} conteúdos guardados`,
-          `${visibleReactionsCount} interações monitoradas`,
-        ],
-        spotlight: [
-          { label: "Governação", value: "Total", hint: "Visão transversal de comunicação" },
-          { label: "Ação", value: "Imediata", hint: "Priorizar comunicados críticos" },
-        ],
-      };
-    }
-
-    if (isCoordinatorUser) {
-      return {
-        title: "Feed Operacional da Coordenação",
-        description: "Visão curada para acompanhamento diário da tua operação académica.",
-        summary: [
-          `${visiblePostsCount} publicações relevantes`,
-          `${officialPostsCount} alertas oficiais`,
-          `${savedPostsCount} conteúdos para seguimento`,
-          `${visibleReactionsCount} sinais da comunidade`,
-        ],
-        spotlight: [
-          { label: "Foco", value: "Execução", hint: "Prioriza mensagens que impactam turmas" },
-          { label: "Ritmo", value: "Diário", hint: "Acompanha tendências e dúvidas" },
-        ],
-      };
-    }
-
-    if (isStudent) {
-      return {
-        title: "Feed do Estudante",
-        description: "Atualizações simples do teu percurso: oportunidades, orientações e anúncios úteis.",
-        summary: [
-          `${visiblePostsCount} atualizações para ti`,
-          `${officialPostsCount} comunicados importantes`,
-          `${savedPostsCount} conteúdos guardados`,
-          `${visibleReactionsCount} interações da comunidade`,
-        ],
-        spotlight: [
-          { label: "Objetivo", value: "Empregabilidade", hint: "Acompanha vagas e comunicados úteis" },
-          { label: "Perfil", value: "Evolução", hint: "Regista interesses e aprende com a comunidade" },
-        ],
-      };
-    }
-
-    if (isExternal) {
-      return {
-        title: "Feed Público Curado",
-        description: "Visão informativa e resumida da comunidade IPIZ em modo de leitura.",
-        summary: [
-          `${visiblePostsCount} publicações públicas`,
-          `${officialPostsCount} comunicados institucionais`,
-          `${visibleReactionsCount} interações observadas`,
-          "Modo leitura ativo",
-        ],
-        spotlight: [
-          { label: "Acesso", value: "Leitura", hint: "Sem ações de publicação/reação" },
-          { label: "Escopo", value: "Público", hint: "Conteúdo aberto e comunicados" },
-        ],
-      };
-    }
-
-    return {
-      title: "Comunidade",
-      description: "Informação pública, simples e resumida da comunidade académica.",
-      summary: compactSummary,
-      spotlight: [],
-    };
-  })();
+  // Limpeza: feedPersona simplificado
+  const feedPersona = {
+    title: isStudent ? "Feed do Estudante" : "Comunidade",
+    description: isStudent ? "Atualizações do teu percurso: oportunidades e anúncios úteis." : "Feed da comunidade acadêmica.",
+  };
 
   const availableFeedFilters = (() => {
     if (isExternal) {
@@ -270,102 +249,94 @@ export default function HomePage() {
   }, [posts]);
 
   return (
-    <main className="page page-home">
+    <main className="page page-home" style={{ padding: 0, background: "var(--bg)" }}>
+      <FeedHero>
+        <h1 style={{ fontSize: "2.2rem", fontWeight: 800, margin: 0, letterSpacing: "-0.5px", lineHeight: 1.1 }}>{feedPersona.title}</h1>
+        <p style={{ fontSize: "1.18rem", margin: 0, opacity: 0.96 }}>{feedPersona.description}</p>
+      </FeedHero>
 
-      {user && !isExternal ? (
-        <section className="panel-card" style={{ marginBottom: "1rem" }}>
+      {user && !isExternal && (
+        <section className="panel-card" style={{ marginBottom: "1.2rem", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", border: "none" }}>
           <CreatePostCard onCreated={handleCreated} />
         </section>
-      ) : null}
+      )}
 
-      <div className="home-context-bar">
-        <h2 className="home-context-title">{feedPersona.title}</h2>
-        <p className="home-context-desc">{feedPersona.description}</p>
-      </div>
-
-      <PanelSection
-        title="Feed"
-        className="panel dashboard-panel community-feed-panel"
-        actions={
-          <div style={{ display: "grid", gap: "0.35rem", justifyItems: "end" }}>
-            <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }} role="group" aria-label="Filtrar feed">
-              {[
-                ...availableFeedFilters,
-              ].map((filterItem) => (
-                <button
-                  key={filterItem.id}
-                  type="button"
-                  className={`btn ghost btn-sm${feedFilter === filterItem.id ? " --active" : ""}`}
-                  onClick={() => setFeedFilter(filterItem.id)}
-                  aria-pressed={feedFilter === filterItem.id}
-                >
-                  <span className="material-icons-sharp" aria-hidden="true">{filterItem.icon}</span>
-                  {filterItem.label}
-                </button>
-              ))}
-            </div>
-            <span className="meta" style={{ fontSize: "0.78rem" }}>
-              {visiblePostsCount} publicação(ões) no resultado atual{isExternal ? " · leitura" : ""}
-            </span>
-          </div>
-        }
-      >
-        {loading && (
-          <div style={{ display: "grid", gap: "0.75rem" }}>
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="panel-card"
-                style={{ minHeight: "120px", background: "var(--surface-alt, rgba(148, 163, 184, 0.12))" }}
-              />
-            ))}
-          </div>
-        )}
-
-        {error && <p className="form-error" style={{ textAlign: "center" }}>{error}</p>}
-
-        {!loading && posts.length === 0 && !error && (
-          <div className="empty-state" style={{ padding: "2rem 1rem" }}>
-            <span className="material-icons-sharp" aria-hidden="true" style={{ fontSize: "2.4rem", opacity: 0.7 }}>
-              {feedFilter === "saved" ? "bookmark_border" : "inbox"}
-            </span>
-            <p className="empty-state-title" style={{ marginTop: "0.6rem" }}>
-              {feedFilter === "saved"
-                ? "Ainda não guardaste nenhuma publicação."
-                : feedFilter === "official"
-                  ? "Sem comunicados oficiais por agora."
-                  : "Ainda não há publicações."}
-            </p>
-            <p className="empty-state-text">
-              {t?.("dashboard.description") ?? "Acompanhe aqui as novidades da comunidade."}
-            </p>
-          </div>
-        )}
-
-        <div style={{ display: "grid", gap: "0.85rem" }}>
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onReaction={isExternal ? undefined : handleReaction}
-              onShare={isExternal ? undefined : handleShare}
-              isBookmarked={bookmarkedIds.has(post.id)}
-              onBookmark={handleBookmark}
-              getAdjacentImagePost={getAdjacentImagePost}
-              readOnly={isExternal}
-              compact
-            />
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "0.5rem", marginBottom: "1.2rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }} role="group" aria-label="Filtrar feed">
+          {availableFeedFilters.map((filterItem) => (
+            <button
+              key={filterItem.id}
+              type="button"
+              className={`btn ghost btn-sm${feedFilter === filterItem.id ? " --active" : ""}`}
+              onClick={() => setFeedFilter(filterItem.id)}
+              aria-pressed={feedFilter === filterItem.id}
+              style={{ fontWeight: 600, fontSize: "1.01rem", borderRadius: 18, padding: "7px 18px" }}
+            >
+              <span className="material-icons-sharp" aria-hidden="true">{filterItem.icon}</span>
+              {filterItem.label}
+            </button>
           ))}
         </div>
+        <span className="meta" style={{ fontSize: "0.93rem", opacity: 0.7 }}>
+          {visiblePostsCount} publicação(ões) no resultado atual{isExternal ? " · leitura" : ""}
+        </span>
+      </div>
 
-        {feedFilter !== "saved" && hasMore && !loading && (
-          <div style={{ marginTop: "1rem", display: "flex", justifyContent: "center" }}>
-            <button type="button" className="btn ghost" onClick={() => loadPosts(false)} disabled={loadingMore}>
-              {loadingMore ? "A carregar..." : "Mostrar mais publicações"}
-            </button>
-          </div>
-        )}
-      </PanelSection>
+      {loading && (
+        <FeedGrid>
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="panel-card"
+              style={{ minHeight: "120px", background: "var(--surface-alt, rgba(148, 163, 184, 0.12))", boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}
+            />
+          ))}
+        </FeedGrid>
+      )}
+
+      {error && <p className="form-error" style={{ textAlign: "center" }}>{error}</p>}
+
+      {!loading && posts.length === 0 && !error && (
+        <div className="empty-state" style={{ padding: "2rem 1rem" }}>
+          <span className="material-icons-sharp" aria-hidden="true" style={{ fontSize: "2.4rem", opacity: 0.7 }}>
+            {feedFilter === "saved" ? "bookmark_border" : "inbox"}
+          </span>
+          <p className="empty-state-title" style={{ marginTop: "0.6rem" }}>
+            {feedFilter === "saved"
+              ? "Ainda não guardaste nenhuma publicação."
+              : feedFilter === "official"
+                ? "Sem comunicados oficiais por agora."
+                : "Ainda não há publicações."}
+          </p>
+          <p className="empty-state-text">
+            {t?.("dashboard.description") ?? "Acompanhe aqui as novidades da comunidade."}
+          </p>
+        </div>
+      )}
+
+      <FeedGrid>
+        {posts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            onReaction={isExternal ? undefined : handleReaction}
+            onShare={isExternal ? undefined : handleShare}
+            isBookmarked={bookmarkedIds.has(post.id)}
+            onBookmark={handleBookmark}
+            getAdjacentImagePost={getAdjacentImagePost}
+            readOnly={isExternal}
+            compact
+          />
+        ))}
+      </FeedGrid>
+
+      {feedFilter !== "saved" && hasMore && !loading && (
+        <div style={{ margin: "2.2rem 0 2.5rem 0", display: "flex", justifyContent: "center" }}>
+          <button type="button" className="btn ghost" onClick={() => loadPosts(false)} disabled={loadingMore} style={{ fontSize: "1.1rem", padding: "0.7rem 2.2rem", borderRadius: 18, fontWeight: 600, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+            {loadingMore ? "A carregar..." : "Mostrar mais publicações"}
+          </button>
+        </div>
+      )}
     </main>
   );
 }

@@ -765,8 +765,9 @@ export function onAuthStateChange(listener) {
  * @param {string} password - Senha escolhida pelo aluno
  * @param {string} displayName - Nome completo (obtido da verificação)
  * @param {string} studentDbId  - UUID do registo em public.students
+ * @param {{ requirePasswordChange?: boolean }} options
  */
-export async function signUpStudent(processNumber, password, displayName, studentDbId, emailAddress = null) {
+export async function signUpStudent(processNumber, password, displayName, studentDbId, emailAddress = null, options = {}) {
   if (!isAuthEnabled()) {
     return { data: null, error: new Error("Supabase Auth is not configured") };
   }
@@ -782,6 +783,7 @@ export async function signUpStudent(processNumber, password, displayName, studen
   const localPart = normalizedProcessNumber.toLowerCase();
   const syntheticEmail = `aluno.${localPart}@${domain}`;
   const authEmail = normalizeEmailAddress(emailAddress) || syntheticEmail;
+  const requirePasswordChange = Boolean(options?.requirePasswordChange);
 
   // Guardar sessão do admin ANTES do signUp, pois supabase.auth.signUp()
   // faz auto-login com o novo utilizador e destrói a sessão activa
@@ -806,6 +808,7 @@ export async function signUpStudent(processNumber, password, displayName, studen
         user_type: "student",
         process_number: normalizedProcessNumber,
         student_id: studentDbId ?? undefined,
+        must_change_password: requirePasswordChange,
       },
     },
   });
@@ -820,6 +823,7 @@ export async function signUpStudent(processNumber, password, displayName, studen
           user_type: "student",
           process_number: normalizedProcessNumber,
           student_id: studentDbId ?? undefined,
+          must_change_password: requirePasswordChange,
         },
       });
       if (recovered.recovered) {

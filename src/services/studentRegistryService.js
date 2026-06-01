@@ -28,6 +28,15 @@ export async function registerStudentUnified(input) {
   if (!fullName) throw new Error("Nome completo é obrigatório.");
   if (!processNumber) throw new Error("Número de processo é obrigatório.");
 
+  const { data: existingStudentRows, error: existingStudentError } = await supabase
+    .from("students")
+    .select("id")
+    .eq("process_number", processNumber)
+    .limit(1);
+
+  if (existingStudentError) throw existingStudentError;
+  const studentAlreadyExists = Boolean(existingStudentRows?.length);
+
   const studentPayload = {
     full_name: fullName,
     process_number: processNumber,
@@ -118,12 +127,14 @@ export async function registerStudentUnified(input) {
   let authAlreadyExists = false;
 
   if (loginPassword) {
+    const requirePasswordChange = Boolean(input?.requirePasswordChange);
     const { error: signUpError } = await signUpStudent(
       processNumber,
       loginPassword,
       fullName,
       studentRow.id,
-      nullableTrim(input?.email)
+      nullableTrim(input?.email),
+      { requirePasswordChange }
     );
     if (signUpError) {
       const signUpMessage = String(signUpError.message ?? "");
@@ -141,6 +152,7 @@ export async function registerStudentUnified(input) {
     processNumber,
     fullName: studentRow.full_name,
     loginEmail,
+    studentAlreadyExists,
     authCreated,
     authAlreadyExists,
   };

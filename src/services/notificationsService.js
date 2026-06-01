@@ -120,6 +120,37 @@ export async function sendNotification({ userId, actorId = null, type, title, bo
 }
 
 /**
+ * Envia notificação de segurança para o utilizador autenticado.
+ * Falhas são devolvidas para o caller decidir se ignora ou apresenta feedback.
+ */
+export async function sendSecurityNotificationToCurrentUser({
+  title,
+  body = null,
+  objectType = "security",
+  objectId = null,
+}) {
+  if (!supabase) throw new Error("Supabase não configurado");
+
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+
+  const userId = authData?.user?.id;
+  if (!userId) {
+    throw new Error("Sessão inválida para enviar notificação de segurança.");
+  }
+
+  return sendNotification({
+    userId,
+    actorId: userId,
+    type: "security_mfa",
+    title,
+    body,
+    objectType,
+    objectId,
+  });
+}
+
+/**
  * Envia um anúncio para todos os utilizadores activos (ou por tipo de conta).
  * Requer que a política RLS permita inserção para qualquer user_id.
  * @returns {{ sent: number, errors: number }}

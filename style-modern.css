@@ -1,4 +1,495 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
+﻿/* --- MINIMALISMO FLUIDO E RESPONSIVO --- */
+
+html, body {
+  min-height: 100vh;
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-size: clamp(15px, 2vw, 18px);
+  background: var(--bg-page);
+  color: var(--text);
+}
+
+.page, .modal, .card, .form-card, .settings-hero-card, .settings-profile-card, .overlay {
+  max-width: 100vw;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 14px;
+  box-shadow: none;
+  border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+  background: var(--bg-elevated);
+  padding: clamp(0.8rem, 2vw, 2.2rem);
+}
+
+.btn, .ghost, .settings-tab, .settings-choice, .account-provider-card {
+  border-radius: 10px;
+  border: none;
+  background: var(--bg-soft);
+  box-shadow: none;
+  padding: 0.55em 1.1em;
+  font-weight: 600;
+  font-size: 1em;
+  min-width: 40px;
+  min-height: 40px;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+.btn:active, .ghost:active, .settings-tab:active, .settings-choice:active, .account-provider-card:active {
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg-soft));
+  transform: scale(0.97);
+}
+.btn:hover, .ghost:hover, .settings-tab:hover, .settings-choice:hover, .account-provider-card:hover {
+  background: color-mix(in srgb, var(--primary) 6%, var(--bg-soft));
+}
+
+.input, .select {
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: var(--bg-page);
+  box-shadow: none;
+  padding: 0.5em 1em;
+  font-size: 1em;
+  min-width: 0;
+  width: 100%;
+  transition: border 0.18s, box-shadow 0.18s;
+}
+.input:focus, .select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* Grid fluido e espaçamento consistente */
+.settings-tabs, .settings-choice-group, .settings-profile-grid, .settings-social-grid, .list, .row, .grid {
+  display: grid;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Ajuste de responsividade extrema */
+@media (max-width: 720px) {
+  .page, .modal, .card, .form-card, .settings-hero-card, .settings-profile-card, .overlay {
+    padding: 0.7rem !important;
+    border-radius: 8px;
+  }
+  .settings-tabs, .settings-choice-group, .settings-profile-grid, .settings-social-grid, .list, .row, .grid {
+    gap: 0.4rem !important;
+    grid-template-columns: 1fr;
+  }
+  .btn, .ghost, .settings-tab, .settings-choice, .account-provider-card {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 0.98em;
+    padding: 0.45em 0.7em;
+  }
+}
+
+@media (max-width: 390px) {
+  html, body {
+    font-size: 14px;
+  }
+  .page, .modal, .card, .form-card, .settings-hero-card, .settings-profile-card, .overlay {
+    padding: 0.4rem !important;
+    border-radius: 6px;
+  }
+}
+/* --- VISUAL PREMIUM: Sombras, gradientes, bordas, blur, paleta, microefeitos --- */
+
+body, html {
+  background: linear-gradient(135deg, var(--bg-page) 80%, var(--primary) 120%);
+}
+
+.card, .form-card, .settings-hero-card, .settings-profile-card, .modal, .dialog, .overlay {
+  box-shadow: 0 8px 48px color-mix(in srgb, var(--primary) 14%, transparent), 0 1.5px 8px color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 22px;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 10%, var(--border));
+  background: linear-gradient(120deg, color-mix(in srgb, var(--bg-elevated) 92%, var(--primary) 8%), color-mix(in srgb, var(--bg-elevated) 100%, var(--accent) 0%));
+  backdrop-filter: blur(8px) saturate(1.12);
+}
+
+.btn, .ghost, .settings-tab, .settings-choice, .account-provider-card {
+  border-radius: 16px;
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--primary) 12%, var(--border));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, var(--bg-elevated)), color-mix(in srgb, var(--accent) 4%, var(--bg-elevated)));
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.btn:active, .ghost:active, .settings-tab:active, .settings-choice:active, .account-provider-card:active {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, var(--primary) 88%), color-mix(in srgb, var(--primary) 18%, var(--accent) 82%));
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Microefeito de luz ao hover */
+.btn:hover, .ghost:hover, .settings-tab:hover, .settings-choice:hover, .account-provider-card:hover {
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 18%, transparent), 0 2px 8px color-mix(in srgb, var(--primary) 10%, transparent);
+  filter: brightness(1.08) saturate(1.08);
+}
+
+/* Gradiente dinâmico em headers */
+.page-header, .settings-section-head {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 12%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+  border-radius: 18px;
+  box-shadow: 0 2px 16px color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+/* Blur e sombra em overlays */
+.overlay, .modal, .dialog {
+  backdrop-filter: blur(12px) saturate(1.18);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--primary) 12%);
+  box-shadow: 0 12px 64px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* Inputs premium */
+.input, .select {
+  border-radius: 12px;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 10%, var(--border));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bg-elevated) 98%, var(--primary) 2%), color-mix(in srgb, var(--bg-elevated) 100%, var(--accent) 0%));
+  box-shadow: 0 1.5px 8px color-mix(in srgb, var(--primary) 6%, transparent);
+}
+.input:focus, .select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2.5px var(--accent), 0 2px 12px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* Paleta vibrante para badges, chips, highlights */
+.badge, .settings-hero-chip, .notification-badge {
+  background: linear-gradient(90deg, var(--accent), var(--primary));
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Responsividade refinada */
+@media (max-width: 480px) {
+  .card, .form-card, .settings-hero-card, .settings-profile-card, .modal, .dialog, .overlay {
+    border-radius: 14px;
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--primary) 12%, transparent);
+    padding: 0.5rem !important;
+  }
+  .btn, .ghost, .settings-tab, .settings-choice, .account-provider-card {
+    border-radius: 12px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+  .input, .select {
+    border-radius: 8px;
+  }
+}
+/* --- MICROINTERAÇÕES E ANIMAÇÕES EXPANDIDAS --- */
+
+/* Microefeito em checkboxes e switches */
+.checkbox, .switch {
+  transition: box-shadow 0.18s, border 0.18s, background 0.18s, transform 0.18s;
+  position: relative;
+  z-index: 1;
+}
+.checkbox:active, .switch:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.checkbox:checked, .switch:checked {
+  box-shadow: 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--primary) 82%);
+}
+
+/* Feedback visual em loading, sucesso, erro */
+.loading-spinner {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.success-badge, .error-badge {
+  animation: popBadge 0.32s cubic-bezier(.4,0,.2,1);
+}
+@keyframes popBadge {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* Microanimação em tooltips e badges */
+.tooltip, .badge {
+  animation: fadeInTooltip 0.22s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadeInTooltip {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Inputs: microefeito ao digitar */
+.input:focus {
+  animation: inputPulse 0.22s cubic-bezier(.4,0,.2,1);
+}
+@keyframes inputPulse {
+  0% { box-shadow: 0 0 0 0 var(--primary); }
+  100% { box-shadow: 0 0 0 2px var(--primary); }
+}
+
+/* Listas: microefeito ao adicionar/remover item */
+.list-item-add {
+  animation: listAdd 0.32s cubic-bezier(.4,0,.2,1);
+}
+.list-item-remove {
+  animation: listRemove 0.32s cubic-bezier(.4,0,.2,1);
+}
+@keyframes listAdd {
+  0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+  80% { opacity: 1; transform: translateY(-2px) scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes listRemove {
+  0% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-16px) scale(0.96); }
+}
+
+/* Microefeito em botões de ação rápida */
+.btn-quick {
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+.btn-quick:active {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--accent);
+  transform: scale(0.93);
+}
+
+/* Microefeito em overlays, backdrop, modais */
+.overlay, .modal, .dialog {
+  animation: fadeInOverlay 0.32s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Microefeito em menus e dropdowns ao abrir */
+.menu, .dropdown {
+  animation: menuPop 0.22s cubic-bezier(.4,0,.2,1);
+}
+@keyframes menuPop {
+  0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+  80% { opacity: 1; transform: scale(1.04) translateY(-2px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Microefeito em badges de notificação */
+.notification-badge {
+  animation: badgePulse 1.2s cubic-bezier(.4,0,.2,1) infinite alternate;
+}
+@keyframes badgePulse {
+  0% { box-shadow: 0 0 0 0 var(--accent); }
+  100% { box-shadow: 0 0 0 6px transparent; }
+}
+/* --- UX GLOBAL: Transições, animações e feedback visual --- */
+
+html, body {
+  scroll-behavior: smooth;
+  transition: background 0.32s cubic-bezier(.4,0,.2,1), color 0.32s cubic-bezier(.4,0,.2,1);
+}
+
+.page, .modal, .card, .form-card, .settings-hero-card, .settings-profile-card, .settings-choice, .settings-tab, .account-provider-card, .btn, .ghost, .input, .select, .dropdown, .menu, .sidebar, .overlay, .dialog, .list, .list-item, .avatar-preview-wrap, .avatar-editor, .bio-counter, .danger-zone, .settings-toggle-row {
+  transition: background 0.22s cubic-bezier(.4,0,.2,1), color 0.22s cubic-bezier(.4,0,.2,1), box-shadow 0.22s cubic-bezier(.4,0,.2,1), border 0.22s cubic-bezier(.4,0,.2,1), transform 0.22s cubic-bezier(.4,0,.2,1), opacity 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+/* Animação de entrada para páginas e modais */
+.page, .modal, .dialog, .overlay {
+  animation: fadeInPage 0.44s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadeInPage {
+  from { opacity: 0; transform: translateY(32px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Botões: feedback animado */
+.btn, .ghost {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.btn:active, .ghost:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.btn:focus-visible, .ghost:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.btn::after, .ghost::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  border-radius: 50%;
+  opacity: 0.18;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: width 0.32s cubic-bezier(.4,0,.2,1), height 0.32s cubic-bezier(.4,0,.2,1), opacity 0.32s cubic-bezier(.4,0,.2,1);
+}
+.btn:active::after, .ghost:active::after {
+  width: 180%;
+  height: 180%;
+  opacity: 0.12;
+}
+
+/* Inputs e selects: foco animado */
+.input:focus, .select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary), 0 2px 8px color-mix(in srgb, var(--primary) 10%, transparent);
+  transition: box-shadow 0.22s cubic-bezier(.4,0,.2,1), border 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+/* Cards e listas: hover animado */
+.card:hover, .form-card:hover, .settings-hero-card:hover, .settings-profile-card:hover, .list-item:hover {
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--primary) 12%, transparent);
+  transform: translateY(-2px) scale(1.01);
+}
+
+/* Menus, dropdowns, overlays: fade animado */
+.menu, .dropdown, .overlay, .sidebar {
+  animation: fadeInMenu 0.32s cubic-bezier(.4,0,.2,1);
+}
+@keyframes fadeInMenu {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Ícones: animação sutil ao hover/foco */
+.material-icons-sharp, .icon {
+  transition: color 0.18s, text-shadow 0.18s, transform 0.18s;
+}
+.material-icons-sharp:hover, .icon:hover, .material-icons-sharp:focus, .icon:focus {
+  color: var(--accent);
+  transform: scale(1.12) rotate(-6deg);
+  text-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Modais: overlay animado */
+.modal, .dialog, .overlay {
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--primary) 8%);
+  box-shadow: 0 8px 48px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* Scrollbar custom animada */
+::-webkit-scrollbar {
+  width: 8px;
+  background: color-mix(in srgb, var(--bg-elevated) 90%, var(--primary) 10%);
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--primary) 22%, var(--bg-elevated) 78%);
+  border-radius: 8px;
+  transition: background 0.22s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 32%, var(--primary) 68%);
+}
+/* ─────────────────────────────────────────────────────────────
+   REFINO GLOBAL: Consistência máxima, aproveitamento 100%,
+   centralização de ícones, largura total, gaps mínimos, sem overflow/quebra.
+────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Garantir largura total e centralização */
+  .app-content,
+  .panel,
+  .form-card,
+  .stat-card,
+  .class-card,
+  .classes-year-block,
+  .dashboard-panel,
+  .intern-panel,
+  .partners-panel,
+  .student-card,
+  .student-menu-card,
+  .partners-app-card,
+  .partners-kpi-item,
+  .intern-class-card {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    border-radius: var(--radius-sm) !important;
+  }
+
+  /* Centralizar ícones e botões */
+  .btn,
+  .card-actions .btn,
+  .sidebar .sidebar-link,
+  .sidebar .sidebar-btn,
+  .mobile-action-btn,
+  .student-menu-arrow,
+  .student-menu-icon-box,
+  .material-icons,
+  .material-icons-sharp,
+  .icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 auto !important;
+    width: 2.2rem !important;
+    height: 2.2rem !important;
+    min-width: 2.2rem !important;
+    min-height: 2.2rem !important;
+    font-size: 1.5rem !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+  }
+
+  /* Gaps mínimos entre elementos */
+  .header-meta,
+  .form-actions,
+  .card-actions,
+  .panel,
+  .class-card,
+  .student-card,
+  .student-menu-card,
+  .partners-app-card,
+  .partners-kpi-item,
+  .intern-class-card {
+    gap: 0.2rem !important;
+  }
+
+  /* Evitar overflow horizontal */
+  html, body, #root, .app-shell, .app-content {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Tabelas/cards: garantir largura total e sem quebra */
+  table, tbody, tr, td, .table-wrap, .stat-card, .class-card, .panel {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+
+  /* Inputs, selects, textareas: largura total */
+  input, select, textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Garantir que nenhum elemento "vaze" para fora */
+  * {
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+}
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
 
 :root {
   /* ── Superfícies — Light Mode ── */
@@ -4998,6 +5489,141 @@ html[data-ui="neo"] .login-box {
 /* ── Utility ─────────────────────────────────────────────── */
 .text-success { color: var(--success, #16a34a); }
 .text-danger  { color: var(--danger, #dc2626); }
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL: Hiding de textos/labels e aproveitamento visual extremo
+   Aplica hiding de labels, textos, descrições, nomes de navegação,
+   e compressão máxima em telas muito pequenas (≤480px e ≤390px).
+   Só ícones, botões e informações essenciais permanecem visíveis.
+────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Sidebar, navegação, labels, nomes, descrições */
+  .sidebar .nav-label,
+  .sidebar .sidebar-brand-name,
+  .sidebar .sidebar-profile-info,
+  .sidebar .pill,
+  .sidebar .sidebar-footer,
+  .sidebar .sidebar-section-title,
+  .sidebar .sidebar-profile-role,
+  .sidebar .sidebar-profile-company,
+  .sidebar .sidebar-profile-email,
+  .sidebar .sidebar-profile-extra,
+  .sidebar .sidebar-version,
+  .sidebar .sidebar-copyright,
+  .sidebar .sidebar-logout-label,
+  .sidebar .sidebar-link-text,
+  .sidebar .sidebar-link-label,
+  .sidebar .sidebar-link-desc,
+  .sidebar .sidebar-link-meta,
+  .sidebar .sidebar-link-company,
+  .sidebar .sidebar-link-role,
+  .sidebar .sidebar-link-email,
+  .sidebar .sidebar-link-extra,
+  .sidebar .sidebar-link-footer,
+  .sidebar .sidebar-link-company,
+  .sidebar .sidebar-link-role,
+  .sidebar .sidebar-link-email,
+  .sidebar .sidebar-link-extra,
+  .sidebar .sidebar-link-footer,
+  .sidebar .sidebar-link-company,
+  .sidebar .sidebar-link-role,
+  .sidebar .sidebar-link-email,
+  .sidebar .sidebar-link-extra,
+  .sidebar .sidebar-link-footer,
+  .sidebar .sidebar-link-company,
+  .sidebar .sidebar-link-role,
+  .sidebar .sidebar-link-email,
+  .sidebar .sidebar-link-extra,
+  .sidebar .sidebar-link-footer,
+  .sidebar .sidebar-link-company,
+  .sidebar .sidebar-link-role,
+  .sidebar .sidebar-link-email,
+  .sidebar .sidebar-link-extra,
+  .sidebar .sidebar-link-footer,
+  .sidebar .sidebar-link-company,
+  .sidebar .sidebar-link-role,
+  .sidebar .sidebar-link-email,
+  .sidebar .sidebar-link-extra,
+  .sidebar .sidebar-link-footer {
+    display: none !important;
+  }
+
+  /* Botões: esconder label, mostrar só ícone */
+  .btn .btn-label,
+  .btn-label,
+  .btn .label,
+  .btn span:not(.material-icons):not(.material-icons-sharp):not(.icon),
+  .btn strong,
+  .btn em {
+    display: none !important;
+  }
+
+  /* Headers, descrições, textos auxiliares */
+  .page-header p,
+  .header-meta,
+  .form-field label,
+  .form-hint,
+  .meta,
+  .badge,
+  .tag,
+  .card-actions .btn-label,
+  .card-actions .label,
+  .card-actions span:not(.material-icons):not(.material-icons-sharp):not(.icon),
+  .card-actions strong,
+  .card-actions em {
+    display: none !important;
+  }
+
+  /* Tabelas: esconder labels, mostrar só valores essenciais */
+  table th,
+  table td::before,
+  .table-wrap th,
+  .table-wrap td::before {
+    display: none !important;
+  }
+
+  /* Cards, painéis, descrições, meta-info */
+  .stat-card .stat-label,
+  .stat-card .meta,
+  .stat-card .badge,
+  .stat-card .tag,
+  .panel .panel-desc,
+  .panel .panel-meta,
+  .panel .panel-label,
+  .panel .panel-badge,
+  .panel .panel-tag,
+  .panel .panel-footer,
+  .panel .panel-desc,
+  .panel .panel-meta,
+  .panel .panel-label,
+  .panel .panel-badge,
+  .panel .panel-tag,
+  .panel .panel-footer {
+    display: none !important;
+  }
+
+  /* Garantir máximo aproveitamento visual */
+  .app-content,
+  .panel,
+  .form-card,
+  .stat-card,
+  .class-card,
+  .classes-year-block {
+    padding: 0.4rem !important;
+  }
+}
+
+@media (max-width: 390px) {
+  /* Compressão ainda maior em telas ultra pequenas */
+  .app-content,
+  .panel,
+  .form-card,
+  .stat-card,
+  .class-card,
+  .classes-year-block {
+    padding: 0.18rem !important;
+  }
+}
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }

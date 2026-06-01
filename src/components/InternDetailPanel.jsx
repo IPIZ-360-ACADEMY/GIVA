@@ -1,5 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import {
+  PanelCard,
+  PanelHeader,
+  PanelTitle,
+  PanelIcon,
+  PanelValue,
+  PanelLabel,
+  PanelSub,
+  PanelTags,
+  PanelTag,
+  PanelGrid,
+  PanelSectionTitle,
+  PanelBox
+} from "./PanelEmotionStyles";
+import {
   listFollowupLogs,
   createFollowupLog,
   updateFollowupLog,
@@ -207,8 +221,8 @@ function FollowupLogsPanel({ progressId, partnerId, studentId, disabled }) {
       )}
 
       {showForm && (
-        <div className="panel-card" style={{ padding: "1rem", marginBottom: "1rem", border: "1px solid var(--accent-color, #3b82f6)" }}>
-          <h4 style={{ margin: "0 0 0.75rem" }}>{editingId ? "Editar registo" : "Novo registo semanal"}</h4>
+        <PanelCard style={{ padding: "1rem", marginBottom: "1rem", border: "1px solid var(--accent-color, #3b82f6)" }}>
+          <PanelSectionTitle as="h4" style={{ margin: "0 0 0.75rem" }}>{editingId ? "Editar registo" : "Novo registo semanal"}</PanelSectionTitle>
           <div className="form-grid">
             <div className="form-field">
               <label>Período — início *</label>
@@ -249,7 +263,7 @@ function FollowupLogsPanel({ progressId, partnerId, studentId, disabled }) {
             <button className="btn primary" onClick={handleSave} disabled={saving}>{saving ? "A guardar..." : "Guardar"}</button>
             <button className="btn ghost" onClick={() => { setShowForm(false); setError(""); }}>Cancelar</button>
           </div>
-        </div>
+        </PanelCard>
       )}
 
       {loading ? (
@@ -259,7 +273,7 @@ function FollowupLogsPanel({ progressId, partnerId, studentId, disabled }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
           {logs.map((log) => (
-            <div key={log.id} style={{ border: "1px solid var(--border-color, #e2e8f0)", borderRadius: 8, padding: "0.85rem" }}>
+            <PanelBox key={log.id} style={{ padding: "0.85rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
                 <strong style={{ fontSize: "0.9rem" }}>
                   {new Date(log.period_start).toLocaleDateString("pt-AO")} → {new Date(log.period_end).toLocaleDateString("pt-AO")}
@@ -283,7 +297,7 @@ function FollowupLogsPanel({ progressId, partnerId, studentId, disabled }) {
               </div>
               {log.activities && <p style={{ margin: "0.4rem 0 0", fontSize: "0.875rem" }}><strong>Actividades:</strong> {log.activities}</p>}
               {log.supervisor_notes && <p style={{ margin: "0.3rem 0 0", fontSize: "0.875rem", opacity: 0.8 }}><strong>Supervisor:</strong> {log.supervisor_notes}</p>}
-            </div>
+            </PanelBox>
           ))}
         </div>
       )}

@@ -792,39 +792,7 @@ export default function DashboardPage() {
   return (
     <main className="page page-dashboard">
       {/* KPI strip */}
-      <section className="dash-kpi-grid">
-        {kpis
-          .filter((item) => matchesSearch(query, item.search))
-          .map((item, index) => {
-            const tone = getTone(item.icon);
-            const cmp = index === 0 ? comparativeKpis[0] : null;
-            return (
-              <article
-                className={`dash-kpi-card dash-kpi-card--${tone} dash-kpi-card--clickable`}
-                key={item.label}
-                onClick={() => navigate(item.to)}
-                role="button"
-                tabIndex={0}
-                aria-label={item.action}
-                onKeyDown={(e) => e.key === "Enter" && navigate(item.to)}
-              >
-                <div className="dash-kpi-top">
-                  <span className={`dash-kpi-icon dash-kpi-icon--${tone}`}>
-                    <span className="material-icons-sharp">{item.icon}</span>
-                  </span>
-                  {cmp != null && (
-                    <span className={`dash-kpi-delta ${cmp.delta >= 0 ? "dash-kpi-delta--up" : "dash-kpi-delta--down"}`}>
-                      {cmp.delta >= 0 ? "▲" : "▼"} {Math.abs(cmp.delta)}%
-                    </span>
-                  )}
-                </div>
-                <div className="dash-kpi-value">{item.value}</div>
-                <div className="dash-kpi-label">{item.label}</div>
-                <p className="dash-kpi-meta">{item.meta}</p>
-              </article>
-            );
-          })}
-      </section>
+      {/* KPIs removidos para visual mais clean */}
 
       {!isStudentView && (
         <>

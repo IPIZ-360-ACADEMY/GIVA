@@ -3,6 +3,41 @@ import { Link, useNavigate } from "react-router-dom";
 import { addComment, getComments, getPublicPostUrl, toggleBookmark, votePoll, deletePost, updatePost } from "../services/postsService.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { sanitizeAssetUrl } from "../utils/urlSafety.js";
+import styled from "@emotion/styled";
+
+const GlassCard = styled.article`
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(8px) saturate(1.05);
+  border-radius: 1.1rem;
+  border: 1px solid rgba(200,200,220,0.13);
+  box-shadow: 0 2px 8px 0 rgba(60,60,120,0.06);
+  transition: box-shadow 0.18s cubic-bezier(.4,0,.2,1), transform 0.14s cubic-bezier(.4,0,.2,1);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  &:hover {
+    box-shadow: 0 4px 16px 0 rgba(60,60,120,0.10);
+    transform: translateY(-1px) scale(1.004);
+  }
+  @media (max-width: 700px) {
+    border-radius: 0.7rem;
+  }
+`;
+
+const AnimatedBar = styled.div`
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  opacity: 0.13;
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: bar-move 3.5s linear infinite alternate;
+  @keyframes bar-move {
+    0% { opacity: 0.13; }
+    100% { opacity: 0.28; }
+  }
+`;
 
 const REACTIONS = [
   { type: "adoro",    emoji: "❤️",  label: "Adoro" },
@@ -595,13 +630,9 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
   }
 
   return (
-    <article className={`post-card${compact ? " post-card-compact" : ""}`}>
-      {post.is_official && (
-        <div className="post-official-banner">
-          <span className="material-icons-sharp">campaign</span>
-          Comunicado Oficial IPIZ
-        </div>
-      )}
+    <GlassCard className={`post-card${compact ? " post-card-compact" : ""}`}>  
+      <AnimatedBar />
+      {/* Banner oficial removido para visual mais clean */}
 
       <div className="post-card-header">
         <Link to={`/perfil-publico/${author.id}`} className="post-author-link">
@@ -626,6 +657,7 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
             onClick={handleBookmark}
             title={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
             aria-label={bookmarked ? "Remover dos guardados" : "Guardar publicação"}
+            style={{ transition: "background 0.18s, color 0.18s", borderRadius: 18, padding: "6px 10px" }}
           >
             <span className="material-icons-sharp">{bookmarked ? "bookmark" : "bookmark_border"}</span>
           </button>
@@ -643,6 +675,7 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
             className={`post-image-wrap post-image-button${compact ? " post-image-wrap-compact" : ""}`}
             onClick={openImageModal}
             aria-label="Abrir imagem em tamanho completo"
+            style={{ borderRadius: "1.1rem", overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.10)", transition: "box-shadow 0.18s" }}
           >
             <img src={safePostImageUrl} alt="" className="post-image" loading="lazy" />
           </button>
@@ -671,6 +704,7 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
               onClick={handleCompactLike}
               aria-label={hasReaction ? "Remover gosto" : "Gostar"}
               disabled={readOnly}
+              style={{ transition: "background 0.18s, color 0.18s", borderRadius: 18 }}
             >
               <span className="material-icons-sharp">{hasReaction ? "favorite" : "favorite_border"}</span>
             </button>
@@ -680,6 +714,7 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
               aria-label="Comentários"
               onClick={handleOpenComments}
               disabled={!post?.id}
+              style={{ borderRadius: 18 }}
             >
               <span className="material-icons-sharp">chat_bubble_outline</span>
             </button>
@@ -689,6 +724,7 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
               aria-label="Partilhar"
               onClick={() => setShareModalOpen(true)}
               disabled={readOnly || !onShare}
+              style={{ borderRadius: 18 }}
             >
               <span className="material-icons-sharp">send</span>
             </button>
@@ -796,6 +832,6 @@ export default function PostCard({ post, onReaction, onShare, isBookmarked = fal
           </div>
         </div>
       )}
-    </article>
+    </GlassCard>
   );
 }

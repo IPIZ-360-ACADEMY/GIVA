@@ -1424,87 +1424,13 @@ export default function CompanyDashboardPage() {
   }
 
   if (!partner && !hasCompanyAccountProfile) {
+    // Limpeza: removido onboarding institucional e banners explicativos
     return (
       <div className="page-container company-page">
         <PageHeader title={t("companyDashboard.title")} description={t("companyDashboard.description")} />
         <div className="empty-state company-onboarding-empty" style={{ maxWidth: 760, margin: "0 auto" }}>
           <span className="material-icons">business_center</span>
           <p style={{ marginBottom: 0 }}>{t("companyDashboard.noPartner")}</p>
-          <div className="panel-card company-hero-card" style={{ width: "100%", padding: "1rem", marginTop: "0.85rem", textAlign: "left", background: "linear-gradient(135deg, rgba(14,165,233,0.12), rgba(255,255,255,0.02))", border: "1px solid rgba(14,165,233,0.18)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-              <div>
-                <h3 style={{ margin: 0 }}>O que terÃ¡ no seu painel</h3>
-                <p style={{ margin: "0.3rem 0 0", opacity: 0.78 }}>VisÃ£o geral de candidaturas, estÃ¡gios ativos, desempenho e acompanhamentos.</p>
-              </div>
-              <span className="company-hero-chip" style={{ fontSize: "0.78rem", padding: "0.3rem 0.6rem", borderRadius: 999, background: "rgba(14,165,233,0.14)", color: "#075985", fontWeight: 700 }}>
-                painel responsivo
-              </span>
-            </div>
-            <div className="company-feature-grid" style={{ display: "grid", gap: "0.55rem", marginTop: "0.85rem" }}>
-              <div className="company-feature-item" style={{ borderRadius: 12, padding: "0.7rem", border: "1px solid var(--border-color, #1f2937)" }}>
-                <strong style={{ fontSize: "0.84rem" }}>VisÃ£o geral de candidaturas</strong>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", opacity: 0.85 }}>
-                  Entradas pendentes, aceites, rejeitadas e tempo mÃ©dio de decisÃ£o.
-                </p>
-              </div>
-              <div className="company-feature-item" style={{ borderRadius: 12, padding: "0.7rem", border: "1px solid var(--border-color, #1f2937)" }}>
-                <strong style={{ fontSize: "0.84rem" }}>EstÃ¡gios ativos e desempenho</strong>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", opacity: 0.85 }}>
-                  OcupaÃ§Ã£o de vagas, acompanhamento de estagiÃ¡rios e indicadores operacionais.
-                </p>
-              </div>
-              <div className="company-feature-item" style={{ borderRadius: 12, padding: "0.7rem", border: "1px solid var(--border-color, #1f2937)" }}>
-                <strong style={{ fontSize: "0.84rem" }}>Recursos de gestÃ£o</strong>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", opacity: 0.85 }}>
-                  AÃ§Ãµes em lote, filtros de SLA e acompanhamento individual dos estagiÃ¡rios.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="panel-card company-editor-card" style={{ width: "100%", padding: "1rem", marginTop: "1rem", textAlign: "left", borderRadius: 12, background: "rgba(59, 130, 246, 0.06)", border: "1px solid rgba(59, 130, 246, 0.2)" }}>
-            <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>ConfiguraÃ§Ã£o de empresa necessÃ¡ria</h3>
-            <p style={{ margin: "0 0 1rem", opacity: 0.85, fontSize: "0.9rem" }}>
-              Para completa integraÃ§Ã£o e gestÃ£o operacional, preencha os dados da sua empresa nas ConfiguraÃ§Ãµes do Perfil.
-            </p>
-            <Link className="btn btn-primary" to="/config/perfil">
-              Completar dados da empresa
-            </Link>
-          </div>
-          <div className="panel-card company-publish-card" style={{ width: "100%", padding: "1rem", marginTop: "1rem", textAlign: "left" }}>
-            <h3 style={{ marginTop: 0, marginBottom: "0.75rem" }}>Publicar a primeira vaga</h3>
-            <label style={{ display: "block", marginBottom: "0.95rem" }}>
-              <span style={{ display: "block", fontSize: "0.85rem", opacity: 0.75, marginBottom: "0.35rem" }}>TÃ­tulo da vaga</span>
-              <input
-                type="text"
-                value={publishTitle}
-                onChange={(e) => setPublishTitle(e.target.value)}
-                style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
-              />
-            </label>
-            <label style={{ display: "block", marginBottom: "0.95rem" }}>
-              <span style={{ display: "block", fontSize: "0.85rem", opacity: 0.75, marginBottom: "0.35rem" }}>DescriÃ§Ã£o</span>
-              <textarea
-                rows={3}
-                value={publishDescription}
-                onChange={(e) => setPublishDescription(e.target.value)}
-                style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
-              />
-            </label>
-            <label style={{ display: "block", marginBottom: "0.95rem" }}>
-              <span style={{ display: "block", fontSize: "0.85rem", opacity: 0.75, marginBottom: "0.35rem" }}>Vagas iniciais para publicar</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={publishSlots}
-                onChange={(e) => setPublishSlots(e.target.value)}
-                style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: 8, border: "1px solid var(--border-color, #d1d5db)" }}
-              />
-            </label>
-            <button className="btn btn-primary" type="button" onClick={handlePublishVacancies} disabled={publishing}>
-              {publishing ? "A processar..." : "Criar empresa e publicar vagas"}
-            </button>
-          </div>
         </div>
       </div>
     );

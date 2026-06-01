@@ -378,7 +378,25 @@ export default function LoginPage() {
             <button className="btn primary" type="submit">
               {submitting ? t("login.signingIn") : t("login.submit")}
             </button>
-            <button className="btn ghost" type="button" onClick={handleForgotPassword} disabled={sendingRecovery || submitting}>
+            <button
+              type="button"
+              className="forgot-password-link"
+              onClick={handleForgotPassword}
+              disabled={sendingRecovery || submitting}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--primary)",
+                padding: 0,
+                margin: 0,
+                font: "inherit",
+                textDecoration: "underline",
+                cursor: "pointer",
+                minHeight: 0,
+                minWidth: 0,
+                boxShadow: "none"
+              }}
+            >
               {sendingRecovery ? "A enviar..." : "Esqueci a senha"}
             </button>
           </form>

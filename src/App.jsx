@@ -93,6 +93,7 @@ const APP_ROUTES = [
   { path: "/chat", element: <ChatPage /> },
 ];
 
+//constantes da App 
 const LEGACY_PATH_REDIRECTS = [
   { from: "/index.html", to: "/" },
   { from: "/est", to: "/estagios" },
@@ -142,7 +143,7 @@ export default function App() {
             ))}
           </Route>
         </Route>
-
+            // Rotas públicas - Definidas para todos os usuarios, independentemente do estado de autenticação
         <Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
         <Route path="/signup" element={<Suspense fallback={<PageLoader />}><SignupPage /></Suspense>} />
         <Route path="/email-status" element={<Suspense fallback={<PageLoader />}><EmailDeliveryStatusPage /></Suspense>} />

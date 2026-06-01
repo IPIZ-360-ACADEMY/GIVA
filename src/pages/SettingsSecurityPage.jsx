@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import {
@@ -10,6 +10,7 @@ import {
   updateUserPassword,
   verifyMfaTotpCode,
 } from "../services/authService.js";
+import { sendSecurityNotificationToCurrentUser } from "../services/notificationsService.js";
 
 function normalizeTimeout(value) {
   if (value === "15" || value === "15 minutos") {
@@ -61,6 +62,7 @@ export default function SettingsSecurityPage() {
   const [mfaCode, setMfaCode] = useState("");
   const [mfaState, setMfaState] = useState({ currentLevel: null, nextLevel: null, totpFactors: [] });
   const [enrollment, setEnrollment] = useState(null);
+  const mfaPendingAlertSentRef = useRef(false);
 
   const primaryTotpFactor = useMemo(() => {
     const factors = Array.isArray(mfaState.totpFactors) ? mfaState.totpFactors : [];
@@ -69,6 +71,14 @@ export default function SettingsSecurityPage() {
 
   const hasMfaEnabled = Boolean(primaryTotpFactor);
   const mfaNeedsChallenge = mfaState.currentLevel === "aal1" && mfaState.nextLevel === "aal2";
+
+  const pushSecurityMessage = useCallback(async ({ title, body }) => {
+    try {
+      await sendSecurityNotificationToCurrentUser({ title, body });
+    } catch {
+      // Não bloquear o fluxo de MFA caso o canal de notificações falhe.
+    }
+  }, []);
 
   const loadMfaState = useCallback(async () => {
     if (!isAuthEnabled() || !user) {
@@ -102,6 +112,23 @@ export default function SettingsSecurityPage() {
     void loadMfaState();
   }, [loadMfaState]);
 
+  useEffect(() => {
+    if (!isAuthEnabled() || !user || !hasMfaEnabled) {
+      mfaPendingAlertSentRef.current = false;
+      return;
+    }
+
+    if (!mfaNeedsChallenge || mfaPendingAlertSentRef.current) {
+      return;
+    }
+
+    mfaPendingAlertSentRef.current = true;
+    void pushSecurityMessage({
+      title: "MFA pendente no próximo login",
+      body: "Existe um fator MFA ativo, mas esta sessão ainda não foi elevada. Termine sessão e volte a entrar para concluir o desafio.",
+    });
+  }, [hasMfaEnabled, mfaNeedsChallenge, pushSecurityMessage, user]);
+
   function submitSecurity(event) {
     event.preventDefault();
     setSubmittingSecurity(true);
@@ -128,6 +155,10 @@ export default function SettingsSecurityPage() {
       uri: data?.totp?.uri ?? "",
     });
     setMfaCode("");
+    await pushSecurityMessage({
+      title: "Configuração MFA iniciada",
+      body: "Foi iniciado o processo de configuração do autenticador. Conclua a validação com o código de 6 dígitos.",
+    });
   }
 
   async function handleVerifyEnrollment(event) {
@@ -145,6 +176,10 @@ export default function SettingsSecurityPage() {
     }
 
     showToast("Autenticação de dois fatores ativada com sucesso.");
+    await pushSecurityMessage({
+      title: "MFA ativado com sucesso",
+      body: "A tua conta está agora protegida com autenticação de dois fatores (TOTP).",
+    });
     setEnrollment(null);
     setMfaCode("");
     await loadMfaState();
@@ -164,6 +199,10 @@ export default function SettingsSecurityPage() {
     }
 
     showToast("Autenticação de dois fatores desativada.");
+    await pushSecurityMessage({
+      title: "MFA desativado",
+      body: "A autenticação de dois fatores foi removida desta conta. Reative o MFA para manter a proteção reforçada.",
+    });
     setEnrollment(null);
     setMfaCode("");
     await loadMfaState();
@@ -197,6 +236,10 @@ export default function SettingsSecurityPage() {
     }
 
     showToast(t("settings.security.passwordSaved") || "Password alterada com sucesso.");
+    await pushSecurityMessage({
+      title: "Password alterada",
+      body: "A password da sua conta foi atualizada com sucesso. Se não reconhece esta ação, contacte o suporte imediatamente.",
+    });
     setPasswords({ newPassword: "", confirmPassword: "" });
   }
 

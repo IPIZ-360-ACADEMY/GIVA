@@ -1,6 +1,25 @@
 ﻿import { useRef, useState } from "react";
 import { createPost, createPollPost } from "../services/postsService.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import styled from "@emotion/styled";
+const GlassCreate = styled.div`
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(8px) saturate(1.05);
+  border-radius: 1.1rem;
+  border: 1px solid rgba(200,200,220,0.13);
+  box-shadow: 0 2px 8px 0 rgba(60,60,120,0.06);
+  transition: box-shadow 0.18s cubic-bezier(.4,0,.2,1), transform 0.14s cubic-bezier(.4,0,.2,1);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  &:hover {
+    box-shadow: 0 4px 16px 0 rgba(60,60,120,0.10);
+    transform: translateY(-1px) scale(1.004);
+  }
+  @media (max-width: 700px) {
+    border-radius: 0.7rem;
+  }
+`;
 
 function Avatar({ url, name, size = 40 }) {
   const initials = (name ?? "?").slice(0, 1).toUpperCase();
@@ -121,12 +140,13 @@ export default function CreatePostCard({ onCreated }) {
   const firstName = (userProfile?.display_name ?? "").split(" ")[0] || "colega";
 
   return (
-    <div className="create-post-card">
+    <GlassCreate className="create-post-card">
       <div className="create-post-top">
         <Avatar url={userProfile?.avatar_url} name={userProfile?.display_name} />
 
         {!expanded ? (
-          <button type="button" className="create-post-trigger" onClick={() => handleExpand("text")}>
+          <button type="button" className="create-post-trigger" onClick={() => handleExpand("text")}
+            style={{ borderRadius: 22, fontSize: "1.08rem", fontWeight: 500, boxShadow: "0 1px 8px rgba(0,0,0,0.04)", transition: "box-shadow 0.18s" }}>
             O que queres partilhar, {firstName}?
           </button>
         ) : (
@@ -139,6 +159,7 @@ export default function CreatePostCard({ onCreated }) {
                   type="button"
                   className={`create-mode-btn${mode === m.id ? " active" : ""}`}
                   onClick={() => setMode(m.id)}
+                  style={{ borderRadius: 16, fontWeight: 600, fontSize: "1.01rem", transition: "background 0.18s, color 0.18s" }}
                 >
                   <span className="material-icons-sharp">{m.icon}</span>
                   <span>{m.label}</span>
@@ -157,20 +178,21 @@ export default function CreatePostCard({ onCreated }) {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={3000}
+              style={{ borderRadius: 14, fontSize: "1.07rem", padding: "12px 16px", boxShadow: "0 1px 8px rgba(0,0,0,0.03)", border: "1.5px solid var(--border)" }}
             />
 
             {/* Modo Foto */}
             {mode === "photo" && (
               <>
                 {preview ? (
-                  <div className="create-post-preview">
+                  <div className="create-post-preview" style={{ borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.10)" }}>
                     <img src={preview} alt="pré-visualização" />
                     <button type="button" className="remove-img-btn" onClick={removeImage} aria-label="Remover imagem">
                       <span className="material-icons-sharp">close</span>
                     </button>
                   </div>
                 ) : (
-                  <button type="button" className="create-photo-drop" onClick={() => fileRef.current?.click()}>
+                  <button type="button" className="create-photo-drop" onClick={() => fileRef.current?.click()} style={{ borderRadius: 14, fontWeight: 500, fontSize: "1.01rem" }}>
                     <span className="material-icons-sharp">add_photo_alternate</span>
                     <span>Clica para adicionar foto</span>
                   </button>
@@ -189,33 +211,35 @@ export default function CreatePostCard({ onCreated }) {
                   value={pollQuestion}
                   onChange={(e) => setPollQuestion(e.target.value)}
                   maxLength={200}
+                  style={{ borderRadius: 12, fontSize: "1.01rem", padding: "8px 12px", marginBottom: 6 }}
                 />
                 {pollOptions.map((opt, idx) => (
-                  <div key={idx} className="create-poll-option-row">
+                  <div key={idx} className="create-poll-option-row" style={{ marginBottom: 4 }}>
                     <input
                       type="text"
                       placeholder={`Opção ${idx + 1}`}
                       value={opt}
                       onChange={(e) => updatePollOption(idx, e.target.value)}
                       maxLength={80}
+                      style={{ borderRadius: 12, fontSize: "0.98rem", padding: "7px 10px" }}
                     />
                     {pollOptions.length > 2 && (
-                      <button type="button" className="create-poll-remove" onClick={() => removePollOption(idx)} aria-label="Remover opção">
+                      <button type="button" className="create-poll-remove" onClick={() => removePollOption(idx)} aria-label="Remover opção" style={{ borderRadius: 12 }}>
                         <span className="material-icons-sharp">close</span>
                       </button>
                     )}
                   </div>
                 ))}
                 {pollOptions.length < 4 && (
-                  <button type="button" className="create-poll-add" onClick={addPollOption}>
+                  <button type="button" className="create-poll-add" onClick={addPollOption} style={{ borderRadius: 12, fontWeight: 500, fontSize: "0.98rem" }}>
                     <span className="material-icons-sharp">add</span>
                     Adicionar opção
                   </button>
                 )}
-                <div className="create-poll-duration">
+                <div className="create-poll-duration" style={{ marginTop: 8 }}>
                   <span className="material-icons-sharp">schedule</span>
                   <label>Duração:</label>
-                  <select value={pollDuration} onChange={(e) => setPollDuration(Number(e.target.value))}>
+                  <select value={pollDuration} onChange={(e) => setPollDuration(Number(e.target.value))} style={{ borderRadius: 10, padding: "4px 10px" }}>
                     <option value={0.01666667}>1 minuto</option>
                     <option value={0.5}>30 minutos</option>
                     <option value={6}>6 horas</option>
@@ -232,15 +256,15 @@ export default function CreatePostCard({ onCreated }) {
             <div className="create-post-actions">
               {mode === "photo" && !preview && (
                 <>
-                  <button type="button" className="create-post-media-btn" onClick={() => fileRef.current?.click()}>
+                  <button type="button" className="create-post-media-btn" onClick={() => fileRef.current?.click()} style={{ borderRadius: 12 }}>
                     <span className="material-icons-sharp">image</span>
                   </button>
                   <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
                 </>
               )}
               <div style={{ flex: 1 }} />
-              <button type="button" className="btn ghost sm" onClick={handleCancel}>Cancelar</button>
-              <button type="submit" className="btn primary sm" disabled={submitting || !content.trim()}>
+              <button type="button" className="btn ghost sm" onClick={handleCancel} style={{ borderRadius: 14 }}>Cancelar</button>
+              <button type="submit" className="btn primary sm" disabled={submitting || !content.trim()} style={{ borderRadius: 14, fontWeight: 600 }}>
                 {submitting ? "A publicar..." : "Publicar"}
               </button>
             </div>
@@ -250,28 +274,33 @@ export default function CreatePostCard({ onCreated }) {
 
       {!expanded && (
         <div className="create-post-shortcuts premium-create-shortcuts">
-          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("photo")}>
+          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("photo")}
+            style={{ borderRadius: 14, fontWeight: 500 }}>
             <span className="material-icons-sharp">image</span>
             <span>Foto</span>
           </button>
-          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("poll")}>
+          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("poll")}
+            style={{ borderRadius: 14, fontWeight: 500 }}>
             <span className="material-icons-sharp">poll</span>
             <span>Sondagem</span>
           </button>
-          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("text")}>
+          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("text")}
+            style={{ borderRadius: 14, fontWeight: 500 }}>
             <span className="material-icons-sharp">article</span>
             <span>Artigo</span>
           </button>
-          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("event")}>
+          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("event")}
+            style={{ borderRadius: 14, fontWeight: 500 }}>
             <span className="material-icons-sharp">event</span>
             <span>Evento</span>
           </button>
-          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("file")}>
+          <button type="button" className="create-post-shortcut" onClick={() => handleExpand("file")}
+            style={{ borderRadius: 14, fontWeight: 500 }}>
             <span className="material-icons-sharp">attach_file</span>
             <span>Ficheiro</span>
           </button>
         </div>
       )}
-    </div>
+    </GlassCreate>
   );
 }

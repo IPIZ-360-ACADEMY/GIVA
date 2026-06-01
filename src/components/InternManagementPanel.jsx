@@ -1,4 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  PanelCard,
+  PanelHeader,
+  PanelTitle,
+  PanelIcon,
+  PanelValue,
+  PanelLabel,
+  PanelSub,
+  PanelTags,
+  PanelTag,
+  PanelGrid,
+  PanelSectionTitle,
+  PanelBox
+} from "./PanelEmotionStyles";
 import { createStudentNote, listStudentNotes } from "../services/studentNotesService.js";
 import {
   createFollowupLog,
@@ -312,23 +326,23 @@ export default function InternManagementPanel({
 
   if (interns.length === 0) {
     return (
-      <div className="panel-card" style={{ padding: "2rem", textAlign: "center" }}>
-        <span className="material-icons" style={{ fontSize: "3rem", opacity: 0.3, display: "block", marginBottom: "1rem" }}>
+      <PanelCard style={{ padding: "2rem", textAlign: "center" }}>
+        <PanelIcon as="span" className="material-icons" style={{ fontSize: "3rem", opacity: 0.3, display: "block", marginBottom: "1rem" }}>
           people_alt
-        </span>
+        </PanelIcon>
         <p style={{ opacity: 0.7 }}>Nenhum estagiário aceite ainda.</p>
-      </div>
+      </PanelCard>
     );
   }
 
     if (loadingSupplemental) {
       return (
-        <div className="panel-card" style={{ padding: "2rem", textAlign: "center" }}>
-          <span className="material-icons" style={{ fontSize: "3rem", opacity: 0.3, display: "block", marginBottom: "1rem" }}>
+        <PanelCard style={{ padding: "2rem", textAlign: "center" }}>
+          <PanelIcon as="span" className="material-icons" style={{ fontSize: "3rem", opacity: 0.3, display: "block", marginBottom: "1rem" }}>
             sync
-          </span>
+          </PanelIcon>
           <p style={{ opacity: 0.7 }}>A sincronizar acompanhamento da empresa...</p>
-        </div>
+        </PanelCard>
       );
     }
 
@@ -336,9 +350,9 @@ export default function InternManagementPanel({
     <div className="intern-management-panel">
       {/* Filtro por Área */}
       <div style={{ marginBottom: "1.5rem" }}>
-        <h3 style={{ margin: "0 0 0.85rem", fontSize: "0.95rem", fontWeight: 600 }}>
+        <PanelSectionTitle as="h3" style={{ fontWeight: 600 }}>
           Filtrar por Área de Atuação
-        </h3>
+        </PanelSectionTitle>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button
             type="button"
@@ -380,9 +394,8 @@ export default function InternManagementPanel({
           const area = trainingAreas.find((a) => a.id === intern.student?.area_id);
 
           return (
-            <div
+            <PanelCard
               key={intern.id}
-              className="panel-card"
               style={{
                 padding: 0,
                 overflow: "hidden",

@@ -1,3 +1,299 @@
+@media (max-width: 480px) {
+  /* Feedback visual de toque/foco/hover nas tabs e ícones */
+  .settings-tab,
+  .settings-choice,
+  .account-provider-card {
+    transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
+    border-radius: 50%;
+    min-width: 56px;
+    min-height: 56px;
+    margin: 0 auto !important;
+    box-shadow: none;
+    outline: none;
+    position: relative;
+    z-index: 1;
+    background: none;
+  }
+  .settings-tab:active,
+  .settings-tab:focus,
+  .settings-tab:hover,
+  .settings-choice:active,
+  .settings-choice:focus,
+  .settings-choice:hover,
+  .account-provider-card:active,
+  .account-provider-card:focus,
+  .account-provider-card:hover {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--primary) 10%, transparent);
+    transform: scale(1.08);
+  }
+  .settings-tab .material-icons-sharp,
+  .settings-choice .material-icons-sharp,
+  .account-provider-icon {
+    transition: color 0.18s, text-shadow 0.18s, transform 0.18s;
+    color: var(--primary);
+    text-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 10%, transparent);
+    filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--primary) 10%, transparent));
+  }
+  .settings-tab:active .material-icons-sharp,
+  .settings-tab:focus .material-icons-sharp,
+  .settings-tab:hover .material-icons-sharp,
+  .settings-choice:active .material-icons-sharp,
+  .settings-choice:focus .material-icons-sharp,
+  .settings-choice:hover .material-icons-sharp,
+  .account-provider-card:active .account-provider-icon,
+  .account-provider-card:focus .account-provider-icon,
+  .account-provider-card:hover .account-provider-icon {
+    color: var(--accent);
+    transform: scale(1.18) rotate(-6deg);
+    text-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  /* Áreas de toque maiores e centralizadas */
+  .settings-tabs,
+  .settings-choice-group {
+    gap: 0.2rem !important;
+    justify-items: center;
+    align-items: center;
+  }
+  /* Remove outline azul padrão mobile */
+  .settings-tab:focus-visible,
+  .settings-choice:focus-visible,
+  .account-provider-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  /* Animação sutil ao abrir/fechar settings */
+  .page-settings {
+    animation: fadeInSettings 0.38s cubic-bezier(.4,0,.2,1);
+  }
+  @keyframes fadeInSettings {
+    from { opacity: 0; transform: translateY(24px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* Contraste reforçado para acessibilidade */
+  .settings-tab .material-icons-sharp,
+  .settings-choice .material-icons-sharp,
+  .account-provider-icon {
+    filter: contrast(1.2) brightness(1.1);
+  }
+}
+@media (max-width: 480px) {
+  /* Tabs: só ícone */
+  .settings-tabs {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+  }
+  .settings-tab {
+    padding: 0.6rem 0;
+    font-size: 0;
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    gap: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+  .settings-tab .material-icons-sharp {
+    font-size: 2.1rem;
+    margin: 0 auto;
+    display: block;
+    color: var(--primary);
+  }
+  .settings-tab > *:not(.material-icons-sharp) {
+    display: none !important;
+  }
+
+  /* Esconde absolutamente todos os textos, labels, descrições, chips, stats, campos, hints, títulos, subtítulos, botões não-ícone */
+  .settings-section-head,
+  .settings-section-desc,
+  .settings-hero-title,
+  .settings-hero-subtitle,
+  .settings-hero-chip-row,
+  .settings-hero-chip,
+  .settings-hero-stat-label,
+  .settings-hero-stat strong,
+  .settings-hero-stat small,
+  .settings-profile-grid label,
+  .settings-profile-grid input,
+  .settings-profile-grid textarea,
+  .settings-profile-grid select,
+  .settings-profile-grid .form-label-small,
+  .settings-profile-grid .form-hint,
+  .settings-inline-note,
+  .settings-choice strong,
+  .settings-choice small,
+  .settings-choice label,
+  .settings-choice p,
+  .settings-choice select,
+  .settings-choice input,
+  .settings-choice .form-label-small,
+  .settings-choice .form-hint,
+  .settings-premium-shell,
+  .settings-premium-stack,
+  .settings-premium-actions,
+  .settings-account-actions,
+  .settings-account-form,
+  .settings-toggle-row p,
+  .settings-toggle-row label,
+  .form-label-small,
+  .form-hint,
+  .bio-counter,
+  .avatar-editor-fields,
+  .account-provider-info,
+  .account-provider-action,
+  .account-provider-meta,
+  .account-provider-name,
+  .danger-zone h3,
+  .danger-zone-row > *:not(.material-icons-sharp),
+  .settings-premium-stack > *:not(.material-icons-sharp),
+  .settings-premium-shell > *:not(.material-icons-sharp) {
+    display: none !important;
+  }
+
+  /* Cards, botões, provedores: só ícone centralizado */
+  .settings-choice .material-icons-sharp,
+  .account-provider-icon {
+    font-size: 2.1rem;
+    margin: 0 auto;
+    display: block;
+    color: var(--primary);
+  }
+  .settings-choice {
+    justify-content: center;
+    align-items: center;
+    font-size: 0;
+    min-width: 0;
+    min-height: 44px;
+    gap: 0;
+    padding: 0.6rem 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+  .settings-toggle-row {
+    justify-content: center;
+    gap: 0;
+    min-height: 44px;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+  .account-provider-card {
+    justify-content: center;
+    gap: 0;
+    min-height: 44px;
+    padding: 0.6rem 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+  /* Remove espaços extras */
+  .settings-profile-grid,
+  .settings-social-grid,
+  .settings-premium-shell,
+  .settings-premium-stack {
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .form-card,
+  .settings-hero-card,
+  .settings-profile-card,
+  .account-provider-card {
+    box-shadow: none !important;
+    border: none !important;
+    background: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+@media (max-width: 480px) {
+  .settings-tabs {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .settings-tab {
+    padding: 0.6rem 0;
+    font-size: 0;
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    gap: 0;
+  }
+  .settings-tab .material-icons-sharp {
+    font-size: 1.7rem;
+    margin: 0 auto;
+    display: block;
+  }
+  .settings-tab > *:not(.material-icons-sharp) {
+    display: none !important;
+  }
+  .settings-section-head h3,
+  .settings-section-desc,
+  .form-label-small,
+  .settings-hero-title,
+  .settings-hero-subtitle,
+  .settings-hero-chip-row,
+  .settings-hero-chip,
+  .settings-hero-stat-label,
+  .settings-hero-stat strong,
+  .settings-hero-stat small,
+  .settings-profile-grid label,
+  .settings-profile-grid input,
+  .settings-profile-grid textarea,
+  .settings-profile-grid select,
+  .settings-profile-grid .form-label-small,
+  .settings-profile-grid .form-hint,
+  .settings-inline-note,
+  .settings-choice strong,
+  .settings-choice small,
+  .settings-choice label,
+  .settings-choice p,
+  .settings-choice select,
+  .settings-choice input,
+  .settings-choice .form-label-small,
+  .settings-choice .form-hint {
+    display: none !important;
+  }
+  .settings-choice .material-icons-sharp {
+    font-size: 1.7rem;
+    margin: 0 auto;
+    display: block;
+  }
+  .settings-choice {
+    justify-content: center;
+    align-items: center;
+    font-size: 0;
+    min-width: 0;
+    min-height: 44px;
+    gap: 0;
+    padding: 0.6rem 0;
+  }
+  .settings-toggle-row p,
+  .settings-toggle-row label {
+    display: none !important;
+  }
+  .settings-toggle-row {
+    justify-content: center;
+    gap: 0;
+  }
+  .account-provider-info,
+  .account-provider-action,
+  .account-provider-meta,
+  .account-provider-name {
+    display: none !important;
+  }
+  .account-provider-card {
+    justify-content: center;
+    gap: 0;
+    min-height: 44px;
+    padding: 0.6rem 0;
+  }
+  .account-provider-icon {
+    margin: 0 auto;
+    display: block;
+  }
+}
 /* Settings */
 .settings-tabs,
 .settings-choice-group {
