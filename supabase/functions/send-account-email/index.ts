@@ -4,29 +4,68 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const PURPOSE_ACTIVATION = "activation";
 const PURPOSE_PASSWORD_RESET = "password-reset";
+const MAX_REQUEST_BYTES = 32 * 1024;
+
+function jsonResponse(body: Record<string, unknown>, status: number, corsHeaders: Record<string, string>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
+function normalizeBaseUrl(raw: string) {
+  const value = String(raw ?? "").trim();
+  if (!value) return "";
+
+  try {
+    const parsed = new URL(value);
+    if (!["https:", "http:"].includes(parsed.protocol)) {
+      return "";
+    }
+    const path = parsed.pathname.replace(/\/$/, "");
+    return `${parsed.origin}${path}`;
+  } catch {
+    return "";
+  }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function getAllowedOrigins() {
   const raw = Deno.env.get("EMAIL_ALLOWED_ORIGINS") ?? "";
   return raw
     .split(",")
-    .map((item) => item.trim())
+    .map((item: string) => item.trim())
     .filter(Boolean);
 }
 
-function getCorsHeaders(origin: string | null) {
-  const allowed = getAllowedOrigins();
-  const allowOrigin = allowed.length === 0
-    ? "*"
-    : origin && allowed.includes(origin)
-      ? origin
-      : allowed[0];
+function resolveCorsOrigin(origin: string | null, allowedOrigins: string[]) {
+  if (allowedOrigins.length === 0) {
+    return "*";
+  }
+
+  if (!origin) {
+    return allowedOrigins[0];
+  }
+
+  return allowedOrigins.includes(origin) ? origin : null;
+}
+
+function getCorsHeaders(allowOrigin: string | null) {
+  const resolvedOrigin = allowOrigin ?? "null";
 
   return {
-    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Origin": resolvedOrigin,
     "Access-Control-Allow-Methods": "POST,OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Vary": "Origin",
-    "Content-Type": "application/json",
   };
 }
 
@@ -229,27 +268,45 @@ async function sendResendEmailWithRetry(payload: {
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
-  const corsHeaders = getCorsHeaders(origin);
+  const allowedOrigins = getAllowedOrigins();
+  const allowOrigin = resolveCorsOrigin(origin, allowedOrigins);
+  const corsHeaders = getCorsHeaders(allowOrigin);
+
+  if (origin && allowOrigin === null) {
+    return jsonResponse({ ok: false, error: "Origin not allowed" }, 403, corsHeaders);
+  }
 
   if (req.method === "OPTIONS") {
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
+    return new Response(null, {
+      status: 204,
       headers: corsHeaders,
     });
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: corsHeaders,
+    return jsonResponse({ ok: false, error: "Method not allowed" }, 405, {
+      ...corsHeaders,
+      "Allow": "POST, OPTIONS",
     });
+  }
+
+  const contentLengthHeader = req.headers.get("content-length");
+  if (contentLengthHeader) {
+    const contentLength = Number(contentLengthHeader);
+    if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
+      return jsonResponse({ ok: false, error: "Payload too large" }, 413, corsHeaders);
+    }
+  }
+
+  const contentType = String(req.headers.get("content-type") ?? "").toLowerCase();
+  if (!contentType.includes("application/json")) {
+    return jsonResponse({ ok: false, error: "Invalid content type" }, 415, corsHeaders);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
-  const appUrlRaw = Deno.env.get("APP_URL") ?? "";
-  const appUrl = appUrlRaw.replace(/\/$/, "");
+  const appUrl = normalizeBaseUrl(Deno.env.get("APP_URL") ?? "");
   // Força sempre o logo institucional local
   const logoUrl = appUrl ? `${appUrl}/images/logo.png` : "https://www.ipiz-giva.com/images/logo.png";
   const fromAddress = Deno.env.get("EMAIL_FROM") ?? "no-reply@ipiz-giva.com";
@@ -257,24 +314,45 @@ Deno.serve(async (req: Request) => {
   const from = fromAddress.includes("<") ? fromAddress : `${fromDisplayName} <${fromAddress}>`;
 
   if (!supabaseUrl || !serviceRoleKey || !resendApiKey) {
-    return new Response(JSON.stringify({ error: "Missing required environment variables" }), {
-      status: 500,
-      headers: corsHeaders,
-    });
+    return jsonResponse({ ok: false, error: "Missing required environment variables" }, 500, corsHeaders);
   }
 
   try {
-    const payload = await req.json();
+    let payload: unknown;
+    try {
+      payload = await req.json();
+    } catch {
+      return jsonResponse({ ok: false, error: "Invalid JSON body" }, 400, corsHeaders);
+    }
+
+    if (!isPlainRecord(payload)) {
+      return jsonResponse({ ok: false, error: "Invalid request payload" }, 400, corsHeaders);
+    }
+
     const email = String(payload?.email ?? "").trim().toLowerCase();
-    const redirectTo = String(payload?.redirectTo ?? appUrl).trim();
     const purpose = normalizePurpose(payload?.purpose ?? payload?.template);
-    const createUserPayload = payload?.createUser ?? null;
+    const redirectRaw = String(payload?.redirectTo ?? appUrl).trim();
+    const createUserPayload = isPlainRecord(payload?.createUser) ? payload.createUser : null;
+
+    let redirectTo = appUrl;
+    if (redirectRaw) {
+      try {
+        const parsedRedirect = new URL(redirectRaw);
+        const isAllowedProtocol = ["https:", "http:"].includes(parsedRedirect.protocol);
+        const allowedOriginsSet = new Set<string>([
+          ...allowedOrigins,
+          ...(appUrl ? [new URL(appUrl).origin] : []),
+        ]);
+        if (isAllowedProtocol && (allowedOriginsSet.size === 0 || allowedOriginsSet.has(parsedRedirect.origin))) {
+          redirectTo = redirectRaw;
+        }
+      } catch {
+        // fallback para appUrl
+      }
+    }
 
     if (!email || !isValidEmail(email)) {
-      return new Response(JSON.stringify({ ok: false, error: "Invalid email" }), {
-        status: 400,
-        headers: corsHeaders,
-      });
+      return jsonResponse({ ok: false, error: "Invalid email" }, 400, corsHeaders);
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -282,25 +360,29 @@ Deno.serve(async (req: Request) => {
     });
 
     if (purpose === PURPOSE_ACTIVATION && createUserPayload?.password) {
+      const rawPassword = String(createUserPayload.password ?? "");
+      if (rawPassword.length < 8) {
+        return jsonResponse({ ok: false, error: "Password must have at least 8 characters" }, 400, corsHeaders);
+      }
+
+      const metadata = isPlainRecord(createUserPayload?.metadata) ? createUserPayload.metadata : {};
+      const appMetadata = isPlainRecord(createUserPayload?.appMetadata) ? createUserPayload.appMetadata : {};
+
       const createUserResponse = await admin.auth.admin.createUser({
         email,
-        password: String(createUserPayload.password),
+        password: rawPassword,
         email_confirm: false,
-        user_metadata: createUserPayload?.metadata ?? {},
-        app_metadata: createUserPayload?.appMetadata ?? {},
+        user_metadata: metadata,
+        app_metadata: appMetadata,
       });
 
       const createUserErrorMessage = String(createUserResponse.error?.message ?? "").toLowerCase();
       const userAlreadyExists = createUserErrorMessage.includes("already") || createUserErrorMessage.includes("registered");
       if (createUserResponse.error && !userAlreadyExists) {
-        return new Response(JSON.stringify({
+        return jsonResponse({
           ok: false,
           error: "Failed to create auth user",
-          detail: createUserResponse.error.message,
-        }), {
-          status: 502,
-          headers: corsHeaders,
-        });
+        }, 502, corsHeaders);
       }
     }
 
@@ -317,10 +399,7 @@ Deno.serve(async (req: Request) => {
     let linkError = linkResponse.error;
 
     if (linkError || !linkData?.properties?.action_link) {
-      return new Response(JSON.stringify({ ok: false, error: "Failed to generate auth link" }), {
-        status: 502,
-        headers: corsHeaders,
-      });
+      return jsonResponse({ ok: false, error: "Failed to generate auth link" }, 502, corsHeaders);
     }
 
     const actionLink = String(linkData.properties.action_link);
@@ -340,29 +419,23 @@ Deno.serve(async (req: Request) => {
     }, resendApiKey);
 
     if (!resendResult.ok) {
-      return new Response(JSON.stringify({
+      console.error("[send-account-email] provider dispatch failure", {
+        status: resendResult.status,
+        bodyPreview: String(resendResult.body ?? "").slice(0, 300),
+      });
+      return jsonResponse({
         ok: false,
         error: "Failed to dispatch email",
         providerStatus: resendResult.status,
-        providerBody: resendResult.body,
-      }), {
-        status: 502,
-        headers: corsHeaders,
-      });
+      }, 502, corsHeaders);
     }
 
-    return new Response(JSON.stringify({ ok: true, queued: true, user: createUserPayload ? { email } : null }), {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return jsonResponse({ ok: true, queued: true, user: createUserPayload ? { email } : null }, 200, corsHeaders);
   } catch (error) {
-    return new Response(JSON.stringify({
+    console.error("[send-account-email] unexpected error", error);
+    return jsonResponse({
       ok: false,
       error: "Unexpected error while sending email",
-      detail: String((error as Error)?.message ?? error ?? "Unknown error"),
-    }), {
-      status: 500,
-      headers: corsHeaders,
-    });
+    }, 500, corsHeaders);
   }
 });
