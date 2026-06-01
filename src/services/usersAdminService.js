@@ -3,9 +3,13 @@ async function notifyAdminsOnUserCreated(newUser) {
   // Busca todos os admins e super admins
   let users = [];
   try {
-    users = await adminListUsers();
+    const listed = await adminListUsers();
+    users = Array.isArray(listed) ? listed : Array.isArray(listed?.items) ? listed.items : [];
   } catch (e) {
     // Se falhar, não bloqueia criação
+    return;
+  }
+  if (!Array.isArray(users) || users.length === 0) {
     return;
   }
   const adminEmails = users
@@ -211,9 +215,12 @@ export async function adminCreatePlatformUser(payload) {
     type: normalized.type,
   });
 
-  const activationResult = await sendAccountActivationEmail(normalized.email).catch((dispatchError) => ({
-    error: dispatchError,
-  }));
+  let activationResult = { error: null };
+  try {
+    activationResult = await Promise.resolve(sendAccountActivationEmail(normalized.email));
+  } catch (dispatchError) {
+    activationResult = { error: dispatchError };
+  }
 
   if (activationResult?.error) {
     return {
