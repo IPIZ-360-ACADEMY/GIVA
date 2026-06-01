@@ -12,6 +12,14 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
 const idempotencyStore = new Map<string, number>();
 const IDEMPOTENCY_IN_PROGRESS = -1;
 
+function ensureMapLimit<T>(map: Map<string, T>, maxEntries: number) {
+  if (map.size < maxEntries) return;
+  const firstKey = map.keys().next().value;
+  if (typeof firstKey === "string") {
+    map.delete(firstKey);
+  }
+}
+
 function getEnvInt(name: string, fallback: number, min: number, max: number) {
   const raw = Deno.env.get(name);
   if (!raw) return fallback;
@@ -37,6 +45,7 @@ function cleanupStores(nowMs: number, rateWindowMs: number) {
 function hitRateLimit(params: { key: string; nowMs: number; maxRequests: number; windowMs: number }) {
   const current = rateLimitStore.get(params.key);
   if (!current || (params.nowMs - current.windowStartMs) >= params.windowMs) {
+    ensureMapLimit(rateLimitStore, getEnvInt("EMAIL_RATE_LIMIT_MAX_ENTRIES", 5000, 100, 200000));
     rateLimitStore.set(params.key, { count: 1, windowStartMs: params.nowMs });
     return { allowed: true, retryAfterSeconds: 0 };
   }
@@ -61,6 +70,7 @@ function reserveIdempotencyKey(params: { key: string; nowMs: number }) {
     return { accepted: false, inProgress: false };
   }
 
+  ensureMapLimit(idempotencyStore, getEnvInt("EMAIL_IDEMPOTENCY_MAX_ENTRIES", 10000, 100, 500000));
   idempotencyStore.set(params.key, IDEMPOTENCY_IN_PROGRESS);
   return { accepted: true, inProgress: false };
 }
@@ -358,13 +368,14 @@ async function sendResendEmailWithRetry(payload: {
 }
 
 Deno.serve(async (req: Request) => {
+  const requestId = String(req.headers.get("x-request-id") ?? crypto.randomUUID());
   const origin = req.headers.get("origin");
   const allowedOrigins = getAllowedOrigins();
   const allowOrigin = resolveCorsOrigin(origin, allowedOrigins);
   const corsHeaders = getCorsHeaders(allowOrigin);
 
   if (origin && allowOrigin === null) {
-    return jsonResponse({ ok: false, error: "Origin not allowed" }, 403, corsHeaders);
+    return jsonResponse({ ok: false, error: "Origin not allowed", requestId }, 403, corsHeaders);
   }
 
   if (req.method === "OPTIONS") {
@@ -375,7 +386,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ ok: false, error: "Method not allowed" }, 405, {
+    return jsonResponse({ ok: false, error: "Method not allowed", requestId }, 405, {
       ...corsHeaders,
       "Allow": "POST, OPTIONS",
     });
@@ -385,13 +396,13 @@ Deno.serve(async (req: Request) => {
   if (contentLengthHeader) {
     const contentLength = Number(contentLengthHeader);
     if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
-      return jsonResponse({ ok: false, error: "Payload too large" }, 413, corsHeaders);
+      return jsonResponse({ ok: false, error: "Payload too large", requestId }, 413, corsHeaders);
     }
   }
 
   const contentType = String(req.headers.get("content-type") ?? "").toLowerCase();
   if (!contentType.includes("application/json")) {
-    return jsonResponse({ ok: false, error: "Invalid content type" }, 415, corsHeaders);
+    return jsonResponse({ ok: false, error: "Invalid content type", requestId }, 415, corsHeaders);
   }
 
   const rateLimitMaxRequests = getEnvInt("EMAIL_RATE_LIMIT_MAX_REQUESTS", 5, 1, 100);
@@ -410,7 +421,7 @@ Deno.serve(async (req: Request) => {
   const from = fromAddress.includes("<") ? fromAddress : `${fromDisplayName} <${fromAddress}>`;
 
   if (!supabaseUrl || !serviceRoleKey || !resendApiKey) {
-    return jsonResponse({ ok: false, error: "Missing required environment variables" }, 500, corsHeaders);
+    return jsonResponse({ ok: false, error: "Missing required environment variables", requestId }, 500, corsHeaders);
   }
 
   let reservedIdempotencyKey = "";
@@ -421,18 +432,17 @@ Deno.serve(async (req: Request) => {
     try {
       payload = await req.json();
     } catch {
-      return jsonResponse({ ok: false, error: "Invalid JSON body" }, 400, corsHeaders);
+      return jsonResponse({ ok: false, error: "Invalid JSON body", requestId }, 400, corsHeaders);
     }
 
     if (!isPlainRecord(payload)) {
-      return jsonResponse({ ok: false, error: "Invalid request payload" }, 400, corsHeaders);
+      return jsonResponse({ ok: false, error: "Invalid request payload", requestId }, 400, corsHeaders);
     }
 
     const email = String(payload?.email ?? "").trim().toLowerCase();
     const purpose = normalizePurpose(payload?.purpose ?? payload?.template);
     const redirectRaw = String(payload?.redirectTo ?? appUrl).trim();
     const createUserPayload = isPlainRecord(payload?.createUser) ? payload.createUser : null;
-    const requestId = String(req.headers.get("x-request-id") ?? crypto.randomUUID());
     const idempotencyKey = String(req.headers.get("x-idempotency-key") ?? "").trim();
 
     if (idempotencyKey && !/^[A-Za-z0-9._:-]{8,200}$/.test(idempotencyKey)) {
@@ -578,7 +588,7 @@ Deno.serve(async (req: Request) => {
       }, 502, corsHeaders);
     }
 
-    releaseIdempotencyKey(idempotencyKey, true, nowMs, idempotencyTtlMs);
+    releaseIdempotencyKey(idempotencyKey, true, Date.now(), idempotencyTtlMs);
 
     return jsonResponse({
       ok: true,
@@ -592,6 +602,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({
       ok: false,
       error: "Unexpected error while sending email",
+      requestId,
     }, 500, corsHeaders);
   }
 });
