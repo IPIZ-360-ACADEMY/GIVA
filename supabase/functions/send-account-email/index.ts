@@ -6,6 +6,78 @@ const PURPOSE_ACTIVATION = "activation";
 const PURPOSE_PASSWORD_RESET = "password-reset";
 const MAX_REQUEST_BYTES = 32 * 1024;
 
+type RateLimitEntry = { count: number; windowStartMs: number };
+
+const rateLimitStore = new Map<string, RateLimitEntry>();
+const idempotencyStore = new Map<string, number>();
+const IDEMPOTENCY_IN_PROGRESS = -1;
+
+function getEnvInt(name: string, fallback: number, min: number, max: number) {
+  const raw = Deno.env.get(name);
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(parsed)));
+}
+
+function cleanupStores(nowMs: number, rateWindowMs: number) {
+  for (const [key, value] of rateLimitStore.entries()) {
+    if (nowMs - value.windowStartMs >= rateWindowMs) {
+      rateLimitStore.delete(key);
+    }
+  }
+
+  for (const [key, expiry] of idempotencyStore.entries()) {
+    if (expiry !== IDEMPOTENCY_IN_PROGRESS && expiry <= nowMs) {
+      idempotencyStore.delete(key);
+    }
+  }
+}
+
+function hitRateLimit(params: { key: string; nowMs: number; maxRequests: number; windowMs: number }) {
+  const current = rateLimitStore.get(params.key);
+  if (!current || (params.nowMs - current.windowStartMs) >= params.windowMs) {
+    rateLimitStore.set(params.key, { count: 1, windowStartMs: params.nowMs });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  if (current.count >= params.maxRequests) {
+    const retryAfterMs = Math.max(0, params.windowMs - (params.nowMs - current.windowStartMs));
+    return { allowed: false, retryAfterSeconds: Math.ceil(retryAfterMs / 1000) };
+  }
+
+  current.count += 1;
+  rateLimitStore.set(params.key, current);
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
+function reserveIdempotencyKey(params: { key: string; nowMs: number }) {
+  const current = idempotencyStore.get(params.key);
+  if (current === IDEMPOTENCY_IN_PROGRESS) {
+    return { accepted: false, inProgress: true };
+  }
+
+  if (typeof current === "number" && current > params.nowMs) {
+    return { accepted: false, inProgress: false };
+  }
+
+  idempotencyStore.set(params.key, IDEMPOTENCY_IN_PROGRESS);
+  return { accepted: true, inProgress: false };
+}
+
+function releaseIdempotencyKey(key: string, success: boolean, nowMs: number, ttlMs: number) {
+  if (!key) return;
+  if (!success) {
+    idempotencyStore.delete(key);
+    return;
+  }
+  idempotencyStore.set(key, nowMs + ttlMs);
+}
+
+function isRetryableStatus(status: number) {
+  return status === 408 || status === 425 || status === 429 || (status >= 500 && status <= 599);
+}
+
 function jsonResponse(body: Record<string, unknown>, status: number, corsHeaders: Record<string, string>) {
   return new Response(JSON.stringify(body), {
     status,
@@ -231,30 +303,49 @@ async function sendResendEmailWithRetry(payload: {
   subject: string;
   html: string;
   text: string;
-}, apiKey: string) {
+}, apiKey: string, timeoutMs: number) {
   const maxAttempts = 3;
   let lastStatus = 0;
   let lastBody = "";
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("provider-timeout"), timeoutMs);
 
-    if (response.ok) {
-      return { ok: true, status: response.status, body: await response.text() };
-    }
-
-    lastStatus = response.status;
     try {
-      lastBody = await response.text();
-    } catch {
-      lastBody = "";
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (response.ok) {
+        clearTimeout(timeoutId);
+        return { ok: true, status: response.status, body: await response.text() };
+      }
+
+      lastStatus = response.status;
+      try {
+        lastBody = await response.text();
+      } catch {
+        lastBody = "";
+      }
+
+      clearTimeout(timeoutId);
+
+      if (!isRetryableStatus(lastStatus)) {
+        return { ok: false, status: lastStatus, body: lastBody };
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      const message = String((error as Error)?.message ?? error ?? "Network error");
+      const aborted = message.toLowerCase().includes("abort") || message.toLowerCase().includes("timeout");
+      lastStatus = aborted ? 504 : 502;
+      lastBody = message;
     }
 
     if (attempt < maxAttempts) {
@@ -303,6 +394,11 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: false, error: "Invalid content type" }, 415, corsHeaders);
   }
 
+  const rateLimitMaxRequests = getEnvInt("EMAIL_RATE_LIMIT_MAX_REQUESTS", 5, 1, 100);
+  const rateLimitWindowMs = getEnvInt("EMAIL_RATE_LIMIT_WINDOW_MS", 15 * 60 * 1000, 5000, 24 * 60 * 60 * 1000);
+  const idempotencyTtlMs = getEnvInt("EMAIL_IDEMPOTENCY_TTL_MS", 10 * 60 * 1000, 1000, 24 * 60 * 60 * 1000);
+  const providerTimeoutMs = getEnvInt("EMAIL_PROVIDER_TIMEOUT_MS", 10_000, 1000, 120_000);
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SECRET_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const resendApiKey = Deno.env.get("RESEND_API_KEY") ?? "";
@@ -316,6 +412,9 @@ Deno.serve(async (req: Request) => {
   if (!supabaseUrl || !serviceRoleKey || !resendApiKey) {
     return jsonResponse({ ok: false, error: "Missing required environment variables" }, 500, corsHeaders);
   }
+
+  let reservedIdempotencyKey = "";
+  const nowMs = Date.now();
 
   try {
     let payload: unknown;
@@ -333,6 +432,12 @@ Deno.serve(async (req: Request) => {
     const purpose = normalizePurpose(payload?.purpose ?? payload?.template);
     const redirectRaw = String(payload?.redirectTo ?? appUrl).trim();
     const createUserPayload = isPlainRecord(payload?.createUser) ? payload.createUser : null;
+    const requestId = String(req.headers.get("x-request-id") ?? crypto.randomUUID());
+    const idempotencyKey = String(req.headers.get("x-idempotency-key") ?? "").trim();
+
+    if (idempotencyKey && !/^[A-Za-z0-9._:-]{8,200}$/.test(idempotencyKey)) {
+      return jsonResponse({ ok: false, error: "Invalid idempotency key", requestId }, 400, corsHeaders);
+    }
 
     let redirectTo = appUrl;
     if (redirectRaw) {
@@ -352,7 +457,43 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!email || !isValidEmail(email)) {
-      return jsonResponse({ ok: false, error: "Invalid email" }, 400, corsHeaders);
+      return jsonResponse({ ok: false, error: "Invalid email", requestId }, 400, corsHeaders);
+    }
+
+    cleanupStores(nowMs, rateLimitWindowMs);
+
+    const clientIp = String(req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+    const rateLimitKey = `${origin ?? "no-origin"}|${clientIp}|${email}`;
+    const rateLimitResult = hitRateLimit({
+      key: rateLimitKey,
+      nowMs,
+      maxRequests: rateLimitMaxRequests,
+      windowMs: rateLimitWindowMs,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return jsonResponse({
+        ok: false,
+        error: "Too many requests",
+        retryAfterSeconds: rateLimitResult.retryAfterSeconds,
+        requestId,
+      }, 429, {
+        ...corsHeaders,
+        "Retry-After": String(rateLimitResult.retryAfterSeconds),
+      });
+    }
+
+    if (idempotencyKey) {
+      const reservation = reserveIdempotencyKey({ key: idempotencyKey, nowMs });
+      if (!reservation.accepted) {
+        return jsonResponse({
+          ok: true,
+          duplicate: true,
+          inProgress: reservation.inProgress,
+          requestId,
+        }, 202, corsHeaders);
+      }
+      reservedIdempotencyKey = idempotencyKey;
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
@@ -362,7 +503,8 @@ Deno.serve(async (req: Request) => {
     if (purpose === PURPOSE_ACTIVATION && createUserPayload?.password) {
       const rawPassword = String(createUserPayload.password ?? "");
       if (rawPassword.length < 8) {
-        return jsonResponse({ ok: false, error: "Password must have at least 8 characters" }, 400, corsHeaders);
+        releaseIdempotencyKey(idempotencyKey, false, nowMs, idempotencyTtlMs);
+        return jsonResponse({ ok: false, error: "Password must have at least 8 characters", requestId }, 400, corsHeaders);
       }
 
       const metadata = isPlainRecord(createUserPayload?.metadata) ? createUserPayload.metadata : {};
@@ -379,9 +521,11 @@ Deno.serve(async (req: Request) => {
       const createUserErrorMessage = String(createUserResponse.error?.message ?? "").toLowerCase();
       const userAlreadyExists = createUserErrorMessage.includes("already") || createUserErrorMessage.includes("registered");
       if (createUserResponse.error && !userAlreadyExists) {
+        releaseIdempotencyKey(idempotencyKey, false, nowMs, idempotencyTtlMs);
         return jsonResponse({
           ok: false,
           error: "Failed to create auth user",
+          requestId,
         }, 502, corsHeaders);
       }
     }
@@ -399,7 +543,8 @@ Deno.serve(async (req: Request) => {
     let linkError = linkResponse.error;
 
     if (linkError || !linkData?.properties?.action_link) {
-      return jsonResponse({ ok: false, error: "Failed to generate auth link" }, 502, corsHeaders);
+      releaseIdempotencyKey(idempotencyKey, false, nowMs, idempotencyTtlMs);
+      return jsonResponse({ ok: false, error: "Failed to generate auth link", requestId }, 502, corsHeaders);
     }
 
     const actionLink = String(linkData.properties.action_link);
@@ -416,10 +561,12 @@ Deno.serve(async (req: Request) => {
       subject,
       html,
       text,
-    }, resendApiKey);
+    }, resendApiKey, providerTimeoutMs);
 
     if (!resendResult.ok) {
+      releaseIdempotencyKey(idempotencyKey, false, nowMs, idempotencyTtlMs);
       console.error("[send-account-email] provider dispatch failure", {
+        requestId,
         status: resendResult.status,
         bodyPreview: String(resendResult.body ?? "").slice(0, 300),
       });
@@ -427,11 +574,20 @@ Deno.serve(async (req: Request) => {
         ok: false,
         error: "Failed to dispatch email",
         providerStatus: resendResult.status,
+        requestId,
       }, 502, corsHeaders);
     }
 
-    return jsonResponse({ ok: true, queued: true, user: createUserPayload ? { email } : null }, 200, corsHeaders);
+    releaseIdempotencyKey(idempotencyKey, true, nowMs, idempotencyTtlMs);
+
+    return jsonResponse({
+      ok: true,
+      queued: true,
+      requestId,
+      user: createUserPayload ? { email } : null,
+    }, 200, corsHeaders);
   } catch (error) {
+    releaseIdempotencyKey(reservedIdempotencyKey, false, nowMs, idempotencyTtlMs);
     console.error("[send-account-email] unexpected error", error);
     return jsonResponse({
       ok: false,
