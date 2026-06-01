@@ -111,14 +111,18 @@ describe("ToolsPage importacao integration", () => {
   });
 
   it("importa ficheiro e mostra relatorio com botoes de exportacao", async () => {
-    render(<ToolsPage />);
+    const { container } = render(<ToolsPage />);
 
-    const fileInput = await screen.findByLabelText(/ficheiro excel/i);
+    const fileInput = container.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
     const file = new File(["dummy"], "alunos.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 
     fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /importar dados/i })).toBeEnabled();
+    });
     fireEvent.click(screen.getByRole("button", { name: /importar dados/i }));
 
     await waitFor(() => {
